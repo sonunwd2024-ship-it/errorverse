@@ -6,7 +6,29 @@ function Particles() {
   const canvasRef = useRef(null);
   useEffect(() => {
     const canvas = canvasRef.current;
-    const ctx = canvas.getContext("2d");
+if (!canvas) return;
+const ctx = canvas.getContext("2d");
+if (!ctx) return;
+```
+
+---
+
+Then save with **Ctrl + S** and run these commands in Command Prompt:
+
+**Command 1:**
+```
+git add app/page.tsx
+```
+
+**Command 2:**
+```
+git commit -m "fix typescript error"
+```
+
+**Command 3:**
+```
+git push origin main --force
+
     let W = (canvas.width = window.innerWidth);
     let H = (canvas.height = window.innerHeight);
     const particles = Array.from({ length: 60 }, () => ({
