@@ -65,7 +65,7 @@ export async function deleteCollectionEntry(entryId: string) {
   await deleteDoc(doc(db, "collection", entryId));
 }
 
-// ─── DAILY ACTIVITY (tracks entries per day for streak) ───────────────────────
+// ─── DAILY ACTIVITY ───────────────────────────────────────────────────────────
 
 export async function updateDailyActivity(userId: string) {
   const today = new Date().toISOString().split("T")[0];
@@ -73,8 +73,8 @@ export async function updateDailyActivity(userId: string) {
   const ref = doc(db, "dailyActivity", docId);
   const snap = await getDoc(ref);
   if (snap.exists()) {
-    const data = snap.data();
-    await setDoc(ref, { ...data, count: (data.count || 0) + 1 }, { merge: true });
+    const current = snap.data().count || 0;
+    await setDoc(ref, { userId, date: today, count: current + 1 }, { merge: true });
   } else {
     await setDoc(ref, { userId, date: today, count: 1, createdAt: serverTimestamp() });
   }
@@ -83,39 +83,47 @@ export async function updateDailyActivity(userId: string) {
 export async function getTodayEntryCount(userId: string): Promise<number> {
   const today = new Date().toISOString().split("T")[0];
   const ref = doc(db, "dailyActivity", `${userId}_${today}`);
-  const snap = await getDoc(ref);
-  if (!snap.exists()) return 0;
-  return snap.data().count || 0;
+  try {
+    const snap = await getDoc(ref);
+    if (!snap.exists()) return 0;
+    return snap.data().count || 0;
+  } catch {
+    return 0;
+  }
 }
 
 // ─── STREAK (requires min 3 entries per day) ──────────────────────────────────
 
 export async function getStreak(userId: string): Promise<number> {
-  const q = query(
-    collection(db, "dailyActivity"),
-    where("userId", "==", userId),
-    orderBy("date", "desc")
-  );
-  const snap = await getDocs(q);
-  const qualifiedDates = snap.docs
-    .filter((d) => (d.data().count || 0) >= 3)
-    .map((d) => d.data().date as string);
+  try {
+    const q = query(
+      collection(db, "dailyActivity"),
+      where("userId", "==", userId),
+      orderBy("date", "desc")
+    );
+    const snap = await getDocs(q);
+    const qualifiedDates = snap.docs
+      .filter((d) => (d.data().count || 0) >= 3)
+      .map((d) => d.data().date as string);
 
-  if (qualifiedDates.length === 0) return 0;
+    if (qualifiedDates.length === 0) return 0;
 
-  const today = new Date().toISOString().split("T")[0];
-  const yesterday = new Date(Date.now() - 86400000).toISOString().split("T")[0];
-  if (qualifiedDates[0] !== today && qualifiedDates[0] !== yesterday) return 0;
+    const today = new Date().toISOString().split("T")[0];
+    const yesterday = new Date(Date.now() - 86400000).toISOString().split("T")[0];
+    if (qualifiedDates[0] !== today && qualifiedDates[0] !== yesterday) return 0;
 
-  let streak = 1;
-  for (let i = 0; i < qualifiedDates.length - 1; i++) {
-    const curr = new Date(qualifiedDates[i]);
-    const prev = new Date(qualifiedDates[i + 1]);
-    const diff = (curr.getTime() - prev.getTime()) / (1000 * 60 * 60 * 24);
-    if (diff === 1) streak++;
-    else break;
+    let streak = 1;
+    for (let i = 0; i < qualifiedDates.length - 1; i++) {
+      const curr = new Date(qualifiedDates[i]);
+      const prev = new Date(qualifiedDates[i + 1]);
+      const diff = (curr.getTime() - prev.getTime()) / (1000 * 60 * 60 * 24);
+      if (diff === 1) streak++;
+      else break;
+    }
+    return streak;
+  } catch {
+    return 0;
   }
-  return streak;
 }
 
 // ─── LEADERBOARD ──────────────────────────────────────────────────────────────
@@ -155,7 +163,6 @@ export async function getDailyActivityForMonth(userId: string, year: number, mon
     where("date", "<=", endDate)
   );
   const snap = await getDocs(q);
-  // Return only days where user added 3+ entries
   return snap.docs
     .filter((d) => (d.data().count || 0) >= 3)
     .map((d) => d.data().date as string);
