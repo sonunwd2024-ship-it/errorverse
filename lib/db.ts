@@ -71,20 +71,25 @@ export async function updateDailyActivity(userId: string) {
   const today = new Date().toISOString().split("T")[0];
   const docId = `${userId}_${today}`;
   const ref = doc(db, "dailyActivity", docId);
-  const snap = await getDoc(ref);
-  if (snap.exists()) {
-    const current = snap.data().count || 0;
-    await setDoc(ref, { userId, date: today, count: current + 1 }, { merge: true });
-  } else {
-    await setDoc(ref, { userId, date: today, count: 1, createdAt: serverTimestamp() });
+  try {
+    const snap = await getDoc(ref);
+    const newCount = snap.exists() ? (snap.data().count || 0) + 1 : 1;
+    await setDoc(ref, {
+      userId,
+      date: today,
+      count: newCount,
+      updatedAt: serverTimestamp(),
+    });
+    console.log(`[STREAK] dailyActivity updated: count=${newCount} for ${today}`);
+  } catch (e) {
+    console.error("[STREAK] updateDailyActivity failed:", e);
   }
 }
 
 export async function getTodayEntryCount(userId: string): Promise<number> {
   const today = new Date().toISOString().split("T")[0];
-  const ref = doc(db, "dailyActivity", `${userId}_${today}`);
   try {
-    const snap = await getDoc(ref);
+    const snap = await getDoc(doc(db, "dailyActivity", `${userId}_${today}`));
     if (!snap.exists()) return 0;
     return snap.data().count || 0;
   } catch {
@@ -92,36 +97,48 @@ export async function getTodayEntryCount(userId: string): Promise<number> {
   }
 }
 
-// ─── STREAK (requires min 3 entries per day) ──────────────────────────────────
+// ─── STREAK ───────────────────────────────────────────────────────────────────
+// NO orderBy to avoid needing Firestore composite index — sort in JS instead
 
 export async function getStreak(userId: string): Promise<number> {
   try {
+    // Simple query — no orderBy, no index needed
     const q = query(
       collection(db, "dailyActivity"),
-      where("userId", "==", userId),
-      orderBy("date", "desc")
+      where("userId", "==", userId)
     );
     const snap = await getDocs(q);
+
+    // Filter days with 3+ entries, sort descending in JS
     const qualifiedDates = snap.docs
-      .filter((d) => (d.data().count || 0) >= 3)
-      .map((d) => d.data().date as string);
+      .map((d) => ({ date: d.data().date as string, count: d.data().count as number }))
+      .filter((d) => d.count >= 3)
+      .map((d) => d.date)
+      .sort()
+      .reverse();
+
+    console.log("[STREAK] qualifiedDates:", qualifiedDates);
 
     if (qualifiedDates.length === 0) return 0;
 
     const today = new Date().toISOString().split("T")[0];
     const yesterday = new Date(Date.now() - 86400000).toISOString().split("T")[0];
+
+    // Streak must start from today or yesterday
     if (qualifiedDates[0] !== today && qualifiedDates[0] !== yesterday) return 0;
 
     let streak = 1;
     for (let i = 0; i < qualifiedDates.length - 1; i++) {
       const curr = new Date(qualifiedDates[i]);
       const prev = new Date(qualifiedDates[i + 1]);
-      const diff = (curr.getTime() - prev.getTime()) / (1000 * 60 * 60 * 24);
-      if (diff === 1) streak++;
+      const diffDays = Math.round((curr.getTime() - prev.getTime()) / 86400000);
+      if (diffDays === 1) streak++;
       else break;
     }
+    console.log("[STREAK] final streak:", streak);
     return streak;
-  } catch {
+  } catch (e) {
+    console.error("[STREAK] getStreak failed:", e);
     return 0;
   }
 }
@@ -135,35 +152,51 @@ export async function updateLeaderboard(
   repeatedMistakes: number,
   streak: number
 ) {
-  await setDoc(doc(db, "leaderboard", userId), {
-    userId,
-    displayName: displayName || "Anonymous",
-    totalErrors,
-    repeatedMistakes,
-    streak,
-    updatedAt: serverTimestamp(),
-  });
+  try {
+    await setDoc(doc(db, "leaderboard", userId), {
+      userId,
+      displayName: displayName || "Anonymous",
+      totalErrors,
+      repeatedMistakes,
+      streak,
+      updatedAt: serverTimestamp(),
+    });
+  } catch (e) {
+    console.error("[LEADERBOARD] update failed:", e);
+  }
 }
 
 export async function getLeaderboard() {
-  const q = query(collection(db, "leaderboard"), orderBy("repeatedMistakes", "asc"));
-  const snap = await getDocs(q);
-  return snap.docs.map((d, idx) => ({ rank: idx + 1, id: d.id, ...d.data() }));
+  try {
+    const q = query(collection(db, "leaderboard"), orderBy("repeatedMistakes", "asc"));
+    const snap = await getDocs(q);
+    return snap.docs.map((d, idx) => ({ rank: idx + 1, id: d.id, ...d.data() }));
+  } catch {
+    return [];
+  }
 }
 
-// ─── CALENDAR HELPER ──────────────────────────────────────────────────────────
+// ─── CALENDAR ─────────────────────────────────────────────────────────────────
 
-export async function getDailyActivityForMonth(userId: string, year: number, month: number): Promise<string[]> {
-  const startDate = `${year}-${String(month + 1).padStart(2, "0")}-01`;
-  const endDate = `${year}-${String(month + 1).padStart(2, "0")}-31`;
-  const q = query(
-    collection(db, "dailyActivity"),
-    where("userId", "==", userId),
-    where("date", ">=", startDate),
-    where("date", "<=", endDate)
-  );
-  const snap = await getDocs(q);
-  return snap.docs
-    .filter((d) => (d.data().count || 0) >= 3)
-    .map((d) => d.data().date as string);
+export async function getDailyActivityForMonth(
+  userId: string,
+  year: number,
+  month: number
+): Promise<string[]> {
+  try {
+    // No orderBy — just filter by userId, then filter by date in JS
+    const q = query(
+      collection(db, "dailyActivity"),
+      where("userId", "==", userId)
+    );
+    const snap = await getDocs(q);
+    const startDate = `${year}-${String(month + 1).padStart(2, "0")}-01`;
+    const endDate = `${year}-${String(month + 1).padStart(2, "0")}-31`;
+    return snap.docs
+      .map((d) => ({ date: d.data().date as string, count: d.data().count as number }))
+      .filter((d) => d.count >= 3 && d.date >= startDate && d.date <= endDate)
+      .map((d) => d.date);
+  } catch {
+    return [];
+  }
 }
