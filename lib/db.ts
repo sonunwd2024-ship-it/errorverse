@@ -337,23 +337,14 @@ export async function updateDailyActivity(userId: string): Promise<number> {
   const ref = doc(db, "dailyActivity", docId);
   try {
     const snap = await getDoc(ref);
-    const currentCount = snap.exists() ? (snap.data().count ?? 0) : 0;
-    const newCount = currentCount + 1;
-
-    if (!snap.exists()) {
-      await setDoc(ref, {
-        userId,
-        date: td,
-        count: 1,
-        updatedAt: serverTimestamp(),
-      });
-    } else {
-      await updateDoc(ref, {
-        count: increment(1),
-        updatedAt: serverTimestamp(),
-      });
-    }
-
+    const newCount = snap.exists() ? (snap.data().count ?? 0) + 1 : 1;
+    await setDoc(ref, {
+      userId,
+      date: td,
+      count: newCount,
+      updatedAt: serverTimestamp(),
+    });
+    // Award daily goal bonus XP when threshold hit
     if (newCount === 3) {
       await awardXP(userId, XP_REWARDS.dailyGoal);
     }
@@ -413,51 +404,25 @@ export async function getStreak(userId: string): Promise<number> {
 
 // ─── ANALYTICS ────────────────────────────────────────────────────────────────
 
-export async function getStreak(userId: string): Promise<number> {
+export async function getWeeklyStats(userId: string): Promise<{ week: string; count: number }[]> {
   try {
     const q = query(collection(db, "dailyActivity"), where("userId", "==", userId));
     const snap = await getDocs(q);
-
-    const qualifiedDates = snap.docs
-      .map(d => ({ date: d.data().date as string, count: d.data().count as number }))
-      .filter(d => d.count >= 3)
-      .map(d => d.date)
-      .sort()
-      .reverse();
-
-    if (qualifiedDates.length === 0) return 0;
-
-    const td = today();
-    const yesterday = addDays(td, -1);
-
-    if (qualifiedDates[0] !== td && qualifiedDates[0] !== yesterday) return 0;
-
-    let streak = 1;
-    for (let i = 0; i < qualifiedDates.length - 1; i++) {
-      const curr = new Date(qualifiedDates[i]);
-      const prev = new Date(qualifiedDates[i + 1]);
-      const diffDays = Math.round((curr.getTime() - prev.getTime()) / 86400000);
-      if (diffDays === 1) streak++;
-      else break;
-    }
-
-    // Save streak to userXP so badges work
-    try {
-      const xpRef = doc(db, "userXP", userId);
-      const xpSnap = await getDoc(xpRef);
-      if (xpSnap.exists()) {
-        const current = xpSnap.data();
-        await updateDoc(xpRef, {
-          currentStreak: streak,
-          longestStreak: Math.max(streak, current.longestStreak ?? 0),
-        });
-      }
-    } catch {}
-
-    return streak;
-  } catch (e) {
-    console.error("getStreak failed:", e);
-    return 0;
+    // Group by ISO week
+    const weeks: Record<string, number> = {};
+    snap.docs.forEach(d => {
+      const date = new Date(d.data().date);
+      const weekStart = new Date(date);
+      weekStart.setDate(date.getDate() - date.getDay());
+      const key = weekStart.toISOString().split("T")[0];
+      weeks[key] = (weeks[key] ?? 0) + (d.data().count ?? 0);
+    });
+    return Object.entries(weeks)
+      .map(([week, count]) => ({ week, count }))
+      .sort((a, b) => a.week.localeCompare(b.week))
+      .slice(-8);
+  } catch {
+    return [];
   }
 }
 
