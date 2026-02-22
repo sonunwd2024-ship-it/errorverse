@@ -14,6 +14,7 @@ import {
   type ErrorEntry, type UserXP,
 } from "../lib/db";
 import { ProfilePanel, XPTapPanel, AvatarDisplay } from "./ProfilePanel";
+import { AIHub } from "./AIFeatures";
 
 // ─── CONSTANTS ────────────────────────────────────────────────────────────────
 
@@ -1053,6 +1054,29 @@ function Leaderboard() {
   );
 }
 
+// ─── AI TAB LOADER ─────────────────────────────────────────────────────────────
+
+function AITabLoader({ userId }: { userId: string }) {
+  const [errors, setErrors] = useState<ErrorEntry[]>([]);
+  const [collection, setCollection] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    Promise.all([getErrors(userId), getCollection(userId)]).then(([e, c]) => {
+      setErrors(e); setCollection(c); setLoading(false);
+    });
+  }, [userId]);
+
+  if (loading) return (
+    <div style={{ textAlign:"center", padding:80, color:"#475569" }}>
+      <div style={{ fontSize:40, marginBottom:12 }}>🤖</div>
+      <div style={{ fontSize:14 }}>Loading AI features...</div>
+    </div>
+  );
+
+  return <AIHub userId={userId} errors={errors} collection={collection} />;
+}
+
 // ─── MAIN APP ─────────────────────────────────────────────────────────────────
 
 export default function App() {
@@ -1144,6 +1168,7 @@ export default function App() {
     { id:"achievements", label:"Achievements", icon:"🏅" },
     { id:"collection",   label:"Collection",   icon:"🎌" },
     { id:"leaderboard",  label:"Leaderboard",  icon:"🏆" },
+    { id:"ai",           label:"AI Hub",       icon:"🤖" },
   ];
 
   const PAGE_TITLES: Record<string,{title:string;sub:string;color:string}> = {
@@ -1153,6 +1178,7 @@ export default function App() {
     achievements: { title:"ACHIEVEMENTS",      sub:"achievements", color:"#ffd700" },
     collection:   { title:"ANIME COLLECTION",  sub:"collection",   color:"#a855f7" },
     leaderboard:  { title:"LEADERBOARD",       sub:"leaderboard",  color:"#ffd700" },
+    ai:           { title:"AI COMMAND",        sub:"ai",           color:"#a855f7" },
   };
 
   const pt = PAGE_TITLES[activeTab];
@@ -1274,6 +1300,7 @@ export default function App() {
         {activeTab==="achievements"  && <BadgesPanel earned={xpData?.badges??[]}/>}
         {activeTab==="collection"   && <AnimeCollection userId={user.uid} onEntryAdded={handleEntryAdded}/>}
         {activeTab==="leaderboard"  && <Leaderboard/>}
+        {activeTab==="ai"           && <AITabLoader userId={user.uid}/>}
       </div>
     </div>
   );
