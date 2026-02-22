@@ -13,6 +13,7 @@ import {
   XP_REWARDS, LEVELS, BADGES,
   type ErrorEntry, type UserXP,
 } from "../lib/db";
+import { ProfilePanel, XPTapPanel, AvatarDisplay } from "./ProfilePanel";
 
 // ─── CONSTANTS ────────────────────────────────────────────────────────────────
 
@@ -661,11 +662,10 @@ function SpacedRevision({ userId, onXP }: { userId:string; onXP:(xp:number)=>voi
   return (
     <div style={{ paddingBottom:40 }}>
       <ToastContainer toasts={toasts} />
-      {/* Stats row */}
       <div style={{ display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(130px,1fr))",gap:12,marginBottom:20 }}>
         {[
-          { label:"Due Today",    value:dueErrors.length,                                          icon:"🎯", color:"#ff2254" },
-          { label:"Upcoming",     value:schedule.filter(s=>s.date>todayStr).reduce((a,b)=>a+b.count,0), icon:"📅", color:"#00d4ff" },
+          { label:"Due Today",value:dueErrors.length,icon:"🎯",color:"#ff2254" },
+          { label:"Upcoming",value:schedule.filter(s=>s.date>todayStr).reduce((a,b)=>a+b.count,0),icon:"📅",color:"#00d4ff" },
         ].map(s=>(
           <GlassCard key={s.label} style={{ padding:16,textAlign:"center" }}>
             <div style={{ fontSize:24 }}>{s.icon}</div>
@@ -673,7 +673,6 @@ function SpacedRevision({ userId, onXP }: { userId:string; onXP:(xp:number)=>voi
             <div style={{ fontSize:11,color:"#64748b",marginTop:2 }}>{s.label}</div>
           </GlassCard>
         ))}
-        {/* Upcoming schedule */}
         {upcomingSchedule.map(s=>(
           <GlassCard key={s.date} style={{ padding:16,textAlign:"center" }}>
             <div style={{ fontSize:13,color:"#64748b",marginBottom:4 }}>📅 {s.date.slice(5)}</div>
@@ -682,8 +681,6 @@ function SpacedRevision({ userId, onXP }: { userId:string; onXP:(xp:number)=>voi
           </GlassCard>
         ))}
       </div>
-
-      {/* Legend */}
       <div style={{ display:"flex",gap:16,marginBottom:16,flexWrap:"wrap" as const }}>
         {[{color:MASTERY_COLORS.red,label:"🔴 Weak (<40%)"},{color:MASTERY_COLORS.yellow,label:"🟡 Learning (40–74%)"},{color:MASTERY_COLORS.green,label:"🟢 Mastered (75%+)"}].map(l=>(
           <div key={l.label} style={{ display:"flex",alignItems:"center",gap:6 }}>
@@ -692,7 +689,6 @@ function SpacedRevision({ userId, onXP }: { userId:string; onXP:(xp:number)=>voi
           </div>
         ))}
       </div>
-
       {loading ? <div style={{ textAlign:"center",padding:60,color:"#475569" }}>Loading revisions...</div> : (
         dueErrors.length === 0 ? (
           <div style={{ textAlign:"center",padding:60 }}>
@@ -703,9 +699,8 @@ function SpacedRevision({ userId, onXP }: { userId:string; onXP:(xp:number)=>voi
         ) : (
           <div style={{ display:"flex",flexDirection:"column",gap:14 }}>
             {dueErrors.map(err=>(
-              <GlassCard key={err.id} style={{ padding:20, borderLeft:`3px solid ${MASTERY_COLORS[err.masteryStage??'red']}` }}>
+              <GlassCard key={err.id} style={{ padding:20,borderLeft:`3px solid ${MASTERY_COLORS[err.masteryStage??"red"]}` }}>
                 <div style={{ display:"flex",flexDirection:"column",gap:12 }}>
-                  {/* Top row */}
                   <div style={{ display:"flex",justifyContent:"space-between",alignItems:"flex-start",flexWrap:"wrap" as const,gap:8 }}>
                     <div style={{ flex:1 }}>
                       <div style={{ display:"flex",gap:6,marginBottom:8,flexWrap:"wrap" as const }}>
@@ -714,18 +709,16 @@ function SpacedRevision({ userId, onXP }: { userId:string; onXP:(xp:number)=>voi
                         <span style={{ padding:"2px 10px",borderRadius:20,fontSize:11,background:"rgba(255,255,255,0.04)",color:"#64748b" }}>{err.difficulty}</span>
                       </div>
                       <div style={{ fontSize:16,fontWeight:700,color:"#e2e8f0",marginBottom:4 }}>{err.chapter}</div>
-                      {err.solution && <div style={{ fontSize:12,color:"#94a3b8",marginBottom:6 }}>{err.solution}</div>}
-                      {err.formula && <div style={{ fontSize:12,color:"#00d4ff",fontFamily:"monospace",padding:"4px 8px",background:"rgba(0,212,255,0.06)",borderRadius:6,display:"inline-block" }}>∫ {err.formula}</div>}
-                      {err.whyMistake && <div style={{ fontSize:12,color:"#ffd700",borderLeft:"2px solid #ffd70044",paddingLeft:8,marginTop:8 }}>❓ {err.whyMistake}</div>}
+                      {err.solution&&<div style={{ fontSize:12,color:"#94a3b8",marginBottom:6 }}>{err.solution}</div>}
+                      {err.formula&&<div style={{ fontSize:12,color:"#00d4ff",fontFamily:"monospace",padding:"4px 8px",background:"rgba(0,212,255,0.06)",borderRadius:6,display:"inline-block" }}>∫ {err.formula}</div>}
+                      {err.whyMistake&&<div style={{ fontSize:12,color:"#ffd700",borderLeft:"2px solid #ffd70044",paddingLeft:8,marginTop:8 }}>❓ {err.whyMistake}</div>}
                     </div>
                     <div style={{ display:"flex",flexDirection:"column",alignItems:"flex-end",gap:8,flexShrink:0 }}>
-                      <RevisionBadge nextDate={err.nextReviewDate ?? ""} />
+                      <RevisionBadge nextDate={err.nextReviewDate??""} />
                       <div style={{ fontSize:11,color:"#475569" }}>Interval: {err.revisionInterval}d</div>
                     </div>
                   </div>
-                  {/* Mastery bar */}
                   <MasteryBar level={err.masteryLevel??0} stage={err.masteryStage??"red"} />
-                  {/* Actions */}
                   <div style={{ display:"flex",gap:8,flexWrap:"wrap" as const }}>
                     <button disabled={!!completing} onClick={()=>handleAction(err,"mastered")} style={{ padding:"8px 16px",borderRadius:8,border:"none",background:"linear-gradient(135deg,#22c55e,#16a34a)",color:"#fff",fontFamily:"inherit",fontSize:12,fontWeight:700,cursor:"pointer",flex:1 }}>✅ Mastered (+{XP_REWARDS.masterError}xp)</button>
                     <button disabled={!!completing} onClick={()=>handleAction(err,"reviewed")} style={{ padding:"8px 16px",borderRadius:8,border:"1px solid rgba(0,212,255,0.3)",background:"rgba(0,212,255,0.08)",color:"#00d4ff",fontFamily:"inherit",fontSize:12,fontWeight:700,cursor:"pointer",flex:1 }}>📖 Reviewed (+{XP_REWARDS.reviewError}xp)</button>
@@ -768,13 +761,12 @@ function Analytics({ userId }: { userId:string }) {
 
   return (
     <div style={{ paddingBottom:40 }}>
-      {/* KPIs */}
       <div style={{ display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(130px,1fr))",gap:12,marginBottom:24 }}>
         {[
-          { label:"Total Errors",  value:errors.length,    icon:"📝", color:"#00d4ff" },
-          { label:"Mastered",      value:masteredCount,    icon:"🟢", color:"#22c55e" },
-          { label:"Mastery Rate",  value:`${masteryPct}%`, icon:"📊", color:"#a855f7" },
-          { label:"This Week",     value:weeklyData.slice(-1)[0]?.count??0, icon:"📅", color:"#ff2254" },
+          { label:"Total Errors",value:errors.length,icon:"📝",color:"#00d4ff" },
+          { label:"Mastered",value:masteredCount,icon:"🟢",color:"#22c55e" },
+          { label:"Mastery Rate",value:`${masteryPct}%`,icon:"📊",color:"#a855f7" },
+          { label:"This Week",value:weeklyData.slice(-1)[0]?.count??0,icon:"📅",color:"#ff2254" },
         ].map(s=>(
           <GlassCard key={s.label} style={{ padding:16,textAlign:"center" }}>
             <div style={{ fontSize:22 }}>{s.icon}</div>
@@ -783,13 +775,10 @@ function Analytics({ userId }: { userId:string }) {
           </GlassCard>
         ))}
       </div>
-
       {mr&&<div style={{ padding:"12px 16px",borderRadius:10,marginBottom:20,background:"rgba(255,34,84,0.1)",border:"1px solid rgba(255,34,84,0.3)",display:"flex",alignItems:"center",gap:10 }}>
         <span style={{ fontSize:20 }}>⚠️</span>
         <span style={{ fontSize:13,color:"#ff8099" }}>Most repeated mistake type: <strong style={{ color:"#ff2254" }}>{mr[0]}</strong> ({mr[1]} errors)</span>
       </div>}
-
-      {/* Charts row */}
       <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:16,marginBottom:16 }}>
         <GlassCard style={{ padding:20 }}>
           <h3 style={{ margin:"0 0 16px",fontSize:13,color:"#64748b",letterSpacing:1 }}>MISTAKE TYPE BREAKDOWN</h3>
@@ -808,21 +797,16 @@ function Analytics({ userId }: { userId:string }) {
             </div>
           ):<div style={{ color:"#475569",fontSize:13,textAlign:"center",padding:40 }}>No data yet</div>}
         </GlassCard>
-
         <GlassCard style={{ padding:20 }}>
           <h3 style={{ margin:"0 0 16px",fontSize:13,color:"#64748b",letterSpacing:1 }}>SUBJECT DISTRIBUTION</h3>
           {barData.length>0?<BarChart data={barData}/>:<div style={{ color:"#475569",fontSize:13,textAlign:"center",padding:40 }}>No data yet</div>}
           {diffData.length>0&&<><h3 style={{ margin:"20px 0 12px",fontSize:13,color:"#64748b",letterSpacing:1 }}>DIFFICULTY SPLIT</h3><BarChart data={diffData}/></>}
         </GlassCard>
       </div>
-
-      {/* Weekly trend */}
       <GlassCard style={{ padding:20,marginBottom:16 }}>
         <h3 style={{ margin:"0 0 16px",fontSize:13,color:"#64748b",letterSpacing:1 }}>📈 WEEKLY ERROR TREND</h3>
         <LineChart data={weeklyData}/>
       </GlassCard>
-
-      {/* Heatmap */}
       <GlassCard style={{ padding:20 }}>
         <h3 style={{ margin:"0 0 16px",fontSize:13,color:"#64748b",letterSpacing:1 }}>🔥 WEAK CHAPTER HEATMAP</h3>
         {heatmap.length>0?<HeatmapBar chapters={heatmap}/>:<div style={{ color:"#475569",fontSize:13,textAlign:"center",padding:40 }}>No data yet</div>}
@@ -845,7 +829,6 @@ function ErrorBook({ userId, onEntryAdded }: { userId:string; onEntryAdded:(n:nu
     setErrors(p=>[newErr,...p]);
     onEntryAdded(newCount);
     addToast(`Error logged! +${XP_REWARDS.addError} XP ⚡`,"xp");
-    // Check badges
     const allErrors=[newErr,...errors];
     const newBadges=await checkAndAwardBadges(userId,allErrors);
     if(newBadges.length>0) addToast(`🏅 New badge: ${BADGES.find(b=>b.id===newBadges[0])?.name}!`,"xp");
@@ -872,8 +855,6 @@ function ErrorBook({ userId, onEntryAdded }: { userId:string; onEntryAdded:(n:nu
     <div style={{ paddingBottom:40 }}>
       <ToastContainer toasts={toasts}/>
       {showForm&&<ErrorForm onSubmit={handleAdd} onClose={()=>setShowForm(false)}/>}
-
-      {/* Stats */}
       <div style={{ display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(130px,1fr))",gap:12,marginBottom:20 }}>
         {[
           { label:"Total Errors",value:errors.length,icon:"📝",color:"#00d4ff" },
@@ -887,13 +868,10 @@ function ErrorBook({ userId, onEntryAdded }: { userId:string; onEntryAdded:(n:nu
           </GlassCard>
         ))}
       </div>
-
       {mr&&<div style={{ padding:"12px 16px",borderRadius:10,marginBottom:16,background:"rgba(255,34,84,0.1)",border:"1px solid rgba(255,34,84,0.3)",display:"flex",alignItems:"center",gap:10 }}>
         <span style={{ fontSize:20 }}>⚠️</span>
         <span style={{ fontSize:13,color:"#ff8099" }}>Most repeated: <strong style={{ color:"#ff2254" }}>{mr[0]}</strong> ({mr[1]} times)</span>
       </div>}
-
-      {/* Mini charts */}
       {pieData.length>0&&(
         <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:20 }}>
           <GlassCard style={{ padding:20 }}>
@@ -909,26 +887,20 @@ function ErrorBook({ userId, onEntryAdded }: { userId:string; onEntryAdded:(n:nu
           </GlassCard>
         </div>
       )}
-
-      {/* Search + Add */}
       <div style={{ display:"flex",gap:10,marginBottom:16,flexWrap:"wrap" as const,alignItems:"center" }}>
         <input style={{ flex:1,minWidth:160,...INP_STYLE }} placeholder="🔍 Search errors..." value={search} onChange={e=>setSearch(e.target.value)} />
         <button onClick={()=>setShowForm(true)} style={{ padding:"9px 18px",borderRadius:8,border:"none",background:"linear-gradient(135deg,#00d4ff,#0066ff)",color:"#fff",fontFamily:"inherit",fontSize:13,fontWeight:700,cursor:"pointer" }}>+ Add Error</button>
       </div>
-
-      {/* Filters */}
       <div style={{ display:"flex",gap:8,marginBottom:16,flexWrap:"wrap" as const }}>
         {["All","Physics","Chemistry","Math","Other"].map(s=><button key={s} style={CHIP(fs===s,"#00d4ff")} onClick={()=>setFs(s)}>{s}</button>)}
         <span style={{ borderLeft:"1px solid rgba(255,255,255,0.1)",margin:"0 4px" }}/>
         {["All","Conceptual","Calculation","Silly mistake","Time pressure"].map(m=><button key={m} style={CHIP(fm===m,"#ff2254")} onClick={()=>setFm(m)}>{m}</button>)}
       </div>
-
-      {/* Error list */}
       {loading?<div style={{ textAlign:"center",padding:40,color:"#475569" }}>Loading...</div>:(
         <div style={{ display:"flex",flexDirection:"column",gap:10 }}>
           {filtered.length===0&&<div style={{ textAlign:"center",padding:40,color:"#475569" }}>No errors found. Clean slate! 🎯</div>}
           {filtered.map((err:ErrorEntry)=>(
-            <GlassCard key={err.id} style={{ padding:16, borderLeft:`3px solid ${MASTERY_COLORS[err.masteryStage??"red"]}` }}>
+            <GlassCard key={err.id} style={{ padding:16,borderLeft:`3px solid ${MASTERY_COLORS[err.masteryStage??"red"]}` }}>
               <div style={{ display:"flex",alignItems:"flex-start",gap:14,flexWrap:"wrap" as const }}>
                 <div style={{ flex:1,minWidth:200 }}>
                   <div style={{ display:"flex",gap:8,marginBottom:8,flexWrap:"wrap" as const }}>
@@ -940,7 +912,6 @@ function ErrorBook({ userId, onEntryAdded }: { userId:string; onEntryAdded:(n:nu
                   <div style={{ fontSize:12,color:"#94a3b8",marginBottom:6 }}>{err.solution}</div>
                   {err.formula&&<div style={{ fontSize:11,color:"#00d4ff",fontFamily:"monospace",marginBottom:6 }}>∫ {err.formula}</div>}
                   {err.lesson&&<div style={{ fontSize:12,color:"#ffd700",borderLeft:"2px solid #ffd70044",paddingLeft:8,marginBottom:8 }}>💡 {err.lesson}</div>}
-                  {/* Mastery bar inline */}
                   <div style={{ maxWidth:200 }}>
                     <MasteryBar level={err.masteryLevel??0} stage={err.masteryStage??"red"}/>
                   </div>
@@ -1093,6 +1064,20 @@ export default function App() {
   const [xpPopup,setXpPopup]=useState<number|null>(null);
   const { toasts, add: addToast } = useToast();
 
+  // ── NEW: Profile state ─────────────────────────────────────────────────────
+  const [showProfile, setShowProfile] = useState(false);
+  const [showXPPanel, setShowXPPanel] = useState(false);
+  const [userAvatar, setUserAvatar] = useState("av1");
+  const [userPhoto, setUserPhoto] = useState<string|null>(null);
+  const [displayName, setDisplayName] = useState("");
+
+  const handleUpdateProfile = (data: any) => {
+    if (data.displayName) setDisplayName(data.displayName);
+    if (data.avatar) setUserAvatar(data.avatar);
+    if (data.photoURL !== undefined) setUserPhoto(data.photoURL);
+  };
+  // ──────────────────────────────────────────────────────────────────────────
+
   const loadStats=async(uid:string,name:string)=>{
     const [s,t,xp]=await Promise.all([getStreak(uid),getTodayEntryCount(uid),getUserXP(uid)]);
     setStreak(s); setTodayCount(t); setXpData(xp);
@@ -1111,7 +1096,6 @@ export default function App() {
       const s=await getStreak(user!.uid);
       setStreak(s);
     }
-    // Refresh XP
     const xp=await getUserXP(user!.uid);
     setXpData(xp);
   };
@@ -1122,7 +1106,14 @@ export default function App() {
   };
 
   useEffect(()=>{
-    const unsub=onAuth(async u=>{ setUser(u); setAuthLoading(false); if(u) loadStats(u.uid,u.displayName||u.email||"Anonymous"); });
+    const unsub=onAuth(async u=>{
+      setUser(u); setAuthLoading(false);
+      if(u) {
+        const name = u.displayName || u.email?.split("@")[0] || "Warrior";
+        setDisplayName(name);
+        loadStats(u.uid, name);
+      }
+    });
     return()=>unsub();
   },[]);
   useEffect(()=>{const i=setInterval(()=>setQuoteIdx(q=>(q+1)%QUOTES.length),5000);return()=>clearInterval(i);},[]);
@@ -1142,7 +1133,7 @@ export default function App() {
         select option{background:#0d1117}
       `}</style>
       <Particles/>
-      <div style={{ position:"relative",zIndex:1 }}><AuthScreen onLogin={setUser}/></div>
+      <div style={{ position:"relative",zIndex:1 }}><AuthScreen onLogin={u=>{setUser(u); const name=u.displayName||u.email?.split("@")[0]||"Warrior"; setDisplayName(name);}}/></div>
     </div>
   );
 
@@ -1184,33 +1175,77 @@ export default function App() {
       {xpPopup&&<XPPopup xp={xpPopup} onDone={()=>setXpPopup(null)}/>}
       {showCal&&<StreakCalendar userId={user.uid} streak={streak} onClose={()=>setShowCal(false)}/>}
 
+      {/* ── PROFILE PANEL ── */}
+      {showProfile && (
+        <ProfilePanel
+          user={{ ...user, displayName }}
+          xpData={xpData}
+          streak={streak}
+          todayCount={todayCount}
+          onClose={() => setShowProfile(false)}
+          onLogout={() => { setShowProfile(false); logOut(); }}
+          onUpdateProfile={handleUpdateProfile}
+          LEVELS={LEVELS}
+          BADGES={BADGES}
+          XP_REWARDS={XP_REWARDS}
+        />
+      )}
+
+      {/* ── XP TAP PANEL ── */}
+      {showXPPanel && xpData && (
+        <XPTapPanel
+          xpData={xpData}
+          streak={streak}
+          onClose={() => setShowXPPanel(false)}
+          LEVELS={LEVELS}
+          BADGES={BADGES}
+        />
+      )}
+
       <div style={{ position:"relative",zIndex:1,maxWidth:1100,margin:"0 auto",padding:"0 16px" }}>
-        {/* Header */}
+
+        {/* ── HEADER ── */}
         <header style={{ display:"flex",alignItems:"center",justifyContent:"space-between",padding:"16px 0",borderBottom:"1px solid rgba(255,255,255,0.05)",marginBottom:20,flexWrap:"wrap" as const,gap:10 }}>
           <div style={{ display:"flex",alignItems:"center",gap:12 }}>
             <span style={{ fontSize:24 }}>⚡</span>
             <span style={{ fontFamily:"'Bebas Neue',cursive",fontSize:28,letterSpacing:4,background:"linear-gradient(135deg,#00d4ff,#ff2254)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent" }}>ERRORVERSE</span>
           </div>
-          <div style={{ flex:1,margin:"0 20px",overflow:"hidden",display:window?.innerWidth>600?"block":"none" }}>
+
+          <div style={{ flex:1,margin:"0 20px",overflow:"hidden",display:"block" }}>
             <span style={{ fontSize:11,color:"#475569",whiteSpace:"nowrap" as const,fontStyle:"italic" }}>"{QUOTES[quoteIdx]}"</span>
           </div>
+
           <div style={{ display:"flex",alignItems:"center",gap:10,flexWrap:"wrap" as const }}>
             {/* Streak */}
             <button onClick={()=>setShowCal(true)} style={{ display:"flex",alignItems:"center",gap:6,padding:"6px 12px",borderRadius:20,background:streak>0?"rgba(255,215,0,0.12)":"rgba(255,255,255,0.05)",border:`1px solid ${streak>0?"rgba(255,215,0,0.35)":"rgba(255,255,255,0.08)"}`,cursor:"pointer",fontFamily:"inherit",transition:"all 0.2s" }}>
               <span style={{ fontSize:14 }}>🔥</span>
               <span style={{ fontSize:12,color:streak>0?"#ffd700":"#475569",fontWeight:700 }}>{streak}d</span>
             </button>
+
             {/* Today counter */}
             <div style={{ padding:"5px 10px",borderRadius:12,background:todayCount>=3?"rgba(34,197,94,0.12)":"rgba(0,212,255,0.08)",border:`1px solid ${todayCount>=3?"rgba(34,197,94,0.3)":"rgba(0,212,255,0.2)"}`,fontSize:11,color:todayCount>=3?"#22c55e":"#00d4ff",fontWeight:700 }}>{todayCount}/3 ✓</div>
-            {/* XP chip */}
-            {xpData&&<div style={{ padding:"5px 10px",borderRadius:12,background:"rgba(123,97,255,0.12)",border:"1px solid rgba(123,97,255,0.3)",fontSize:11,color:"#a78bfa",fontWeight:700 }}>⚡ {xpData.totalXP} XP · Lv.{xpData.level}</div>}
-            {/* Avatar */}
-            <div style={{ width:32,height:32,borderRadius:"50%",background:"linear-gradient(135deg,#00d4ff,#ff2254)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:13,fontWeight:700 }}>{(user.displayName||user.email||"?")[0].toUpperCase()}</div>
-            <button onClick={()=>logOut()} style={{ background:"none",border:"1px solid rgba(255,255,255,0.1)",color:"#64748b",padding:"6px 12px",borderRadius:8,cursor:"pointer",fontFamily:"inherit",fontSize:12 }}>Logout</button>
+
+            {/* XP chip — click to open XP panel */}
+            {xpData && (
+              <button onClick={() => setShowXPPanel(true)} style={{ padding:"5px 10px",borderRadius:12,background:"rgba(123,97,255,0.12)",border:"1px solid rgba(123,97,255,0.3)",fontSize:11,color:"#a78bfa",fontWeight:700,cursor:"pointer",fontFamily:"inherit",transition:"all 0.2s" }}>
+                ⚡ {xpData.totalXP} XP · Lv.{xpData.level}
+              </button>
+            )}
+
+            {/* Avatar + name — click to open profile */}
+            <button onClick={() => setShowProfile(true)} style={{ display:"flex",alignItems:"center",gap:8,background:"rgba(255,255,255,0.04)",border:"1px solid rgba(255,255,255,0.1)",borderRadius:24,padding:"4px 12px 4px 4px",cursor:"pointer",transition:"all 0.2s" }}
+              onMouseEnter={e=>{(e.currentTarget as HTMLElement).style.borderColor="rgba(0,212,255,0.3)";}}
+              onMouseLeave={e=>{(e.currentTarget as HTMLElement).style.borderColor="rgba(255,255,255,0.1)";}}>
+              <AvatarDisplay avatar={userAvatar} photoURL={userPhoto} displayName={displayName} size={28} />
+              <span style={{ fontSize:13,color:"#94a3b8",fontWeight:600,maxWidth:80,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" as const }}>
+                {displayName.split(" ")[0] || "You"}
+              </span>
+              <span style={{ fontSize:11,color:"#334155" }}>▾</span>
+            </button>
           </div>
         </header>
 
-        {/* Level banner for gamification tab */}
+        {/* Level banner for achievements tab */}
         {activeTab==="achievements"&&xpData&&<LevelBanner xpData={xpData}/>}
 
         {/* Streak banner */}
@@ -1233,12 +1268,12 @@ export default function App() {
         </div>
 
         {/* Pages */}
-        {activeTab==="errors"      && <ErrorBook userId={user.uid} onEntryAdded={handleEntryAdded}/>}
-        {activeTab==="revision"    && <SpacedRevision userId={user.uid} onXP={handleXPGained}/>}
-        {activeTab==="analytics"   && <Analytics userId={user.uid}/>}
-        {activeTab==="achievements" && <BadgesPanel earned={xpData?.badges??[]}/>}
-        {activeTab==="collection"  && <AnimeCollection userId={user.uid} onEntryAdded={handleEntryAdded}/>}
-        {activeTab==="leaderboard" && <Leaderboard/>}
+        {activeTab==="errors"       && <ErrorBook userId={user.uid} onEntryAdded={handleEntryAdded}/>}
+        {activeTab==="revision"     && <SpacedRevision userId={user.uid} onXP={handleXPGained}/>}
+        {activeTab==="analytics"    && <Analytics userId={user.uid}/>}
+        {activeTab==="achievements"  && <BadgesPanel earned={xpData?.badges??[]}/>}
+        {activeTab==="collection"   && <AnimeCollection userId={user.uid} onEntryAdded={handleEntryAdded}/>}
+        {activeTab==="leaderboard"  && <Leaderboard/>}
       </div>
     </div>
   );
