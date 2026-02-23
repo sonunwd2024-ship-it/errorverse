@@ -168,14 +168,14 @@ function useToast() {
 function ToastContainer({ toasts }: { toasts: any[] }) {
   const colors = { success:"#22c55e", error:"#ff2254", xp:"#ffd700" };
   return (
-    <div style={{ position:"fixed", bottom:24, right:24, zIndex:999, display:"flex", flexDirection:"column", gap:10 }}>
+    <div style={{ position:"fixed", bottom:100, right:16, zIndex:999, display:"flex", flexDirection:"column", gap:10 }}>
       {toasts.map(t => (
         <div key={t.id} style={{
           background:"rgba(10,14,26,0.95)", backdropFilter:"blur(12px)",
           border:`1px solid ${colors[t.type as keyof typeof colors]}44`,
           borderLeft:`3px solid ${colors[t.type as keyof typeof colors]}`,
           borderRadius:12, padding:"12px 18px", fontSize:13, color:"#e2e8f0",
-          display:"flex", alignItems:"center", gap:10, maxWidth:320,
+          display:"flex", alignItems:"center", gap:10, maxWidth:300,
           boxShadow:"0 8px 32px rgba(0,0,0,0.5)",
           animation:"slideInToast 0.3s ease",
         }}>
@@ -222,7 +222,7 @@ function RevisionBadge({ nextDate }: { nextDate: string }) {
   );
 }
 
-// ─── XP TOAST ─────────────────────────────────────────────────────────────────
+// ─── XP POPUP ─────────────────────────────────────────────────────────────────
 
 function XPPopup({ xp, onDone }: { xp:number; onDone:()=>void }) {
   useEffect(() => { const t = setTimeout(onDone, 2000); return ()=>clearTimeout(t); }, [onDone]);
@@ -685,14 +685,6 @@ function SpacedRevision({ userId, onXP }: { userId:string; onXP:(xp:number)=>voi
           </GlassCard>
         ))}
       </div>
-      <div style={{ display:"flex",gap:16,marginBottom:16,flexWrap:"wrap" as const }}>
-        {[{color:MASTERY_COLORS.red,label:"🔴 Weak (<40%)"},{color:MASTERY_COLORS.yellow,label:"🟡 Learning (40–74%)"},{color:MASTERY_COLORS.green,label:"🟢 Mastered (75%+)"}].map(l=>(
-          <div key={l.label} style={{ display:"flex",alignItems:"center",gap:6 }}>
-            <div style={{ width:10,height:10,borderRadius:"50%",background:l.color }}/>
-            <span style={{ fontSize:12,color:"#64748b" }}>{l.label}</span>
-          </div>
-        ))}
-      </div>
       {loading ? <div style={{ textAlign:"center",padding:60,color:"#475569" }}>Loading revisions...</div> : (
         dueErrors.length === 0 ? (
           <div style={{ textAlign:"center",padding:60 }}>
@@ -715,11 +707,9 @@ function SpacedRevision({ userId, onXP }: { userId:string; onXP:(xp:number)=>voi
                       <div style={{ fontSize:16,fontWeight:700,color:"#e2e8f0",marginBottom:4 }}>{err.chapter}</div>
                       {err.solution&&<div style={{ fontSize:12,color:"#94a3b8",marginBottom:6 }}>{err.solution}</div>}
                       {err.formula&&<div style={{ fontSize:12,color:"#00d4ff",fontFamily:"monospace",padding:"4px 8px",background:"rgba(0,212,255,0.06)",borderRadius:6,display:"inline-block" }}>∫ {err.formula}</div>}
-                      {err.whyMistake&&<div style={{ fontSize:12,color:"#ffd700",borderLeft:"2px solid #ffd70044",paddingLeft:8,marginTop:8 }}>❓ {err.whyMistake}</div>}
                     </div>
                     <div style={{ display:"flex",flexDirection:"column",alignItems:"flex-end",gap:8,flexShrink:0 }}>
                       <RevisionBadge nextDate={err.nextReviewDate??""} />
-                      <div style={{ fontSize:11,color:"#475569" }}>Interval: {err.revisionInterval}d</div>
                     </div>
                   </div>
                   <MasteryBar level={err.masteryLevel??0} stage={err.masteryStage??"red"} />
@@ -1022,7 +1012,7 @@ function AnimeCollection({ userId, onEntryAdded }: { userId:string; onEntryAdded
   );
 }
 
-// ─── LEADERBOARD — Duolingo-style ─────────────────────────────────────────────
+// ─── LEADERBOARD ─────────────────────────────────────────────────────────────
 
 function Leaderboard({ currentUserId }: { currentUserId: string }) {
   const [leaders, setLeaders] = useState<any[]>([]);
@@ -1033,7 +1023,6 @@ function Leaderboard({ currentUserId }: { currentUserId: string }) {
   useEffect(() => {
     getLeaderboard().then(async data => {
       setLeaders(data);
-      // Fetch all profiles for avatars/names
       const profileMap: Record<string, any> = {};
       await Promise.all(data.map(async (l: any) => {
         try {
@@ -1049,77 +1038,65 @@ function Leaderboard({ currentUserId }: { currentUserId: string }) {
   const MEDALS = ["🥇", "🥈", "🥉"];
   const RANK_COLORS = ["#ffd700", "#c0c0c0", "#cd7f32"];
   const LEAGUE_TIERS = {
-    gold: { label: "Gold League 🏆", color: "#ffd700", min: 0, max: Infinity },
-    silver: { label: "Silver League 🥈", color: "#c0c0c0", min: 10, max: Infinity },
-    bronze: { label: "Bronze League 🥉", color: "#cd7f32", min: 20, max: Infinity },
+    gold:   { label:"Gold League 🏆",   color:"#ffd700" },
+    silver: { label:"Silver League 🥈", color:"#c0c0c0" },
+    bronze: { label:"Bronze League 🥉", color:"#cd7f32" },
   };
 
   const league = LEAGUE_TIERS[activeLeague];
   const topLeaders = leaders.slice(0, 10);
   const myRank = leaders.findIndex(l => (l.userId ?? l.id) === currentUserId) + 1;
   const myData = leaders.find(l => (l.userId ?? l.id) === currentUserId);
-  const myProfile = profiles[currentUserId];
-
-  // Stats to show
-  const totalXP = leaders.reduce((a, l) => a + (l.totalXP ?? 0), 0);
   const avgStreak = leaders.length > 0 ? Math.round(leaders.reduce((a, l) => a + (l.streak ?? 0), 0) / leaders.length) : 0;
 
   return (
-    <div style={{ paddingBottom: 40 }}>
-      {/* League header */}
-      <div style={{ marginBottom: 20, textAlign: "center" }}>
-        <div style={{ display: "flex", justifyContent: "center", gap: 8, marginBottom: 16 }}>
-          {(["gold", "silver", "bronze"] as const).map(l => (
-            <button key={l} onClick={() => setActiveLeague(l)} style={{ padding: "8px 18px", borderRadius: 20, border: `1px solid ${activeLeague === l ? LEAGUE_TIERS[l].color : "rgba(255,255,255,0.1)"}`, background: activeLeague === l ? `${LEAGUE_TIERS[l].color}18` : "transparent", color: activeLeague === l ? LEAGUE_TIERS[l].color : "#64748b", fontFamily: "inherit", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
+    <div style={{ paddingBottom:40 }}>
+      <div style={{ marginBottom:20, textAlign:"center" }}>
+        <div style={{ display:"flex", justifyContent:"center", gap:8, marginBottom:16 }}>
+          {(["gold","silver","bronze"] as const).map(l => (
+            <button key={l} onClick={() => setActiveLeague(l)} style={{ padding:"8px 18px", borderRadius:20, border:`1px solid ${activeLeague===l?LEAGUE_TIERS[l].color:"rgba(255,255,255,0.1)"}`, background:activeLeague===l?`${LEAGUE_TIERS[l].color}18`:"transparent", color:activeLeague===l?LEAGUE_TIERS[l].color:"#64748b", fontFamily:"inherit", fontSize:12, fontWeight:700, cursor:"pointer" }}>
               {LEAGUE_TIERS[l].label.split(" ")[0]} {LEAGUE_TIERS[l].label.split(" ")[1]}
             </button>
           ))}
         </div>
-        <div style={{ fontSize: 24, fontFamily: "'Bebas Neue',cursive", letterSpacing: 3, color: league.color }}>{league.label}</div>
-        <div style={{ fontSize: 12, color: "#64748b", marginTop: 4 }}>Top warriors this season</div>
+        <div style={{ fontSize:24, fontFamily:"'Bebas Neue',cursive", letterSpacing:3, color:league.color }}>{league.label}</div>
       </div>
 
-      {/* Global stats */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 10, marginBottom: 20 }}>
+      <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:10, marginBottom:20 }}>
         {[
-          { icon: "👥", label: "Warriors", value: leaders.length, color: "#00d4ff" },
-          { icon: "📅", label: "Avg Streak", value: `${avgStreak}d`, color: "#ffd700" },
-          { icon: "🏅", label: "My Rank", value: myRank > 0 ? `#${myRank}` : "—", color: "#a855f7" },
-        ].map(s => (
-          <GlassCard key={s.label} style={{ padding: "12px 10px", textAlign: "center" }}>
-            <div style={{ fontSize: 18 }}>{s.icon}</div>
-            <div style={{ fontSize: 20, fontWeight: 800, color: s.color, fontFamily: "'Bebas Neue',cursive" }}>{s.value}</div>
-            <div style={{ fontSize: 10, color: "#64748b" }}>{s.label}</div>
+          { icon:"👥", label:"Warriors",value:leaders.length,     color:"#00d4ff" },
+          { icon:"📅", label:"Avg Streak",value:`${avgStreak}d`,  color:"#ffd700" },
+          { icon:"🏅", label:"My Rank",value:myRank>0?`#${myRank}`:"—", color:"#a855f7" },
+        ].map(s=>(
+          <GlassCard key={s.label} style={{ padding:"12px 10px", textAlign:"center" }}>
+            <div style={{ fontSize:18 }}>{s.icon}</div>
+            <div style={{ fontSize:20, fontWeight:800, color:s.color, fontFamily:"'Bebas Neue',cursive" }}>{s.value}</div>
+            <div style={{ fontSize:10, color:"#64748b" }}>{s.label}</div>
           </GlassCard>
         ))}
       </div>
 
-      {/* My position banner (if not in top 10) */}
       {myRank > 10 && myData && (
-        <div style={{ marginBottom: 16, padding: "14px 16px", borderRadius: 12, background: "rgba(123,97,255,0.1)", border: "1px solid rgba(123,97,255,0.25)", display: "flex", alignItems: "center", gap: 14 }}>
-          <span style={{ fontSize: 22, fontWeight: 800, color: "#a78bfa", fontFamily: "'Bebas Neue',cursive", minWidth: 40, textAlign: "center" }}>#{myRank}</span>
-          <AvatarDisplay avatar={myProfile?.avatar ?? "av_luffy"} photoURL={myProfile?.photoURL} displayName={myProfile?.displayName ?? myData.displayName} size={38} />
-          <div style={{ flex: 1 }}>
-            <div style={{ fontSize: 14, fontWeight: 700, color: "#e2e8f0" }}>You — {myProfile?.displayName || myData.displayName}</div>
-            <div style={{ fontSize: 11, color: "#64748b" }}>{myData.totalErrors ?? 0} errors · 🔥 {myData.streak ?? 0}d streak</div>
-          </div>
-          <div style={{ textAlign: "right" }}>
-            <div style={{ fontSize: 13, color: "#a78bfa" }}>⬆ Keep grinding!</div>
+        <div style={{ marginBottom:16, padding:"14px 16px", borderRadius:12, background:"rgba(123,97,255,0.1)", border:"1px solid rgba(123,97,255,0.25)", display:"flex", alignItems:"center", gap:14 }}>
+          <span style={{ fontSize:22, fontWeight:800, color:"#a78bfa", fontFamily:"'Bebas Neue',cursive", minWidth:40, textAlign:"center" }}>#{myRank}</span>
+          <AvatarDisplay avatar={profiles[currentUserId]?.avatar ?? "av_luffy"} photoURL={profiles[currentUserId]?.photoURL} displayName={profiles[currentUserId]?.displayName ?? myData.displayName} size={38} />
+          <div style={{ flex:1 }}>
+            <div style={{ fontSize:14, fontWeight:700, color:"#e2e8f0" }}>You — {profiles[currentUserId]?.displayName || myData.displayName}</div>
+            <div style={{ fontSize:11, color:"#64748b" }}>{myData.totalErrors ?? 0} errors · 🔥 {myData.streak ?? 0}d streak</div>
           </div>
         </div>
       )}
 
-      {/* Promotion zone label */}
-      <div style={{ fontSize: 11, color: "#22c55e", fontWeight: 700, letterSpacing: 1, marginBottom: 10, paddingLeft: 4 }}>⬆ PROMOTION ZONE (Top 3)</div>
+      <div style={{ fontSize:11, color:"#22c55e", fontWeight:700, letterSpacing:1, marginBottom:10, paddingLeft:4 }}>⬆ PROMOTION ZONE (Top 3)</div>
 
-      {loading ? <div style={{ textAlign: "center", padding: 60, color: "#475569" }}>Loading warriors...</div> : leaders.length === 0 ? (
-        <div style={{ textAlign: "center", padding: 60 }}>
-          <div style={{ fontSize: 48, marginBottom: 12 }}>🏆</div>
-          <div style={{ fontSize: 16, color: "#64748b" }}>No warriors yet! Add 3+ entries to appear.</div>
+      {loading ? <div style={{ textAlign:"center", padding:60, color:"#475569" }}>Loading warriors...</div> : leaders.length === 0 ? (
+        <div style={{ textAlign:"center", padding:60 }}>
+          <div style={{ fontSize:48, marginBottom:12 }}>🏆</div>
+          <div style={{ fontSize:16, color:"#64748b" }}>No warriors yet! Add 3+ entries to appear.</div>
         </div>
       ) : (
-        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-          {topLeaders.map((l: any, i: number) => {
+        <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+          {topLeaders.map((l:any,i:number) => {
             const uid = l.userId ?? l.id;
             const profile = profiles[uid];
             const name = profile?.displayName || l.displayName || "Warrior";
@@ -1128,81 +1105,61 @@ function Leaderboard({ currentUserId }: { currentUserId: string }) {
             const av = getAvatar(avatar);
             const isMe = uid === currentUserId;
             const isMedal = i < 3;
-            const isPromo = i < 3;
-            const isDemo = i >= 7; // demotion zone
-
-            // XP for display if available
+            const isDemo = i >= 7;
             const xp = l.totalXP ?? (l.totalErrors ?? 0) * 10;
 
             return (
               <div key={l.id ?? uid} style={{
-                padding: "14px 16px",
-                borderRadius: 14,
-                display: "flex",
-                alignItems: "center",
-                gap: 14,
-                background: isMe ? "rgba(123,97,255,0.12)" : isMedal ? `${RANK_COLORS[i]}08` : "rgba(255,255,255,0.03)",
-                border: isMe ? "1px solid rgba(123,97,255,0.35)" : isMedal ? `1px solid ${RANK_COLORS[i]}30` : isDemo ? "1px solid rgba(255,34,84,0.15)" : "1px solid rgba(255,255,255,0.06)",
-                position: "relative" as const,
-                transition: "all 0.2s",
+                padding:"14px 16px", borderRadius:14,
+                display:"flex", alignItems:"center", gap:14,
+                background:isMe?"rgba(123,97,255,0.12)":isMedal?`${RANK_COLORS[i]}08`:"rgba(255,255,255,0.03)",
+                border:isMe?"1px solid rgba(123,97,255,0.35)":isMedal?`1px solid ${RANK_COLORS[i]}30`:isDemo?"1px solid rgba(255,34,84,0.15)":"1px solid rgba(255,255,255,0.06)",
+                position:"relative" as const, transition:"all 0.2s",
               }}>
-                {/* Rank */}
-                <div style={{ fontSize: isMedal ? 26 : 14, minWidth: 36, textAlign: "center", color: isMedal ? RANK_COLORS[i] : "#475569", fontWeight: 800, fontFamily: "'Bebas Neue',cursive", flexShrink: 0 }}>
+                <div style={{ fontSize:isMedal?26:14, minWidth:36, textAlign:"center", color:isMedal?RANK_COLORS[i]:"#475569", fontWeight:800, fontFamily:"'Bebas Neue',cursive", flexShrink:0 }}>
                   {isMedal ? MEDALS[i] : `#${l.rank}`}
                 </div>
-
-                {/* Avatar */}
                 <AvatarDisplay avatar={avatar} photoURL={photoURL} displayName={name} size={42} />
-
-                {/* Info */}
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" as const }}>
-                    <span style={{ fontSize: 15, fontWeight: 700, color: isMe ? "#a78bfa" : "#e2e8f0" }}>{name}{isMe ? " (You)" : ""}</span>
-                    {isMedal && <span style={{ fontSize: 9, padding: "2px 6px", borderRadius: 8, background: `${RANK_COLORS[i]}22`, color: RANK_COLORS[i], fontWeight: 700 }}>TOP {i + 1}</span>}
+                <div style={{ flex:1, minWidth:0 }}>
+                  <div style={{ display:"flex", alignItems:"center", gap:8, flexWrap:"wrap" as const }}>
+                    <span style={{ fontSize:15, fontWeight:700, color:isMe?"#a78bfa":"#e2e8f0" }}>{name}{isMe?" (You)":""}</span>
+                    {isMedal&&<span style={{ fontSize:9, padding:"2px 6px", borderRadius:8, background:`${RANK_COLORS[i]}22`, color:RANK_COLORS[i], fontWeight:700 }}>TOP {i+1}</span>}
                   </div>
-                  <div style={{ display: "flex", gap: 10, flexWrap: "wrap" as const, marginTop: 4 }}>
-                    <span style={{ fontSize: 11, color: "#64748b" }}>📝 {l.totalErrors ?? 0} errors</span>
-                    <span style={{ fontSize: 11, color: "#ffd700" }}>🔥 {l.streak ?? 0}d</span>
-                    {l.repeatedMistakes !== undefined && <span style={{ fontSize: 11, color: l.repeatedMistakes === 0 ? "#22c55e" : "#ff2254" }}>♻ {l.repeatedMistakes} repeats</span>}
+                  <div style={{ display:"flex", gap:10, flexWrap:"wrap" as const, marginTop:4 }}>
+                    <span style={{ fontSize:11, color:"#64748b" }}>📝 {l.totalErrors??0} errors</span>
+                    <span style={{ fontSize:11, color:"#ffd700" }}>🔥 {l.streak??0}d</span>
+                    {l.repeatedMistakes!==undefined&&<span style={{ fontSize:11, color:l.repeatedMistakes===0?"#22c55e":"#ff2254" }}>♻ {l.repeatedMistakes} repeats</span>}
                   </div>
-                  {/* Mini XP bar */}
-                  <div style={{ marginTop: 6, height: 3, background: "rgba(255,255,255,0.05)", borderRadius: 2, overflow: "hidden", maxWidth: 160 }}>
-                    <div style={{ height: "100%", width: `${Math.min(100, (xp / 3000) * 100)}%`, background: isMedal ? `linear-gradient(90deg,${RANK_COLORS[i]},${RANK_COLORS[i]}88)` : "linear-gradient(90deg,#7c3aed,#00d4ff)", borderRadius: 2 }} />
+                  <div style={{ marginTop:6, height:3, background:"rgba(255,255,255,0.05)", borderRadius:2, overflow:"hidden", maxWidth:160 }}>
+                    <div style={{ height:"100%", width:`${Math.min(100,(xp/3000)*100)}%`, background:isMedal?`linear-gradient(90deg,${RANK_COLORS[i]},${RANK_COLORS[i]}88)`:"linear-gradient(90deg,#7c3aed,#00d4ff)", borderRadius:2 }} />
                   </div>
                 </div>
-
-                {/* Right stat */}
-                <div style={{ textAlign: "right", flexShrink: 0 }}>
-                  <div style={{ fontSize: 22, fontWeight: 800, color: l.repeatedMistakes === 0 ? "#22c55e" : "#ff2254", fontFamily: "'Bebas Neue',cursive" }}>{l.repeatedMistakes ?? 0}</div>
-                  <div style={{ fontSize: 9, color: "#64748b", textTransform: "uppercase" as const }}>repeats</div>
+                <div style={{ textAlign:"right", flexShrink:0 }}>
+                  <div style={{ fontSize:22, fontWeight:800, color:l.repeatedMistakes===0?"#22c55e":"#ff2254", fontFamily:"'Bebas Neue',cursive" }}>{l.repeatedMistakes??0}</div>
+                  <div style={{ fontSize:9, color:"#64748b", textTransform:"uppercase" as const }}>repeats</div>
                 </div>
-
-                {/* Avatar character badge */}
-                <div style={{ position: "absolute", top: 8, right: isMedal ? 60 : 50, fontSize: 11, color: av.color, opacity: 0.7 }}>{av.emoji}</div>
-
-                {isDemo && <div style={{ position: "absolute", right: 10, bottom: -1, fontSize: 9, color: "#ff2254", fontWeight: 700, letterSpacing: 0.5 }}>⬇ DEMOTION ZONE</div>}
+                <div style={{ position:"absolute", top:8, right:isMedal?60:50, fontSize:11, color:av.color, opacity:0.7 }}>{av.emoji}</div>
+                {isDemo&&<div style={{ position:"absolute", right:10, bottom:-1, fontSize:9, color:"#ff2254", fontWeight:700, letterSpacing:0.5 }}>⬇ DEMOTION ZONE</div>}
               </div>
             );
           })}
         </div>
       )}
 
-      {/* Demotion zone label */}
-      {topLeaders.length > 7 && <div style={{ fontSize: 11, color: "#ff2254", fontWeight: 700, letterSpacing: 1, marginTop: 8, paddingLeft: 4 }}>⬇ DEMOTION ZONE (Bottom 3)</div>}
+      {topLeaders.length > 7 && <div style={{ fontSize:11, color:"#ff2254", fontWeight:700, letterSpacing:1, marginTop:8, paddingLeft:4 }}>⬇ DEMOTION ZONE (Bottom 3)</div>}
 
-      {/* How ranking works */}
-      <GlassCard hover={false} style={{ padding: 16, marginTop: 20, background: "rgba(0,212,255,0.04)" }}>
-        <h3 style={{ margin: "0 0 12px", fontSize: 13, color: "#00d4ff", letterSpacing: 1 }}>⚔️ HOW RANKING WORKS</h3>
-        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+      <GlassCard hover={false} style={{ padding:16, marginTop:20, background:"rgba(0,212,255,0.04)" }}>
+        <h3 style={{ margin:"0 0 12px", fontSize:13, color:"#00d4ff", letterSpacing:1 }}>⚔️ HOW RANKING WORKS</h3>
+        <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
           {[
-            { icon: "♻️", label: "Fewer repeated mistakes = higher rank", color: "#22c55e" },
-            { icon: "🔥", label: "Daily streak keeps your position locked", color: "#ffd700" },
-            { icon: "📝", label: "More errors logged = more XP gained", color: "#00d4ff" },
-            { icon: "⬆", label: "Top 3 promote to next league each week", color: "#a855f7" },
-          ].map(r => (
-            <div key={r.label} style={{ display: "flex", alignItems: "center", gap: 10 }}>
-              <span style={{ fontSize: 16 }}>{r.icon}</span>
-              <span style={{ fontSize: 12, color: "#94a3b8" }}>{r.label}</span>
+            { icon:"♻️", label:"Fewer repeated mistakes = higher rank" },
+            { icon:"🔥", label:"Daily streak keeps your position locked" },
+            { icon:"📝", label:"More errors logged = more XP gained" },
+            { icon:"⬆", label:"Top 3 promote to next league each week" },
+          ].map(r=>(
+            <div key={r.label} style={{ display:"flex", alignItems:"center", gap:10 }}>
+              <span style={{ fontSize:16 }}>{r.icon}</span>
+              <span style={{ fontSize:12, color:"#94a3b8" }}>{r.label}</span>
             </div>
           ))}
         </div>
@@ -1254,45 +1211,138 @@ function HeatCalendarLoader({ userId }: { userId: string }) {
   return <HeatCalendar errors={errors} />;
 }
 
-// ─── DUOLINGO-STYLE BOTTOM NAV ────────────────────────────────────────────────
+// ─── REDESIGNED BOTTOM NAV ────────────────────────────────────────────────────
+// Grouped like Duolingo: primary tabs + secondary tabs
 
-const TABS = [
-  { id:"errors",       label:"Errors",     icon:"📝", color:"#ff2254" },
-  { id:"revision",     label:"Revision",   icon:"🔁", color:"#00d4ff" },
-  { id:"analytics",    label:"Stats",      icon:"📊", color:"#a855f7" },
-  { id:"collection",   label:"Collection", icon:"🎌", color:"#f97316" },
-  { id:"leaderboard",  label:"Rank",       icon:"🏆", color:"#ffd700" },
-  { id:"achievements", label:"Badges",     icon:"🏅", color:"#22c55e" },
-  { id:"ai",           label:"AI",         icon:"🤖", color:"#a855f7" },
-  { id:"heatmap",      label:"Heat",       icon:"🔥", color:"#f97316" },
+const PRIMARY_TABS = [
+  { id:"errors",      label:"Learn",    icon:"📝", color:"#ff2254",  glow:"rgba(255,34,84,0.4)" },
+  { id:"revision",    label:"Review",   icon:"🔁", color:"#00d4ff",  glow:"rgba(0,212,255,0.4)" },
+  { id:"analytics",   label:"Stats",    icon:"📊", color:"#a855f7",  glow:"rgba(168,85,247,0.4)" },
+  { id:"leaderboard", label:"Rank",     icon:"🏆", color:"#ffd700",  glow:"rgba(255,215,0,0.4)" },
+  { id:"collection",  label:"Watch",    icon:"🎌", color:"#f97316",  glow:"rgba(249,115,22,0.4)" },
+];
+
+const SECONDARY_TABS = [
+  { id:"achievements", label:"Badges",  icon:"🏅", color:"#22c55e" },
+  { id:"ai",           label:"AI",      icon:"🤖", color:"#a855f7" },
+  { id:"heatmap",      label:"Heat",    icon:"🔥", color:"#f97316" },
 ];
 
 function BottomNav({ active, setActive }: { active:string; setActive:(t:string)=>void }) {
+  const [showMore, setShowMore] = useState(false);
+  const allActive = [...PRIMARY_TABS, ...SECONDARY_TABS].find(t => t.id === active);
+  const isSecondaryActive = SECONDARY_TABS.some(t => t.id === active);
+
   return (
-    <div style={{
-      position: "fixed", bottom: 0, left: 0, right: 0, zIndex: 50,
-      background: "rgba(5,8,16,0.97)", backdropFilter: "blur(20px)",
-      borderTop: "1px solid rgba(255,255,255,0.08)",
-      display: "flex", justifyContent: "space-around", alignItems: "center",
-      padding: "8px 0 env(safe-area-inset-bottom,8px)",
-    }}>
-      {TABS.map(t => {
-        const isActive = active === t.id;
-        return (
-          <button key={t.id} onClick={() => setActive(t.id)} style={{
-            display: "flex", flexDirection: "column", alignItems: "center", gap: 2,
-            padding: "6px 8px", borderRadius: 12, border: "none",
-            background: isActive ? `${t.color}18` : "transparent",
-            cursor: "pointer", fontFamily: "inherit", transition: "all 0.2s",
-            minWidth: 52,
-          }}>
-            <span style={{ fontSize: isActive ? 22 : 20, transition: "all 0.2s", filter: isActive ? `drop-shadow(0 0 6px ${t.color})` : "none" }}>{t.icon}</span>
-            <span style={{ fontSize: 9, fontWeight: isActive ? 700 : 500, color: isActive ? t.color : "#475569", letterSpacing: 0.3 }}>{t.label}</span>
-            {isActive && <div style={{ width: 4, height: 4, borderRadius: "50%", background: t.color }} />}
-          </button>
-        );
-      })}
-    </div>
+    <>
+      {/* More panel */}
+      {showMore && (
+        <div
+          style={{
+            position:"fixed", bottom:70, left:"50%", transform:"translateX(-50%)",
+            zIndex:100, background:"rgba(5,8,16,0.97)", backdropFilter:"blur(20px)",
+            border:"1px solid rgba(255,255,255,0.1)", borderRadius:20, padding:16,
+            display:"flex", gap:12, boxShadow:"0 -8px 32px rgba(0,0,0,0.5)",
+          }}
+          onClick={e => e.stopPropagation()}
+        >
+          {SECONDARY_TABS.map(t => {
+            const isActive = active === t.id;
+            return (
+              <button key={t.id} onClick={() => { setActive(t.id); setShowMore(false); }} style={{
+                display:"flex", flexDirection:"column", alignItems:"center", gap:4,
+                padding:"10px 16px", borderRadius:14,
+                border:`1px solid ${isActive ? t.color : "rgba(255,255,255,0.06)"}`,
+                background:isActive?`${t.color}18`:"rgba(255,255,255,0.03)",
+                cursor:"pointer", fontFamily:"inherit", transition:"all 0.2s",
+              }}>
+                <span style={{ fontSize:24, filter:isActive?`drop-shadow(0 0 8px ${t.color})`:"none" }}>{t.icon}</span>
+                <span style={{ fontSize:10, fontWeight:700, color:isActive?t.color:"#64748b" }}>{t.label}</span>
+              </button>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Click outside to close */}
+      {showMore && <div style={{ position:"fixed", inset:0, zIndex:99 }} onClick={() => setShowMore(false)} />}
+
+      {/* Main nav bar */}
+      <nav style={{
+        position:"fixed", bottom:0, left:0, right:0, zIndex:101,
+        background:"rgba(4,6,14,0.98)", backdropFilter:"blur(24px)",
+        borderTop:"1px solid rgba(255,255,255,0.07)",
+        display:"flex", alignItems:"stretch",
+        height:62,
+        paddingBottom:"env(safe-area-inset-bottom,0px)",
+      }}>
+        {PRIMARY_TABS.map(t => {
+          const isActive = active === t.id;
+          return (
+            <button key={t.id} onClick={() => { setActive(t.id); setShowMore(false); }} style={{
+              flex:1, display:"flex", flexDirection:"column", alignItems:"center",
+              justifyContent:"center", gap:2,
+              padding:"6px 0 8px",
+              border:"none", background:"transparent",
+              cursor:"pointer", fontFamily:"inherit",
+              position:"relative",
+              transition:"all 0.15s",
+            }}>
+              {/* Active indicator pill at top */}
+              {isActive && (
+                <div style={{
+                  position:"absolute", top:0, left:"50%", transform:"translateX(-50%)",
+                  width:28, height:3, borderRadius:"0 0 4px 4px",
+                  background:t.color, boxShadow:`0 2px 8px ${t.glow}`,
+                }} />
+              )}
+              <span style={{
+                fontSize:isActive?24:20,
+                transition:"all 0.2s",
+                filter:isActive?`drop-shadow(0 0 8px ${t.glow})`:"none",
+                lineHeight:1,
+              }}>{t.icon}</span>
+              <span style={{
+                fontSize:9, fontWeight:isActive?800:500,
+                color:isActive?t.color:"#3d4d63",
+                letterSpacing:0.3,
+                transition:"all 0.15s",
+              }}>{t.label}</span>
+            </button>
+          );
+        })}
+
+        {/* More button */}
+        <button onClick={() => setShowMore(s => !s)} style={{
+          flex:1, display:"flex", flexDirection:"column", alignItems:"center",
+          justifyContent:"center", gap:2,
+          padding:"6px 0 8px",
+          border:"none", background:"transparent",
+          cursor:"pointer", fontFamily:"inherit",
+          position:"relative",
+        }}>
+          {isSecondaryActive && (
+            <div style={{
+              position:"absolute", top:0, left:"50%", transform:"translateX(-50%)",
+              width:28, height:3, borderRadius:"0 0 4px 4px",
+              background:allActive?.color ?? "#64748b",
+              boxShadow:`0 2px 8px ${allActive?.color ?? "#64748b"}44`,
+            }} />
+          )}
+          {isSecondaryActive ? (
+            <>
+              <span style={{ fontSize:22, filter:`drop-shadow(0 0 8px ${allActive?.color}88)` }}>{allActive?.icon}</span>
+              <span style={{ fontSize:9, fontWeight:800, color:allActive?.color, letterSpacing:0.3 }}>{allActive?.label}</span>
+            </>
+          ) : (
+            <>
+              <span style={{ fontSize:20, color:showMore?"#94a3b8":"#3d4d63", lineHeight:1, transition:"all 0.2s", transform:showMore?"rotate(45deg)":"none" }}>⊕</span>
+              <span style={{ fontSize:9, fontWeight:500, color:showMore?"#94a3b8":"#3d4d63", letterSpacing:0.3 }}>More</span>
+            </>
+          )}
+        </button>
+      </nav>
+    </>
   );
 }
 
@@ -1313,77 +1363,87 @@ export default function App() {
   const [userPhoto, setUserPhoto] = useState<string|null>(null);
   const [displayName, setDisplayName] = useState("");
 
-  const handleUpdateProfile = (data: any) => {
+  // ── Update leaderboard with latest profile data ────────────────────────
+  const syncLeaderboard = useCallback(async (uid: string, name: string, stk: number) => {
+    try {
+      const errors = await getErrors(uid);
+      const mc: Record<string,number> = {};
+      errors.forEach((e:any) => { mc[e.mistakeType]=(mc[e.mistakeType]||0)+1; });
+      const repeated = Object.values(mc).filter(v=>v>1).reduce((a,b)=>a+b,0);
+      await updateLeaderboard(uid, name, errors.length, repeated, stk);
+    } catch(e) { console.error("syncLeaderboard:", e); }
+  }, []);
+
+  const handleUpdateProfile = useCallback(async (data: any) => {
     if (data.displayName) setDisplayName(data.displayName);
     if (data.avatar) setUserAvatar(data.avatar);
     if (data.photoURL !== undefined) setUserPhoto(data.photoURL ?? null);
-    // Update leaderboard with new name
+    // Sync to leaderboard immediately with new name
     if (user) {
-      getErrors(user.uid).then(errors => {
-        const mc: Record<string,number> = {};
-        errors.forEach((e:any) => { mc[e.mistakeType]=(mc[e.mistakeType]||0)+1; });
-        const repeated = Object.values(mc).filter(v=>v>1).reduce((a,b)=>a+b,0);
-        updateLeaderboard(user.uid, data.displayName || displayName, errors.length, repeated, streak);
-      });
+      await syncLeaderboard(user.uid, data.displayName || displayName, streak);
     }
-  };
+  }, [user, displayName, streak, syncLeaderboard]);
 
-  const loadStats=async(uid:string, name:string)=>{
-    const [s,t,xp]=await Promise.all([getStreak(uid),getTodayEntryCount(uid),getUserXP(uid)]);
+  const loadStats = useCallback(async (uid: string, name: string) => {
+    const [s, t, xp] = await Promise.all([getStreak(uid), getTodayEntryCount(uid), getUserXP(uid)]);
     setStreak(s); setTodayCount(t); setXpData(xp);
-    // Also load saved profile
+    // Load saved profile
     const profile = await loadUserProfile(uid);
     if (profile) {
+      const resolvedName = profile.displayName || name;
       if (profile.displayName) setDisplayName(profile.displayName);
       if (profile.avatar) setUserAvatar(profile.avatar);
       if (profile.photoURL !== undefined) setUserPhoto(profile.photoURL ?? null);
+      // Sync leaderboard with stored profile name
+      await syncLeaderboard(uid, resolvedName, s);
+    } else {
+      // First time — sync with auth name
+      await syncLeaderboard(uid, name, s);
     }
-    try {
-      const errors=await getErrors(uid);
-      const mc:Record<string,number>={};
-      errors.forEach((e:any)=>{mc[e.mistakeType]=(mc[e.mistakeType]||0)+1;});
-      const repeated=Object.values(mc).filter(v=>v>1).reduce((a,b)=>a+b,0);
-      const nameToUse = profile?.displayName || name;
-      await updateLeaderboard(uid, nameToUse, errors.length, repeated, s);
-    } catch {}
-  };
+  }, [syncLeaderboard]);
 
-  const handleEntryAdded=async(newCount:number)=>{
+  const handleEntryAdded = useCallback(async (newCount: number) => {
     setTodayCount(newCount);
-    if(newCount>=3){
-      const s=await getStreak(user!.uid);
+    if (newCount >= 3 && user) {
+      const s = await getStreak(user.uid);
       setStreak(s);
     }
-    const xp=await getUserXP(user!.uid);
-    setXpData(xp);
-  };
+    if (user) {
+      const xp = await getUserXP(user.uid);
+      setXpData(xp);
+    }
+  }, [user]);
 
-  const handleXPGained=(xp:number)=>{
+  const handleXPGained = useCallback((xp: number) => {
     setXpPopup(xp);
-    setXpData(prev=>prev?({...prev,totalXP:(prev.totalXP||0)+xp}):prev);
-  };
+    setXpData(prev => prev ? ({...prev, totalXP:(prev.totalXP||0)+xp}) : prev);
+  }, []);
 
-  useEffect(()=>{
-    const unsub=onAuth(async u=>{
+  useEffect(() => {
+    const unsub = onAuth(async u => {
       setUser(u); setAuthLoading(false);
-      if(u) {
+      if (u) {
         const name = u.displayName || u.email?.split("@")[0] || "Warrior";
         setDisplayName(name);
         loadStats(u.uid, name);
       }
     });
-    return()=>unsub();
-  },[]);
-  useEffect(()=>{const i=setInterval(()=>setQuoteIdx(q=>(q+1)%QUOTES.length),5000);return()=>clearInterval(i);},[]);
+    return () => unsub();
+  }, [loadStats]);
 
-  if(authLoading) return (
-    <div style={{ minHeight:"100vh",background:"#050810",display:"flex",alignItems:"center",justifyContent:"center" }}>
-      <div style={{ fontSize:48,animation:"pulse 1s infinite" }}>⚡</div>
+  useEffect(() => {
+    const i = setInterval(() => setQuoteIdx(q=>(q+1)%QUOTES.length), 5000);
+    return () => clearInterval(i);
+  }, []);
+
+  if (authLoading) return (
+    <div style={{ minHeight:"100vh", background:"#050810", display:"flex", alignItems:"center", justifyContent:"center" }}>
+      <div style={{ fontSize:48, animation:"pulse 1s infinite" }}>⚡</div>
     </div>
   );
 
-  if(!user) return (
-    <div style={{ minHeight:"100vh",background:"#050810",color:"#e2e8f0",fontFamily:"'DM Sans',sans-serif",position:"relative" }}>
+  if (!user) return (
+    <div style={{ minHeight:"100vh", background:"#050810", color:"#e2e8f0", fontFamily:"'DM Sans',sans-serif", position:"relative" }}>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600;700;800&display=swap');
         *{margin:0;padding:0;box-sizing:border-box}
@@ -1391,7 +1451,9 @@ export default function App() {
         select option{background:#0d1117}
       `}</style>
       <Particles/>
-      <div style={{ position:"relative",zIndex:1 }}><AuthScreen onLogin={u=>{setUser(u); const name=u.displayName||u.email?.split("@")[0]||"Warrior"; setDisplayName(name); loadStats(u.uid, name);}}/></div>
+      <div style={{ position:"relative", zIndex:1 }}>
+        <AuthScreen onLogin={u => { setUser(u); const name = u.displayName||u.email?.split("@")[0]||"Warrior"; setDisplayName(name); loadStats(u.uid, name); }} />
+      </div>
     </div>
   );
 
@@ -1406,10 +1468,10 @@ export default function App() {
     heatmap:      { title:"MISTAKE HEAT MAP",  sub:"heatmap",      color:"#22c55e" },
   };
 
-  const pt = PAGE_TITLES[activeTab];
+  const pt = PAGE_TITLES[activeTab] ?? PAGE_TITLES["errors"];
 
   return (
-    <div style={{ minHeight:"100vh",background:"#050810",color:"#e2e8f0",fontFamily:"'DM Sans',sans-serif",position:"relative" }}>
+    <div style={{ minHeight:"100vh", background:"#050810", color:"#e2e8f0", fontFamily:"'DM Sans',sans-serif", position:"relative" }}>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600;700;800&display=swap');
         *{margin:0;padding:0;box-sizing:border-box}
@@ -1423,8 +1485,8 @@ export default function App() {
 
       <Particles/>
       <ToastContainer toasts={toasts}/>
-      {xpPopup&&<XPPopup xp={xpPopup} onDone={()=>setXpPopup(null)}/>}
-      {showCal&&<StreakCalendar userId={user.uid} streak={streak} onClose={()=>setShowCal(false)}/>}
+      {xpPopup && <XPPopup xp={xpPopup} onDone={()=>setXpPopup(null)}/>}
+      {showCal && <StreakCalendar userId={user.uid} streak={streak} onClose={()=>setShowCal(false)}/>}
 
       {showProfile && (
         <ProfilePanel
@@ -1451,48 +1513,60 @@ export default function App() {
         />
       )}
 
-      {/* Content area with bottom padding for nav */}
-      <div style={{ position:"relative",zIndex:1,maxWidth:1100,margin:"0 auto",padding:"0 16px",paddingBottom:90 }}>
+      {/* Main content */}
+      <div style={{ position:"relative", zIndex:1, maxWidth:1100, margin:"0 auto", padding:"0 16px", paddingBottom:80 }}>
 
         {/* COMPACT TOP HEADER */}
-        <header style={{ display:"flex",alignItems:"center",justifyContent:"space-between",padding:"12px 0",borderBottom:"1px solid rgba(255,255,255,0.05)",marginBottom:16,gap:10 }}>
-          <div style={{ display:"flex",alignItems:"center",gap:10 }}>
+        <header style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"12px 0", borderBottom:"1px solid rgba(255,255,255,0.05)", marginBottom:16, gap:10 }}>
+          <div style={{ display:"flex", alignItems:"center", gap:10 }}>
             <span style={{ fontSize:22 }}>⚡</span>
-            <span style={{ fontFamily:"'Bebas Neue',cursive",fontSize:24,letterSpacing:4,background:"linear-gradient(135deg,#00d4ff,#ff2254)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent" }}>ERRORVERSE</span>
+            <span style={{ fontFamily:"'Bebas Neue',cursive", fontSize:24, letterSpacing:4, background:"linear-gradient(135deg,#00d4ff,#ff2254)", WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent" }}>ERRORVERSE</span>
           </div>
 
-          {/* Streak & XP pills */}
-          <div style={{ display:"flex",alignItems:"center",gap:8 }}>
-            <button onClick={()=>setShowCal(true)} style={{ display:"flex",alignItems:"center",gap:5,padding:"5px 10px",borderRadius:20,background:streak>0?"rgba(255,215,0,0.12)":"rgba(255,255,255,0.05)",border:`1px solid ${streak>0?"rgba(255,215,0,0.35)":"rgba(255,255,255,0.08)"}`,cursor:"pointer",fontFamily:"inherit" }}>
+          <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+            {/* Streak pill */}
+            <button onClick={()=>setShowCal(true)} style={{ display:"flex", alignItems:"center", gap:5, padding:"5px 10px", borderRadius:20, background:streak>0?"rgba(255,215,0,0.12)":"rgba(255,255,255,0.05)", border:`1px solid ${streak>0?"rgba(255,215,0,0.35)":"rgba(255,255,255,0.08)"}`, cursor:"pointer", fontFamily:"inherit" }}>
               <span style={{ fontSize:13 }}>🔥</span>
-              <span style={{ fontSize:12,color:streak>0?"#ffd700":"#475569",fontWeight:700 }}>{streak}d</span>
+              <span style={{ fontSize:12, color:streak>0?"#ffd700":"#475569", fontWeight:700 }}>{streak}d</span>
             </button>
-            <div style={{ padding:"5px 10px",borderRadius:12,background:todayCount>=3?"rgba(34,197,94,0.12)":"rgba(0,212,255,0.08)",border:`1px solid ${todayCount>=3?"rgba(34,197,94,0.3)":"rgba(0,212,255,0.2)"}`,fontSize:11,color:todayCount>=3?"#22c55e":"#00d4ff",fontWeight:700 }}>{todayCount}/3 ✓</div>
+
+            {/* Daily progress pill */}
+            <div style={{ padding:"5px 10px", borderRadius:12, background:todayCount>=3?"rgba(34,197,94,0.12)":"rgba(0,212,255,0.08)", border:`1px solid ${todayCount>=3?"rgba(34,197,94,0.3)":"rgba(0,212,255,0.2)"}`, fontSize:11, color:todayCount>=3?"#22c55e":"#00d4ff", fontWeight:700 }}>{todayCount}/3 ✓</div>
+
+            {/* XP pill */}
             {xpData && (
-              <button onClick={() => setShowXPPanel(true)} style={{ padding:"5px 10px",borderRadius:12,background:"rgba(123,97,255,0.12)",border:"1px solid rgba(123,97,255,0.3)",fontSize:11,color:"#a78bfa",fontWeight:700,cursor:"pointer",fontFamily:"inherit" }}>
+              <button onClick={() => setShowXPPanel(true)} style={{ padding:"5px 10px", borderRadius:12, background:"rgba(123,97,255,0.12)", border:"1px solid rgba(123,97,255,0.3)", fontSize:11, color:"#a78bfa", fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>
                 ⚡ {xpData.totalXP} · Lv{xpData.level}
               </button>
             )}
-            <button onClick={() => setShowProfile(true)} style={{ display:"flex",alignItems:"center",gap:6,background:"rgba(255,255,255,0.04)",border:"1px solid rgba(255,255,255,0.1)",borderRadius:24,padding:"3px 10px 3px 3px",cursor:"pointer" }}>
-              <AvatarDisplay avatar={userAvatar} photoURL={userPhoto} displayName={displayName} size={26} />
-              <span style={{ fontSize:12,color:"#94a3b8",fontWeight:600,maxWidth:70,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" as const }}>{displayName.split(" ")[0] || "You"}</span>
+
+            {/* Avatar / profile button */}
+            <button onClick={() => setShowProfile(true)} style={{ display:"flex", alignItems:"center", gap:6, background:"rgba(255,255,255,0.04)", border:"1px solid rgba(255,255,255,0.1)", borderRadius:24, padding:"3px 10px 3px 3px", cursor:"pointer" }}>
+              <AvatarDisplay avatar={userAvatar} photoURL={userPhoto} displayName={displayName} size={28} />
+              <span style={{ fontSize:12, color:"#94a3b8", fontWeight:600, maxWidth:70, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" as const }}>
+                {displayName.split(" ")[0] || "You"}
+              </span>
             </button>
           </div>
         </header>
 
         {/* Scrolling quote */}
-        <div style={{ marginBottom:12,overflow:"hidden" }}>
-          <span style={{ fontSize:11,color:"#334155",fontStyle:"italic" }}>"{QUOTES[quoteIdx]}"</span>
+        <div style={{ marginBottom:12, overflow:"hidden" }}>
+          <span style={{ fontSize:11, color:"#334155", fontStyle:"italic" }}>"{QUOTES[quoteIdx]}"</span>
         </div>
 
         {/* Page banners */}
-        {activeTab==="achievements"&&xpData&&<LevelBanner xpData={xpData}/>}
-        {(activeTab==="errors"||activeTab==="collection")&&<StreakBanner todayCount={todayCount} streak={streak}/>}
+        {activeTab==="achievements" && xpData && <LevelBanner xpData={xpData}/>}
+        {(activeTab==="errors" || activeTab==="collection") && <StreakBanner todayCount={todayCount} streak={streak}/>}
 
         {/* Page title */}
         <div style={{ marginBottom:16 }}>
-          <h1 style={{ fontSize:28,fontFamily:"'Bebas Neue',cursive",letterSpacing:3,color:"#e2e8f0",margin:0 }}>
-            {pt.title.split(" ").map((w,i,arr)=>i===arr.length-1?<span key={i} style={{ color:pt.color }}> {w}</span>:<span key={i}>{w} </span>)}
+          <h1 style={{ fontSize:28, fontFamily:"'Bebas Neue',cursive", letterSpacing:3, color:"#e2e8f0", margin:0 }}>
+            {pt.title.split(" ").map((w,i,arr)=>
+              i===arr.length-1
+                ? <span key={i} style={{ color:pt.color }}> {w}</span>
+                : <span key={i}>{w} </span>
+            )}
           </h1>
         </div>
 
@@ -1500,14 +1574,14 @@ export default function App() {
         {activeTab==="errors"       && <ErrorBook userId={user.uid} onEntryAdded={handleEntryAdded}/>}
         {activeTab==="revision"     && <SpacedRevision userId={user.uid} onXP={handleXPGained}/>}
         {activeTab==="analytics"    && <Analytics userId={user.uid}/>}
-        {activeTab==="achievements"  && <BadgesPanel earned={xpData?.badges??[]}/>}
+        {activeTab==="achievements" && <BadgesPanel earned={xpData?.badges??[]}/>}
         {activeTab==="collection"   && <AnimeCollection userId={user.uid} onEntryAdded={handleEntryAdded}/>}
         {activeTab==="leaderboard"  && <Leaderboard currentUserId={user.uid}/>}
         {activeTab==="ai"           && <AITabLoader userId={user.uid}/>}
         {activeTab==="heatmap"      && <HeatCalendarLoader userId={user.uid}/>}
       </div>
 
-      {/* Duolingo-style bottom nav */}
+      {/* Redesigned bottom nav */}
       <BottomNav active={activeTab} setActive={setActiveTab} />
     </div>
   );
