@@ -12,13 +12,18 @@ const INP: React.CSSProperties = {
   outline: "none", fontFamily: "inherit", boxSizing: "border-box",
 };
 
-// ─── API CALL — uses Next.js /api/claude route (no CORS!) ────────────────────
+// ─── API CALL — uses Next.js /api/gemini route (no CORS!) ────────────────────
 
-async function askClaude(systemPrompt: string, userMessage: string): Promise<string> {
-  const res = await fetch("/api/claude", {
+async function askGemini(
+  systemPrompt: string,
+  userMessage: string,
+  signal?: AbortSignal
+): Promise<string> {
+  const res = await fetch("/api/gemini", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ systemPrompt, userMessage }),
+    signal,
   });
   const data = await res.json();
   if (!res.ok) throw new Error(data?.error || "API error");
@@ -69,6 +74,25 @@ function AIResponse({ text, color = "#00d4ff" }: { text: string; color?: string 
   );
 }
 
+// ─── CANCEL BUTTON ────────────────────────────────────────────────────────────
+
+function CancelButton({ onCancel }: { onCancel: () => void }) {
+  return (
+    <button
+      onClick={onCancel}
+      style={{
+        width: "100%", padding: "10px", borderRadius: 12,
+        border: "1px solid rgba(255,34,84,0.3)",
+        background: "rgba(255,34,84,0.06)", color: "#ff2254",
+        fontFamily: "inherit", fontSize: 13, cursor: "pointer", marginBottom: 8,
+        transition: "all 0.2s",
+      }}
+    >
+      ✕ Cancel Request
+    </button>
+  );
+}
+
 // ─── ERROR ALERT ──────────────────────────────────────────────────────────────
 
 function ErrorAlert({ msg }: { msg: string }) {
@@ -81,10 +105,10 @@ function ErrorAlert({ msg }: { msg: string }) {
       <div style={{ fontSize: 13, color: "#94a3b8", lineHeight: 1.8 }}>
         {isApiKey ? (
           <>
-            Add your Anthropic API key to make AI work:<br />
+            Add your Gemini API key to make AI work:<br />
             1. Go to <strong style={{ color: "#00d4ff" }}>vercel.com</strong> → Project → Settings → Environment Variables<br />
-            2. Add variable: <code style={{ background: "rgba(0,212,255,0.1)", padding: "2px 8px", borderRadius: 4, color: "#00d4ff" }}>ANTHROPIC_API_KEY</code><br />
-            3. Get your free key at <strong style={{ color: "#00d4ff" }}>console.anthropic.com</strong><br />
+            2. Add variable: <code style={{ background: "rgba(0,212,255,0.1)", padding: "2px 8px", borderRadius: 4, color: "#00d4ff" }}>GEMINI_API_KEY</code><br />
+            3. Get your free key at <strong style={{ color: "#00d4ff" }}>aistudio.google.com</strong><br />
             4. Redeploy → Done! ✅
           </>
         ) : msg}
@@ -99,9 +123,9 @@ function Center({ children }: { children: React.ReactNode }) {
   return <div style={{ maxWidth: 700, margin: "0 auto" }}>{children}</div>;
 }
 
-function Glass({ children, style = {} }: { children: React.ReactNode; style?: React.CSSProperties }) {
+function Glass({ children, style = {}, ref: _ref }: { children: React.ReactNode; style?: React.CSSProperties; ref?: React.RefObject<HTMLDivElement> }) {
   return (
-    <div style={{ background: "rgba(255,255,255,0.04)", backdropFilter: "blur(14px)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, ...style }}>
+    <div ref={_ref} style={{ background: "rgba(255,255,255,0.04)", backdropFilter: "blur(14px)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, ...style }}>
       {children}
     </div>
   );
@@ -120,6 +144,7 @@ function AISolutionExplainer({ errors }: { errors: any[] }) {
   const [mode, setMode] = useState<"error" | "custom">("error");
   const [depth, setDepth] = useState<"simple" | "detailed" | "exam">("simple");
   const ref = useRef<HTMLDivElement>(null);
+  const abortRef = useRef<AbortController | null>(null);
 
   const DEPTH = {
     simple:   { label: "Simple 🐣",     color: "#22c55e", desc: "ELI5 — beginner friendly" },
@@ -127,17 +152,26 @@ function AISolutionExplainer({ errors }: { errors: any[] }) {
     exam:     { label: "Exam Mode 🎯",  color: "#ff2254", desc: "JEE/NEET strategy & timing" },
   };
 
+  const cancel = () => {
+    abortRef.current?.abort();
+    setLoading(false);
+  };
+
   const explain = async () => {
+    abortRef.current?.abort();
+    abortRef.current = new AbortController();
     setLoading(true); setResponse(""); setErr("");
     try {
       const sys = `You are an expert JEE/NEET tutor. Explain Physics, Chemistry, and Math with extreme clarity using analogies, step-by-step breakdowns, and exam tips. Format with ## headers, bullet points with -, numbered steps. Be encouraging. Under 400 words.`;
       const msg = mode === "error" && selected
         ? `Student made a ${selected.mistakeType} mistake in ${selected.subject}, Chapter: ${selected.chapter}.\nSolution: "${selected.solution}"\n${selected.formula ? `Formula: ${selected.formula}` : ""}\n${selected.whyMistake ? `Why they think: "${selected.whyMistake}"` : ""}\nDepth: ${DEPTH[depth].desc}\n1. Correct concept 2. Why they made this mistake 3. Memory trick 4. ${depth === "exam" ? "JEE/NEET exam approach" : "Similar example"}`
         : `JEE/NEET student asks: "${customQ}"\nDepth: ${DEPTH[depth].desc}\nGive a clear structured explanation.`;
-      const result = await askClaude(sys, msg);
+      const result = await askGemini(sys, msg, abortRef.current.signal);
       setResponse(result);
       setTimeout(() => ref.current?.scrollIntoView({ behavior: "smooth" }), 100);
-    } catch (e: any) { setErr(e.message); }
+    } catch (e: any) {
+      if (e.name !== "AbortError") setErr(e.message);
+    }
     setLoading(false);
   };
 
@@ -173,15 +207,24 @@ function AISolutionExplainer({ errors }: { errors: any[] }) {
             ? <Glass style={{ padding: 20, textAlign: "center", color: "#475569", fontSize: 13 }}>No errors yet — log some in Error Book first!</Glass>
             : <div style={{ maxHeight: 240, overflowY: "auto", display: "flex", flexDirection: "column", gap: 6 }}>
                 {errors.slice(0, 20).map(e => (
-                  <Glass key={e.id} style={{ padding: "12px 16px", cursor: "pointer", border: `1px solid ${selected?.id === e.id ? "rgba(0,212,255,0.5)" : "rgba(255,255,255,0.06)"}`, background: selected?.id === e.id ? "rgba(0,212,255,0.08)" : "rgba(255,255,255,0.02)" }} >
-                    <div onClick={() => setSelected(e)} style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <div
+                    key={e.id}
+                    onClick={() => setSelected(e)}
+                    style={{
+                      padding: "12px 16px", cursor: "pointer", borderRadius: 16,
+                      background: selected?.id === e.id ? "rgba(0,212,255,0.08)" : "rgba(255,255,255,0.02)",
+                      border: `1px solid ${selected?.id === e.id ? "rgba(0,212,255,0.5)" : "rgba(255,255,255,0.06)"}`,
+                      backdropFilter: "blur(14px)", transition: "all 0.2s",
+                    }}
+                  >
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                       <div>
                         <span style={{ fontSize: 13, fontWeight: 600, color: "#e2e8f0" }}>{e.chapter}</span>
                         <span style={{ fontSize: 11, color: "#64748b", marginLeft: 10 }}>{e.subject} · {e.mistakeType}</span>
                       </div>
                       {selected?.id === e.id && <span style={{ color: "#00d4ff" }}>✓</span>}
                     </div>
-                  </Glass>
+                  </div>
                 ))}
               </div>
           }
@@ -193,6 +236,8 @@ function AISolutionExplainer({ errors }: { errors: any[] }) {
         </div>
       )}
 
+      {loading && <CancelButton onCancel={cancel} />}
+
       <button onClick={explain} disabled={loading || (mode === "error" ? !selected : !customQ.trim())} style={{ width: "100%", padding: "14px", borderRadius: 12, border: "none", background: loading ? "rgba(255,255,255,0.06)" : "linear-gradient(135deg,#00d4ff,#7c3aed)", color: loading ? "#475569" : "#fff", fontFamily: "inherit", fontSize: 15, fontWeight: 800, cursor: loading ? "not-allowed" : "pointer", letterSpacing: 1, marginBottom: 16 }}>
         {loading ? "Thinking..." : "✨ EXPLAIN IT TO ME"}
       </button>
@@ -200,10 +245,10 @@ function AISolutionExplainer({ errors }: { errors: any[] }) {
       {err && <ErrorAlert msg={err} />}
 
       {(loading || response) && !err && (
-        <Glass ref={ref} style={{ padding: 24, border: "1px solid rgba(0,212,255,0.2)", background: "rgba(0,212,255,0.02)" }}>
+        <div ref={ref} style={{ padding: 24, border: "1px solid rgba(0,212,255,0.2)", background: "rgba(0,212,255,0.02)", backdropFilter: "blur(14px)", borderRadius: 16 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
             <div style={{ width: 30, height: 30, borderRadius: "50%", background: "linear-gradient(135deg,#00d4ff,#7c3aed)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14 }}>🤖</div>
-            <span style={{ fontSize: 12, color: "#00d4ff", fontWeight: 700, letterSpacing: 1 }}>AI TUTOR</span>
+            <span style={{ fontSize: 12, color: "#00d4ff", fontWeight: 700, letterSpacing: 1 }}>GEMINI AI TUTOR</span>
           </div>
           {loading ? <TypingDots color="#00d4ff" /> : (
             <>
@@ -214,7 +259,7 @@ function AISolutionExplainer({ errors }: { errors: any[] }) {
               </div>
             </>
           )}
-        </Glass>
+        </div>
       )}
     </Center>
   );
@@ -231,6 +276,7 @@ function AIStudyCoach({ errors }: { errors: any[] }) {
   const [planType, setPlanType] = useState<"daily" | "weekly" | "subject">("daily");
   const [subject, setSubject] = useState("Physics");
   const ref = useRef<HTMLDivElement>(null);
+  const abortRef = useRef<AbortController | null>(null);
 
   const chMap: Record<string, { count: number; subject: string }> = {};
   errors.forEach(e => { const k = `${e.subject}__${e.chapter}`; if (!chMap[k]) chMap[k] = { count: 0, subject: e.subject }; chMap[k].count++; });
@@ -241,7 +287,14 @@ function AIStudyCoach({ errors }: { errors: any[] }) {
   const weakCount = errors.filter(e => e.masteryStage === "red").length;
   const COLORS: Record<string, string> = { Physics: "#00d4ff", Chemistry: "#22c55e", Math: "#ff2254", Other: "#f97316" };
 
+  const cancel = () => {
+    abortRef.current?.abort();
+    setLoading(false);
+  };
+
   const generate = async () => {
+    abortRef.current?.abort();
+    abortRef.current = new AbortController();
     setLoading(true); setPlan(""); setErr("");
     try {
       const sys = `You are an elite JEE/NEET study strategist. Create sharp personalized study plans. Be direct and specific. Use ## headers, bullet points, numbered steps with time estimates. Max 500 words.`;
@@ -251,10 +304,12 @@ function AIStudyCoach({ errors }: { errors: any[] }) {
         : planType === "weekly"
         ? `${ctx}\n\n7-Day War Plan: day-by-day chapters, mistake types to crush, revision days, weekly goal.`
         : `${ctx}\n\nSubject Deep-Dive for ${subject}. Errors: ${subBreak[subject] || 0}. Weak chapters: ${weak.filter(c => c.subject === subject).map(c => c.chapter).join(",") || "none"}. Chapter priority, error patterns, fix strategies.`;
-      const result = await askClaude(sys, msg);
+      const result = await askGemini(sys, msg, abortRef.current.signal);
       setPlan(result);
       setTimeout(() => ref.current?.scrollIntoView({ behavior: "smooth" }), 100);
-    } catch (e: any) { setErr(e.message); }
+    } catch (e: any) {
+      if (e.name !== "AbortError") setErr(e.message);
+    }
     setLoading(false);
   };
 
@@ -321,6 +376,8 @@ function AIStudyCoach({ errors }: { errors: any[] }) {
 
       {errors.length === 0 && <Glass style={{ padding: 16, marginBottom: 16, textAlign: "center" as const, color: "#64748b", fontSize: 13, border: "1px solid rgba(255,215,0,0.15)" }}>⚠️ Log errors first so AI can build a personalized plan!</Glass>}
 
+      {loading && <CancelButton onCancel={cancel} />}
+
       <button onClick={generate} disabled={loading || errors.length === 0} style={{ width: "100%", padding: "14px", borderRadius: 12, border: "none", background: loading || errors.length === 0 ? "rgba(255,255,255,0.06)" : "linear-gradient(135deg,#ffd700,#f97316)", color: loading || errors.length === 0 ? "#475569" : "#000", fontFamily: "inherit", fontSize: 15, fontWeight: 900, cursor: loading || errors.length === 0 ? "not-allowed" : "pointer", letterSpacing: 1, marginBottom: 16 }}>
         {loading ? "Building plan..." : `⚔️ GENERATE ${planType.toUpperCase()} PLAN`}
       </button>
@@ -328,10 +385,10 @@ function AIStudyCoach({ errors }: { errors: any[] }) {
       {err && <ErrorAlert msg={err} />}
 
       {(loading || plan) && !err && (
-        <Glass ref={ref} style={{ padding: 24, border: "1px solid rgba(255,215,0,0.2)", background: "rgba(255,215,0,0.02)" }}>
+        <div ref={ref} style={{ padding: 24, border: "1px solid rgba(255,215,0,0.2)", background: "rgba(255,215,0,0.02)", backdropFilter: "blur(14px)", borderRadius: 16 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
             <div style={{ width: 30, height: 30, borderRadius: "50%", background: "linear-gradient(135deg,#ffd700,#f97316)", display: "flex", alignItems: "center", justifyContent: "center" }}>🧠</div>
-            <span style={{ fontSize: 12, color: "#ffd700", fontWeight: 700, letterSpacing: 1 }}>AI COACH</span>
+            <span style={{ fontSize: 12, color: "#ffd700", fontWeight: 700, letterSpacing: 1 }}>GEMINI AI COACH</span>
           </div>
           {loading ? <TypingDots color="#ffd700" /> : (
             <>
@@ -342,7 +399,7 @@ function AIStudyCoach({ errors }: { errors: any[] }) {
               </div>
             </>
           )}
-        </Glass>
+        </div>
       )}
     </Center>
   );
@@ -361,6 +418,7 @@ function AIAnimeRecommender({ collection }: { collection: any[] }) {
   const [mood, setMood] = useState("hype");
   const [media, setMedia] = useState("All");
   const ref = useRef<HTMLDivElement>(null);
+  const abortRef = useRef<AbortController | null>(null);
 
   const MOODS = [
     { id: "hype",       emoji: "🔥", label: "Hype",      desc: "Intense action" },
@@ -372,8 +430,13 @@ function AIAnimeRecommender({ collection }: { collection: any[] }) {
   ];
   const MEDIA = ["All", "Anime", "Manga", "Manhwa", "Manhua", "Webtoon", "Light Novel"];
 
-  const summary = collection.slice(0, 15).map(c => `${c.title}(${c.type},${c.rating}/10,${(c.tags || []).join(",")})`).join("; ");
-  const topRated = [...collection].sort((a, b) => (b.rating || 0) - (a.rating || 0)).slice(0, 3).map(c => c.title).join(", ");
+  // ✅ FIXED: Send top 30 by rating instead of just first 15
+  const sorted = [...collection].sort((a, b) => (b.rating || 0) - (a.rating || 0));
+  const summary = sorted.slice(0, 30).map(c =>
+    `${c.title}(${c.type},${c.rating}/10,${(c.tags || []).join(",")})`
+  ).join("; ");
+
+  const topRated = sorted.slice(0, 3).map(c => c.title).join(", ");
   const genres = collection.flatMap(c => c.tags || []);
   const gc: Record<string, number> = {};
   genres.forEach(g => { gc[g] = (gc[g] || 0) + 1; });
@@ -381,7 +444,14 @@ function AIAnimeRecommender({ collection }: { collection: any[] }) {
   const avg = collection.length > 0 ? (collection.reduce((a, c) => a + (c.rating || 0), 0) / collection.length).toFixed(1) : "—";
   const mediaLine = media === "All" ? "Recommend a mix of Anime, Manga, Manhwa, Manhua, Webtoon, Light Novel" : `Only recommend ${media}`;
 
+  const cancel = () => {
+    abortRef.current?.abort();
+    setLoading(false);
+  };
+
   const getRecs = async () => {
+    abortRef.current?.abort();
+    abortRef.current = new AbortController();
     setLoading(true); setRecs(""); setErr("");
     try {
       const sys = `You are the ultimate expert on anime, manga, manhwa, manhua, webtoons, and light novels across all media types. Give HIGHLY specific, personalized recommendations. For each of 5 picks include: ## Title, Media Type, Genre tags, Why you'll love it, Power Level (1-9999), Where to read/watch. Max 600 words.`;
@@ -393,10 +463,12 @@ function AIAnimeRecommender({ collection }: { collection: any[] }) {
         : mode === "hidden"
         ? `${base}\n${mediaLine} that are HIDDEN GEMS — underrated, not mainstream (avoid: Naruto, AOT, One Piece, Solo Leveling, etc). Undiscovered masterpieces.`
         : `${base}\nMood: ${mood}(${MOODS.find(m => m.id === mood)?.desc}).\n${mediaLine} that deliver this mood AND match my taste.`;
-      const result = await askClaude(sys, msg);
+      const result = await askGemini(sys, msg, abortRef.current.signal);
       setRecs(result);
       setTimeout(() => ref.current?.scrollIntoView({ behavior: "smooth" }), 100);
-    } catch (e: any) { setErr(e.message); }
+    } catch (e: any) {
+      if (e.name !== "AbortError") setErr(e.message);
+    }
     setLoading(false);
   };
 
@@ -470,6 +542,8 @@ function AIAnimeRecommender({ collection }: { collection: any[] }) {
         </div>
       )}
 
+      {loading && <CancelButton onCancel={cancel} />}
+
       <button onClick={getRecs} disabled={loading || (mode === "genre" && !genreQ.trim())} style={{ width: "100%", padding: "14px", borderRadius: 12, border: "none", background: loading ? "rgba(255,255,255,0.06)" : "linear-gradient(135deg,#a855f7,#ff2254)", color: loading ? "#475569" : "#fff", fontFamily: "inherit", fontSize: 15, fontWeight: 900, cursor: loading ? "not-allowed" : "pointer", letterSpacing: 1, marginBottom: 16 }}>
         {loading ? "Finding your next obsession..." : "🎌 GET RECOMMENDATIONS"}
       </button>
@@ -477,10 +551,10 @@ function AIAnimeRecommender({ collection }: { collection: any[] }) {
       {err && <ErrorAlert msg={err} />}
 
       {(loading || recs) && !err && (
-        <Glass ref={ref} style={{ padding: 24, border: "1px solid rgba(168,85,247,0.25)", background: "rgba(168,85,247,0.02)" }}>
+        <div ref={ref} style={{ padding: 24, border: "1px solid rgba(168,85,247,0.25)", background: "rgba(168,85,247,0.02)", backdropFilter: "blur(14px)", borderRadius: 16 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
             <div style={{ width: 30, height: 30, borderRadius: "50%", background: "linear-gradient(135deg,#a855f7,#ff2254)", display: "flex", alignItems: "center", justifyContent: "center" }}>🎌</div>
-            <span style={{ fontSize: 12, color: "#a855f7", fontWeight: 700, letterSpacing: 1 }}>AI ORACLE</span>
+            <span style={{ fontSize: 12, color: "#a855f7", fontWeight: 700, letterSpacing: 1 }}>GEMINI AI ORACLE</span>
             <span style={{ fontSize: 11, color: "#475569" }}>· {media === "All" ? "All media types" : media}</span>
           </div>
           {loading ? <TypingDots color="#a855f7" /> : (
@@ -492,7 +566,7 @@ function AIAnimeRecommender({ collection }: { collection: any[] }) {
               </div>
             </>
           )}
-        </Glass>
+        </div>
       )}
     </Center>
   );
@@ -515,15 +589,15 @@ export function AIHub({ userId, errors, collection }: { userId: string; errors: 
     <div style={{ paddingBottom: 60 }}>
       <style>{`@keyframes typingBounce{0%,60%,100%{transform:translateY(0)}30%{transform:translateY(-9px)}}`}</style>
 
-      {/* Hero — centered */}
+      {/* Hero */}
       <div style={{ maxWidth: 700, margin: "0 auto 28px", textAlign: "center", padding: "28px 24px", background: "linear-gradient(135deg,rgba(0,212,255,0.06),rgba(168,85,247,0.06),rgba(255,34,84,0.04))", borderRadius: 20, border: "1px solid rgba(255,255,255,0.07)", position: "relative", overflow: "hidden" }}>
         <div style={{ position: "absolute", inset: 0, background: "radial-gradient(ellipse at 50% 0%,rgba(0,212,255,0.1),transparent 60%)", pointerEvents: "none" }} />
         <div style={{ fontSize: 44, marginBottom: 10 }}>🤖</div>
         <div style={{ fontSize: 30, fontWeight: 900, fontFamily: "'Bebas Neue',cursive", letterSpacing: 4, background: "linear-gradient(135deg,#00d4ff,#a855f7,#ff2254)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", marginBottom: 6 }}>AI COMMAND CENTER</div>
-        <div style={{ fontSize: 13, color: "#64748b" }}>Powered by Claude AI · Study smarter, discover more</div>
+        <div style={{ fontSize: 13, color: "#64748b" }}>Powered by Gemini AI · Study smarter, discover more</div>
       </div>
 
-      {/* Tab selector — centered */}
+      {/* Tab selector */}
       <div style={{ maxWidth: 700, margin: "0 auto 28px", display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
         {TABS.map(t => (
           <button key={t.id} onClick={() => setTab(t.id)} style={{ padding: "18px 10px", borderRadius: 14, border: `2px solid ${tab === t.id ? t.color : "rgba(255,255,255,0.06)"}`, background: tab === t.id ? `${t.color}10` : "rgba(255,255,255,0.02)", color: tab === t.id ? t.color : "#64748b", fontFamily: "inherit", cursor: "pointer", textAlign: "center" as const, transition: "all 0.25s", boxShadow: tab === t.id ? `0 4px 24px ${t.color}25` : "none" }}>
