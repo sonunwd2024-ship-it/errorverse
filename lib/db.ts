@@ -12,7 +12,6 @@ import {
   getDoc,
   updateDoc,
   serverTimestamp,
-  increment,
 } from "firebase/firestore";
 
 // ─── TYPES ────────────────────────────────────────────────────────────────────
@@ -66,8 +65,8 @@ export const XP_REWARDS = {
   addError: 10,
   reviewError: 15,
   masterError: 25,
-  streakBonus: 5,        // per streak day bonus
-  dailyGoal: 30,         // completing 3+ entries
+  streakBonus: 5,
+  dailyGoal: 30,
 } as const;
 
 export const LEVELS = [
@@ -80,14 +79,14 @@ export const LEVELS = [
 ] as const;
 
 export const BADGES = [
-  { id: "first_error",    name: "First Blood",    desc: "Log your first error",          icon: "🩸", condition: (xp: UserXP, errors: ErrorEntry[]) => errors.length >= 1 },
+  { id: "first_error",    name: "First Blood",    desc: "Log your first error",           icon: "🩸", condition: (xp: UserXP, errors: ErrorEntry[]) => errors.length >= 1 },
   { id: "on_fire",        name: "On Fire",         desc: "7-day streak",                  icon: "🔥", condition: (xp: UserXP) => xp.currentStreak >= 7 },
   { id: "big_brain",      name: "Big Brain",       desc: "Master 20 errors",              icon: "🧠", condition: (_: UserXP, errors: ErrorEntry[]) => errors.filter(e => e.masteryStage === "green").length >= 20 },
-  { id: "speed_runner",   name: "Speed Runner",    desc: "Add 10 errors in one day",     icon: "⚡", condition: () => false }, // checked separately
+  { id: "speed_runner",   name: "Speed Runner",    desc: "Add 10 errors in one day",      icon: "⚡", condition: () => false },
   { id: "chem_wizard",    name: "Chem Wizard",     desc: "Master 10 Chemistry errors",    icon: "⚗️", condition: (_: UserXP, errors: ErrorEntry[]) => errors.filter(e => e.subject === "Chemistry" && e.masteryStage === "green").length >= 10 },
   { id: "perfect_week",   name: "Perfect Week",    desc: "Log errors for 7 days straight",icon: "🌟", condition: (xp: UserXP) => xp.currentStreak >= 7 },
   { id: "centurion",      name: "Centurion",       desc: "Log 100 total errors",          icon: "💯", condition: (_: UserXP, errors: ErrorEntry[]) => errors.length >= 100 },
-  { id: "error_god",      name: "Error God",       desc: "Reach Level 6",                icon: "👑", condition: (xp: UserXP) => xp.level >= 6 },
+  { id: "error_god",      name: "Error God",       desc: "Reach Level 6",                 icon: "👑", condition: (xp: UserXP) => xp.level >= 6 },
 ] as const;
 
 // Spaced repetition intervals (days)
@@ -139,10 +138,7 @@ export async function addError(userId: string, error: Omit<ErrorEntry, "userId" 
 
   const ref = await addDoc(collection(db, "errors"), entry);
   const newCount = await updateDailyActivity(userId);
-
-  // Award XP
   await awardXP(userId, XP_REWARDS.addError);
-
   return { ref, newCount };
 }
 
@@ -180,7 +176,6 @@ export async function updateErrorMastery(errorId: string, result: "mastered" | "
     newMasteryLevel = Math.min(100, newMasteryLevel + 10);
     xpEarned = XP_REWARDS.reviewError;
   } else {
-    // skipped — slight regression
     newMasteryLevel = Math.max(0, newMasteryLevel - 5);
   }
 
@@ -199,7 +194,6 @@ export async function updateErrorMastery(errorId: string, result: "mastered" | "
   return xpEarned;
 }
 
-// Get errors due for review today
 export async function getTodayRevisions(userId: string): Promise<ErrorEntry[]> {
   const q = query(
     collection(db, "errors"),
@@ -214,7 +208,6 @@ export async function getTodayRevisions(userId: string): Promise<ErrorEntry[]> {
     .sort((a, b) => a.nextReviewDate.localeCompare(b.nextReviewDate));
 }
 
-// Get upcoming revision schedule
 export async function getRevisionSchedule(userId: string): Promise<{ date: string; count: number }[]> {
   const q = query(
     collection(db, "errors"),
@@ -344,7 +337,6 @@ export async function updateDailyActivity(userId: string): Promise<number> {
       count: newCount,
       updatedAt: serverTimestamp(),
     });
-    // Award daily goal bonus XP when threshold hit
     if (newCount === 3) {
       await awardXP(userId, XP_REWARDS.dailyGoal);
     }
@@ -408,7 +400,6 @@ export async function getWeeklyStats(userId: string): Promise<{ week: string; co
   try {
     const q = query(collection(db, "dailyActivity"), where("userId", "==", userId));
     const snap = await getDocs(q);
-    // Group by ISO week
     const weeks: Record<string, number> = {};
     snap.docs.forEach(d => {
       const date = new Date(d.data().date);
@@ -448,15 +439,24 @@ export async function updateLeaderboard(
   displayName: string,
   totalErrors: number,
   repeatedMistakes: number,
-  streak: number
+  streak: number,
+  totalXP?: number
 ) {
   try {
+    // Also fetch latest XP if not provided
+    let xp = totalXP;
+    if (xp === undefined) {
+      const xpDoc = await getDoc(doc(db, "userXP", userId));
+      xp = xpDoc.exists() ? (xpDoc.data().totalXP ?? 0) : 0;
+    }
+
     await setDoc(doc(db, "leaderboard", userId), {
       userId,
       displayName: displayName || "Anonymous",
       totalErrors,
       repeatedMistakes,
       streak,
+      totalXP: xp,
       updatedAt: serverTimestamp(),
     });
   } catch (e) {
