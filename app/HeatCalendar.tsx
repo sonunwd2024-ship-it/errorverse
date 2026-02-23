@@ -4,7 +4,7 @@ import { useState, useMemo } from "react";
 // ─── TYPES ────────────────────────────────────────────────────────────────────
 
 interface ErrorEntry {
-  id: string;
+  id?: string;
   date: string;          // ISO string e.g. "2026-02-23"
   subject: string;
   chapter: string;
