@@ -15,6 +15,7 @@ import {
 } from "../lib/db";
 import { ProfilePanel, XPTapPanel, AvatarDisplay } from "./ProfilePanel";
 import { AIHub } from "./AIFeatures";
+import { HeatCalendar } from "./HeatCalendar";
 
 // ─── CONSTANTS ────────────────────────────────────────────────────────────────
 
@@ -1077,6 +1078,26 @@ function AITabLoader({ userId }: { userId: string }) {
   return <AIHub userId={userId} errors={errors} collection={collection} />;
 }
 
+// ─── HEAT CALENDAR TAB LOADER ─────────────────────────────────────────────────
+
+function HeatCalendarLoader({ userId }: { userId: string }) {
+  const [errors, setErrors] = useState<ErrorEntry[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    getErrors(userId).then(e => { setErrors(e); setLoading(false); });
+  }, [userId]);
+
+  if (loading) return (
+    <div style={{ textAlign:"center", padding:80, color:"#475569" }}>
+      <div style={{ fontSize:40, marginBottom:12 }}>🔥</div>
+      <div style={{ fontSize:14 }}>Loading heat map...</div>
+    </div>
+  );
+
+  return <HeatCalendar errors={errors} />;
+}
+
 // ─── MAIN APP ─────────────────────────────────────────────────────────────────
 
 export default function App() {
@@ -1088,7 +1109,6 @@ export default function App() {
   const [xpPopup,setXpPopup]=useState<number|null>(null);
   const { toasts, add: addToast } = useToast();
 
-  // ── NEW: Profile state ─────────────────────────────────────────────────────
   const [showProfile, setShowProfile] = useState(false);
   const [showXPPanel, setShowXPPanel] = useState(false);
   const [userAvatar, setUserAvatar] = useState("av1");
@@ -1100,7 +1120,6 @@ export default function App() {
     if (data.avatar) setUserAvatar(data.avatar);
     if (data.photoURL !== undefined) setUserPhoto(data.photoURL);
   };
-  // ──────────────────────────────────────────────────────────────────────────
 
   const loadStats=async(uid:string,name:string)=>{
     const [s,t,xp]=await Promise.all([getStreak(uid),getTodayEntryCount(uid),getUserXP(uid)]);
@@ -1169,6 +1188,7 @@ export default function App() {
     { id:"collection",   label:"Collection",   icon:"🎌" },
     { id:"leaderboard",  label:"Leaderboard",  icon:"🏆" },
     { id:"ai",           label:"AI Hub",       icon:"🤖" },
+    { id:"heatmap",      label:"Heat Map",     icon:"🔥" },
   ];
 
   const PAGE_TITLES: Record<string,{title:string;sub:string;color:string}> = {
@@ -1179,6 +1199,7 @@ export default function App() {
     collection:   { title:"ANIME COLLECTION",  sub:"collection",   color:"#a855f7" },
     leaderboard:  { title:"LEADERBOARD",       sub:"leaderboard",  color:"#ffd700" },
     ai:           { title:"AI COMMAND",        sub:"ai",           color:"#a855f7" },
+    heatmap:      { title:"MISTAKE HEAT MAP",  sub:"heatmap",      color:"#22c55e" },
   };
 
   const pt = PAGE_TITLES[activeTab];
@@ -1201,7 +1222,6 @@ export default function App() {
       {xpPopup&&<XPPopup xp={xpPopup} onDone={()=>setXpPopup(null)}/>}
       {showCal&&<StreakCalendar userId={user.uid} streak={streak} onClose={()=>setShowCal(false)}/>}
 
-      {/* ── PROFILE PANEL ── */}
       {showProfile && (
         <ProfilePanel
           user={{ ...user, displayName }}
@@ -1217,7 +1237,6 @@ export default function App() {
         />
       )}
 
-      {/* ── XP TAP PANEL ── */}
       {showXPPanel && xpData && (
         <XPTapPanel
           xpData={xpData}
@@ -1230,7 +1249,6 @@ export default function App() {
 
       <div style={{ position:"relative",zIndex:1,maxWidth:1100,margin:"0 auto",padding:"0 16px" }}>
 
-        {/* ── HEADER ── */}
         <header style={{ display:"flex",alignItems:"center",justifyContent:"space-between",padding:"16px 0",borderBottom:"1px solid rgba(255,255,255,0.05)",marginBottom:20,flexWrap:"wrap" as const,gap:10 }}>
           <div style={{ display:"flex",alignItems:"center",gap:12 }}>
             <span style={{ fontSize:24 }}>⚡</span>
@@ -1242,23 +1260,16 @@ export default function App() {
           </div>
 
           <div style={{ display:"flex",alignItems:"center",gap:10,flexWrap:"wrap" as const }}>
-            {/* Streak */}
             <button onClick={()=>setShowCal(true)} style={{ display:"flex",alignItems:"center",gap:6,padding:"6px 12px",borderRadius:20,background:streak>0?"rgba(255,215,0,0.12)":"rgba(255,255,255,0.05)",border:`1px solid ${streak>0?"rgba(255,215,0,0.35)":"rgba(255,255,255,0.08)"}`,cursor:"pointer",fontFamily:"inherit",transition:"all 0.2s" }}>
               <span style={{ fontSize:14 }}>🔥</span>
               <span style={{ fontSize:12,color:streak>0?"#ffd700":"#475569",fontWeight:700 }}>{streak}d</span>
             </button>
-
-            {/* Today counter */}
             <div style={{ padding:"5px 10px",borderRadius:12,background:todayCount>=3?"rgba(34,197,94,0.12)":"rgba(0,212,255,0.08)",border:`1px solid ${todayCount>=3?"rgba(34,197,94,0.3)":"rgba(0,212,255,0.2)"}`,fontSize:11,color:todayCount>=3?"#22c55e":"#00d4ff",fontWeight:700 }}>{todayCount}/3 ✓</div>
-
-            {/* XP chip — click to open XP panel */}
             {xpData && (
               <button onClick={() => setShowXPPanel(true)} style={{ padding:"5px 10px",borderRadius:12,background:"rgba(123,97,255,0.12)",border:"1px solid rgba(123,97,255,0.3)",fontSize:11,color:"#a78bfa",fontWeight:700,cursor:"pointer",fontFamily:"inherit",transition:"all 0.2s" }}>
                 ⚡ {xpData.totalXP} XP · Lv.{xpData.level}
               </button>
             )}
-
-            {/* Avatar + name — click to open profile */}
             <button onClick={() => setShowProfile(true)} style={{ display:"flex",alignItems:"center",gap:8,background:"rgba(255,255,255,0.04)",border:"1px solid rgba(255,255,255,0.1)",borderRadius:24,padding:"4px 12px 4px 4px",cursor:"pointer",transition:"all 0.2s" }}
               onMouseEnter={e=>{(e.currentTarget as HTMLElement).style.borderColor="rgba(0,212,255,0.3)";}}
               onMouseLeave={e=>{(e.currentTarget as HTMLElement).style.borderColor="rgba(255,255,255,0.1)";}}>
@@ -1271,13 +1282,9 @@ export default function App() {
           </div>
         </header>
 
-        {/* Level banner for achievements tab */}
         {activeTab==="achievements"&&xpData&&<LevelBanner xpData={xpData}/>}
-
-        {/* Streak banner */}
         {(activeTab==="errors"||activeTab==="collection")&&<StreakBanner todayCount={todayCount} streak={streak}/>}
 
-        {/* Tabs */}
         <div style={{ display:"flex",gap:4,marginBottom:24,padding:"4px",background:"rgba(255,255,255,0.03)",borderRadius:12,border:"1px solid rgba(255,255,255,0.06)",width:"100%",overflowX:"auto" as const }}>
           {TABS.map(tab=>(
             <button key={tab.id} onClick={()=>setActiveTab(tab.id)} style={{ padding:"8px 16px",borderRadius:10,border:"none",cursor:"pointer",background:activeTab===tab.id?"rgba(255,255,255,0.08)":"transparent",color:activeTab===tab.id?"#e2e8f0":"#64748b",fontFamily:"inherit",fontSize:13,fontWeight:activeTab===tab.id?600:400,transition:"all 0.2s",display:"flex",alignItems:"center",gap:6,whiteSpace:"nowrap" as const,flexShrink:0 }}>
@@ -1286,14 +1293,12 @@ export default function App() {
           ))}
         </div>
 
-        {/* Page title */}
         <div style={{ marginBottom:20 }}>
           <h1 style={{ fontSize:32,fontFamily:"'Bebas Neue',cursive",letterSpacing:3,color:"#e2e8f0",margin:0 }}>
             {pt.title.split(" ").map((w,i,arr)=>i===arr.length-1?<span key={i} style={{ color:pt.color }}> {w}</span>:<span key={i}>{w} </span>)}
           </h1>
         </div>
 
-        {/* Pages */}
         {activeTab==="errors"       && <ErrorBook userId={user.uid} onEntryAdded={handleEntryAdded}/>}
         {activeTab==="revision"     && <SpacedRevision userId={user.uid} onXP={handleXPGained}/>}
         {activeTab==="analytics"    && <Analytics userId={user.uid}/>}
@@ -1301,6 +1306,7 @@ export default function App() {
         {activeTab==="collection"   && <AnimeCollection userId={user.uid} onEntryAdded={handleEntryAdded}/>}
         {activeTab==="leaderboard"  && <Leaderboard/>}
         {activeTab==="ai"           && <AITabLoader userId={user.uid}/>}
+        {activeTab==="heatmap"      && <HeatCalendarLoader userId={user.uid}/>}
       </div>
     </div>
   );
