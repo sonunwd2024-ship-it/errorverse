@@ -1,10 +1,10 @@
 "use client";
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useRef, useEffect, useCallback } from "react";
-import { db } from "../lib/firebase";
+import { db, auth } from "../lib/firebase";
 import { doc, setDoc, getDoc, serverTimestamp, collection, getDocs, deleteDoc, query, where } from "firebase/firestore";
 import {
-  getAuth,
+
   updatePassword,
   sendEmailVerification,
   sendPasswordResetEmail,
@@ -945,7 +945,7 @@ function SecurityPanel({ user, onBack, onClose, onLogout }: { user:any; onBack:(
       if (newPw === currentPw) { setMsg("New password must be different from current."); setStatus("error"); return; }
       setStatus("loading"); setMsg("");
       try {
-        const auth = getAuth();
+        
         const u = auth.currentUser;
         if (!u || !u.email) throw new Error("Not authenticated");
         const cred = EmailAuthProvider.credential(u.email, currentPw);
@@ -1046,7 +1046,7 @@ function SecurityPanel({ user, onBack, onClose, onLogout }: { user:any; onBack:(
               <button
                 onClick={async () => {
                   try {
-                    await sendPasswordResetEmail(getAuth(), user.email);
+                    await sendPasswordResetEmail(auth, user.email);
                     setStatus("success"); setMsg("Reset email sent to " + user.email);
                   } catch { setStatus("error"); setMsg("Failed to send reset email."); }
                 }}
@@ -1066,12 +1066,12 @@ function SecurityPanel({ user, onBack, onClose, onLogout }: { user:any; onBack:(
     const [sent, setSent] = useState(false);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
-    const isVerified = getAuth().currentUser?.emailVerified ?? user.emailVerified;
+    const isVerified = auth.currentUser?.emailVerified ?? user.emailVerified;
 
     const handleSend = async () => {
       setLoading(true); setError("");
       try {
-        const u = getAuth().currentUser;
+        const u = auth.currentUser;
         if (!u) throw new Error("Not authenticated");
         await sendEmailVerification(u);
         setSent(true);
@@ -1118,7 +1118,7 @@ function SecurityPanel({ user, onBack, onClose, onLogout }: { user:any; onBack:(
                 {loading ? "SENDING..." : sent ? "EMAIL SENT ✓" : "SEND VERIFICATION EMAIL"}
               </button>
               <button
-                onClick={() => { getAuth().currentUser?.reload().then(() => { if(getAuth().currentUser?.emailVerified) setSecView("main"); }); }}
+                onClick={() => { auth.currentUser?.reload().then(() => { if(auth.currentUser?.emailVerified) setSecView("main"); }); }}
                 style={{ width:"100%", marginTop:10, padding:"11px", borderRadius:10, border:"1px solid rgba(255,255,255,0.08)", background:"transparent", color:"#64748b", fontFamily:"inherit", fontSize:13, cursor:"pointer" }}
               >
                 I've verified — Refresh status
@@ -1132,7 +1132,7 @@ function SecurityPanel({ user, onBack, onClose, onLogout }: { user:any; onBack:(
 
   // ── ACTIVE SESSIONS ─────────────────────────────────────────────────────
   function SessionsView() {
-    const auth = getAuth();
+    
     const currentUser = auth.currentUser;
     const signInTime = currentUser?.metadata?.lastSignInTime;
     const creationTime = currentUser?.metadata?.creationTime;
@@ -1186,7 +1186,7 @@ function SecurityPanel({ user, onBack, onClose, onLogout }: { user:any; onBack:(
           {/* Sign out current */}
           <button
             onClick={async () => {
-              try { await signOut(getAuth()); onLogout(); } catch {}
+              try { await signOut(auth); onLogout(); } catch {}
             }}
             style={{ width:"100%", padding:"12px", borderRadius:10, border:"1px solid rgba(255,34,84,0.3)", background:"rgba(255,34,84,0.08)", color:"#ff2254", fontFamily:"inherit", fontSize:14, fontWeight:700, cursor:"pointer" }}
           >
@@ -1209,7 +1209,7 @@ function SecurityPanel({ user, onBack, onClose, onLogout }: { user:any; onBack:(
       if (!password) { setError("Enter your password."); return; }
       setStep("deleting"); setError("");
       try {
-        const auth = getAuth();
+        
         const u = auth.currentUser;
         if (!u || !u.email) throw new Error("Not authenticated");
         // Re-authenticate first
@@ -1337,7 +1337,7 @@ function SecurityPanel({ user, onBack, onClose, onLogout }: { user:any; onBack:(
   if (secView === "sessions")       return <SessionsView />;
   if (secView === "deleteAccount")  return <DeleteAccountView />;
 
-  const auth = getAuth();
+  
   const isVerified = auth.currentUser?.emailVerified ?? user.emailVerified;
 
   return (

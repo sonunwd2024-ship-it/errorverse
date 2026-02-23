@@ -1211,133 +1211,185 @@ function HeatCalendarLoader({ userId }: { userId: string }) {
   return <HeatCalendar errors={errors} />;
 }
 
-// ─── REDESIGNED BOTTOM NAV ────────────────────────────────────────────────────
-// Grouped like Duolingo: primary tabs + secondary tabs
+// ─── NAVIGATION CONFIG ────────────────────────────────────────────────────────
 
 const PRIMARY_TABS = [
-  { id:"errors",      label:"Learn",    icon:"📝", color:"#ff2254",  glow:"rgba(255,34,84,0.4)" },
-  { id:"revision",    label:"Review",   icon:"🔁", color:"#00d4ff",  glow:"rgba(0,212,255,0.4)" },
-  { id:"analytics",   label:"Stats",    icon:"📊", color:"#a855f7",  glow:"rgba(168,85,247,0.4)" },
-  { id:"leaderboard", label:"Rank",     icon:"🏆", color:"#ffd700",  glow:"rgba(255,215,0,0.4)" },
-  { id:"collection",  label:"Watch",    icon:"🎌", color:"#f97316",  glow:"rgba(249,115,22,0.4)" },
+  { id:"errors",      label:"Learn",   icon:"📝", color:"#ff2254", glow:"rgba(255,34,84,0.5)" },
+  { id:"revision",    label:"Review",  icon:"🔁", color:"#00d4ff", glow:"rgba(0,212,255,0.5)" },
+  { id:"analytics",   label:"Stats",   icon:"📊", color:"#a855f7", glow:"rgba(168,85,247,0.5)" },
+  { id:"leaderboard", label:"Rank",    icon:"🏆", color:"#ffd700", glow:"rgba(255,215,0,0.5)" },
+  { id:"collection",  label:"Watch",   icon:"🎌", color:"#f97316", glow:"rgba(249,115,22,0.5)" },
 ];
 
 const SECONDARY_TABS = [
-  { id:"achievements", label:"Badges",  icon:"🏅", color:"#22c55e" },
-  { id:"ai",           label:"AI",      icon:"🤖", color:"#a855f7" },
-  { id:"heatmap",      label:"Heat",    icon:"🔥", color:"#f97316" },
+  { id:"achievements", label:"Badges", icon:"🏅", color:"#22c55e", glow:"rgba(34,197,94,0.5)" },
+  { id:"ai",           label:"AI Hub", icon:"🤖", color:"#a855f7", glow:"rgba(168,85,247,0.5)" },
+  { id:"heatmap",      label:"Heat",   icon:"🔥", color:"#f97316", glow:"rgba(249,115,22,0.5)" },
 ];
 
 function BottomNav({ active, setActive }: { active:string; setActive:(t:string)=>void }) {
   const [showMore, setShowMore] = useState(false);
-  const allActive = [...PRIMARY_TABS, ...SECONDARY_TABS].find(t => t.id === active);
+  const allTabs = [...PRIMARY_TABS, ...SECONDARY_TABS];
+  const activeTab = allTabs.find(t => t.id === active);
   const isSecondaryActive = SECONDARY_TABS.some(t => t.id === active);
 
   return (
     <>
-      {/* More panel */}
+      {/* Backdrop when More is open */}
       {showMore && (
         <div
-          style={{
-            position:"fixed", bottom:70, left:"50%", transform:"translateX(-50%)",
-            zIndex:100, background:"rgba(5,8,16,0.97)", backdropFilter:"blur(20px)",
-            border:"1px solid rgba(255,255,255,0.1)", borderRadius:20, padding:16,
-            display:"flex", gap:12, boxShadow:"0 -8px 32px rgba(0,0,0,0.5)",
-          }}
-          onClick={e => e.stopPropagation()}
-        >
-          {SECONDARY_TABS.map(t => {
-            const isActive = active === t.id;
-            return (
-              <button key={t.id} onClick={() => { setActive(t.id); setShowMore(false); }} style={{
-                display:"flex", flexDirection:"column", alignItems:"center", gap:4,
-                padding:"10px 16px", borderRadius:14,
-                border:`1px solid ${isActive ? t.color : "rgba(255,255,255,0.06)"}`,
-                background:isActive?`${t.color}18`:"rgba(255,255,255,0.03)",
-                cursor:"pointer", fontFamily:"inherit", transition:"all 0.2s",
-              }}>
-                <span style={{ fontSize:24, filter:isActive?`drop-shadow(0 0 8px ${t.color})`:"none" }}>{t.icon}</span>
-                <span style={{ fontSize:10, fontWeight:700, color:isActive?t.color:"#64748b" }}>{t.label}</span>
-              </button>
-            );
-          })}
+          style={{ position:"fixed", inset:0, zIndex:99 }}
+          onClick={() => setShowMore(false)}
+        />
+      )}
+
+      {/* Secondary tabs floating panel */}
+      {showMore && (
+        <div style={{
+          position:"fixed", bottom:68, left:0, right:0, zIndex:100,
+          display:"flex", justifyContent:"center", padding:"0 16px",
+          pointerEvents:"none",
+        }}>
+          <div style={{
+            display:"flex", gap:10, padding:"14px 20px",
+            background:"rgba(4,6,14,0.98)", backdropFilter:"blur(24px)",
+            border:"1px solid rgba(255,255,255,0.1)", borderRadius:20,
+            boxShadow:"0 -4px 40px rgba(0,0,0,0.6)",
+            pointerEvents:"all",
+          }}>
+            {SECONDARY_TABS.map(t => {
+              const isActive = active === t.id;
+              return (
+                <button
+                  key={t.id}
+                  onClick={() => { setActive(t.id); setShowMore(false); }}
+                  style={{
+                    display:"flex", flexDirection:"column", alignItems:"center", gap:5,
+                    padding:"10px 18px", borderRadius:14, border:"none",
+                    background: isActive ? `${t.color}18` : "rgba(255,255,255,0.04)",
+                    outline: isActive ? `1px solid ${t.color}44` : "1px solid rgba(255,255,255,0.06)",
+                    cursor:"pointer", fontFamily:"inherit", transition:"all 0.2s",
+                  }}
+                >
+                  <span style={{
+                    fontSize:26, lineHeight:1,
+                    filter: isActive ? `drop-shadow(0 0 10px ${t.color})` : "none",
+                    transition:"filter 0.2s",
+                  }}>{t.icon}</span>
+                  <span style={{
+                    fontSize:10, fontWeight: isActive ? 800 : 500,
+                    color: isActive ? t.color : "#64748b",
+                    letterSpacing:0.3,
+                  }}>{t.label}</span>
+                </button>
+              );
+            })}
+          </div>
         </div>
       )}
 
-      {/* Click outside to close */}
-      {showMore && <div style={{ position:"fixed", inset:0, zIndex:99 }} onClick={() => setShowMore(false)} />}
-
-      {/* Main nav bar */}
+      {/* Main bottom nav */}
       <nav style={{
         position:"fixed", bottom:0, left:0, right:0, zIndex:101,
-        background:"rgba(4,6,14,0.98)", backdropFilter:"blur(24px)",
+        height:64,
+        background:"rgba(3,5,12,0.98)", backdropFilter:"blur(28px)",
         borderTop:"1px solid rgba(255,255,255,0.07)",
         display:"flex", alignItems:"stretch",
-        height:62,
         paddingBottom:"env(safe-area-inset-bottom,0px)",
       }}>
         {PRIMARY_TABS.map(t => {
           const isActive = active === t.id;
           return (
-            <button key={t.id} onClick={() => { setActive(t.id); setShowMore(false); }} style={{
-              flex:1, display:"flex", flexDirection:"column", alignItems:"center",
-              justifyContent:"center", gap:2,
-              padding:"6px 0 8px",
-              border:"none", background:"transparent",
-              cursor:"pointer", fontFamily:"inherit",
-              position:"relative",
-              transition:"all 0.15s",
-            }}>
-              {/* Active indicator pill at top */}
-              {isActive && (
-                <div style={{
-                  position:"absolute", top:0, left:"50%", transform:"translateX(-50%)",
-                  width:28, height:3, borderRadius:"0 0 4px 4px",
-                  background:t.color, boxShadow:`0 2px 8px ${t.glow}`,
-                }} />
-              )}
-              <span style={{
-                fontSize:isActive?24:20,
-                transition:"all 0.2s",
-                filter:isActive?`drop-shadow(0 0 8px ${t.glow})`:"none",
-                lineHeight:1,
-              }}>{t.icon}</span>
-              <span style={{
-                fontSize:9, fontWeight:isActive?800:500,
-                color:isActive?t.color:"#3d4d63",
-                letterSpacing:0.3,
+            <button
+              key={t.id}
+              onClick={() => { setActive(t.id); setShowMore(false); }}
+              style={{
+                flex:1, display:"flex", flexDirection:"column", alignItems:"center",
+                justifyContent:"center", gap:3,
+                border:"none", background:"transparent",
+                cursor:"pointer", fontFamily:"inherit",
+                position:"relative", padding:"6px 2px 8px",
                 transition:"all 0.15s",
+              }}
+            >
+              {/* Top accent line */}
+              <div style={{
+                position:"absolute", top:0, left:"50%", transform:"translateX(-50%)",
+                width: isActive ? 32 : 0,
+                height:2, borderRadius:"0 0 3px 3px",
+                background:t.color,
+                boxShadow: isActive ? `0 2px 12px ${t.glow}` : "none",
+                transition:"width 0.25s ease, box-shadow 0.25s ease",
+              }} />
+
+              <span style={{
+                fontSize: isActive ? 24 : 21,
+                lineHeight:1,
+                filter: isActive ? `drop-shadow(0 0 10px ${t.glow})` : "none",
+                transition:"all 0.2s",
+                transform: isActive ? "translateY(-1px)" : "none",
+              }}>{t.icon}</span>
+
+              <span style={{
+                fontSize:9.5, fontWeight: isActive ? 800 : 400,
+                color: isActive ? t.color : "#3d4d63",
+                letterSpacing:0.2, transition:"all 0.15s",
               }}>{t.label}</span>
             </button>
           );
         })}
 
-        {/* More button */}
-        <button onClick={() => setShowMore(s => !s)} style={{
-          flex:1, display:"flex", flexDirection:"column", alignItems:"center",
-          justifyContent:"center", gap:2,
-          padding:"6px 0 8px",
-          border:"none", background:"transparent",
-          cursor:"pointer", fontFamily:"inherit",
-          position:"relative",
-        }}>
-          {isSecondaryActive && (
-            <div style={{
-              position:"absolute", top:0, left:"50%", transform:"translateX(-50%)",
-              width:28, height:3, borderRadius:"0 0 4px 4px",
-              background:allActive?.color ?? "#64748b",
-              boxShadow:`0 2px 8px ${allActive?.color ?? "#64748b"}44`,
-            }} />
-          )}
+        {/* More / secondary tab button */}
+        <button
+          onClick={() => setShowMore(s => !s)}
+          style={{
+            flex:1, display:"flex", flexDirection:"column", alignItems:"center",
+            justifyContent:"center", gap:3,
+            border:"none", background:"transparent",
+            cursor:"pointer", fontFamily:"inherit",
+            position:"relative", padding:"6px 2px 8px",
+            transition:"all 0.15s",
+          }}
+        >
+          {/* Top accent when secondary active */}
+          <div style={{
+            position:"absolute", top:0, left:"50%", transform:"translateX(-50%)",
+            width: isSecondaryActive ? 32 : 0,
+            height:2, borderRadius:"0 0 3px 3px",
+            background: activeTab?.color ?? "#64748b",
+            boxShadow: isSecondaryActive ? `0 2px 12px ${(activeTab as any)?.glow ?? "#64748b44"}` : "none",
+            transition:"width 0.25s ease",
+          }} />
+
           {isSecondaryActive ? (
+            /* Show active secondary tab icon */
             <>
-              <span style={{ fontSize:22, filter:`drop-shadow(0 0 8px ${allActive?.color}88)` }}>{allActive?.icon}</span>
-              <span style={{ fontSize:9, fontWeight:800, color:allActive?.color, letterSpacing:0.3 }}>{allActive?.label}</span>
+              <span style={{
+                fontSize:24, lineHeight:1,
+                filter: `drop-shadow(0 0 10px ${(activeTab as any)?.glow ?? "#64748b"})`,
+                transform:"translateY(-1px)",
+              }}>{activeTab?.icon}</span>
+              <span style={{
+                fontSize:9.5, fontWeight:800,
+                color: activeTab?.color ?? "#64748b",
+                letterSpacing:0.2,
+              }}>{activeTab?.label}</span>
             </>
           ) : (
+            /* Show More button */
             <>
-              <span style={{ fontSize:20, color:showMore?"#94a3b8":"#3d4d63", lineHeight:1, transition:"all 0.2s", transform:showMore?"rotate(45deg)":"none" }}>⊕</span>
-              <span style={{ fontSize:9, fontWeight:500, color:showMore?"#94a3b8":"#3d4d63", letterSpacing:0.3 }}>More</span>
+              <span style={{
+                fontSize:20, lineHeight:1,
+                color: showMore ? "#94a3b8" : "#3d4d63",
+                transform: showMore ? "rotate(45deg)" : "none",
+                transition:"all 0.25s ease",
+                display:"block",
+              }}>⊕</span>
+              <span style={{
+                fontSize:9.5, fontWeight:400,
+                color: showMore ? "#94a3b8" : "#3d4d63",
+                letterSpacing:0.2, transition:"color 0.15s",
+              }}>More</span>
             </>
           )}
         </button>
