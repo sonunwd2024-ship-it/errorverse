@@ -878,28 +878,78 @@ function AuthScreen({ onLogin }: { onLogin:(u:any)=>void }) {
 
 // ─── ERROR FORM ───────────────────────────────────────────────────────────────
 
-function ErrorForm({ onSubmit, onClose }: any) {
-  const [form,setForm]=useState({
-    subject:"Physics" as ErrorEntry["subject"],
-    chapter:"",
-    questionType:"Numerical" as ErrorEntry["questionType"],
-    mistakeType:"Conceptual" as ErrorEntry["mistakeType"],
-    difficulty:"Medium" as ErrorEntry["difficulty"],
-    solution:"",
-    lesson:"",
-    whyMistake:"",
-    formula:"",
+// ─── IMAGE UPLOAD HELPER ──────────────────────────────────────────────────────
+function imageToBase64(file: File): Promise<string> {
+  return new Promise((res, rej) => {
+    const r = new FileReader();
+    r.onload = () => res(r.result as string);
+    r.onerror = rej;
+    r.readAsDataURL(file);
   });
-  const set=(k:string)=>(e:any)=>setForm(p=>({...p,[k]:e.target.value}));
+}
+
+function PhotoUploadBox({ label, value, onChange }: { label: string; value: string|null; onChange: (v: string|null) => void }) {
+  const inputRef = useRef<HTMLInputElement>(null);
   return (
-    <div style={{ position:"fixed",inset:0,background:"rgba(0,0,0,0.8)",backdropFilter:"blur(4px)",zIndex:100,display:"flex",alignItems:"center",justifyContent:"center",padding:20 }}>
-      <div style={{ width:"100%",maxWidth:580,maxHeight:"92vh",overflow:"auto" }}>
+    <div>
+      <label style={{ fontSize:11, color:"#64748b", display:"block", marginBottom:4 }}>{label}</label>
+      <div
+        onClick={() => inputRef.current?.click()}
+        style={{
+          width:"100%", minHeight:80, borderRadius:10,
+          border:`2px dashed ${value ? "#22c55e" : "rgba(255,255,255,0.12)"}`,
+          background: value ? "rgba(34,197,94,0.06)" : "rgba(255,255,255,0.02)",
+          display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center",
+          cursor:"pointer", position:"relative", overflow:"hidden", transition:"all 0.2s",
+        }}
+      >
+        {value ? (
+          <>
+            <img src={value} alt="" style={{ maxHeight:120, maxWidth:"100%", objectFit:"contain", borderRadius:8 }} />
+            <button onClick={e => { e.stopPropagation(); onChange(null); }} style={{ position:"absolute", top:6, right:6, background:"rgba(255,34,84,0.85)", border:"none", borderRadius:"50%", width:22, height:22, color:"#fff", fontSize:12, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}>✕</button>
+          </>
+        ) : (
+          <>
+            <span style={{ fontSize:24, marginBottom:4 }}>📷</span>
+            <span style={{ fontSize:11, color:"#475569" }}>Tap to upload photo</span>
+          </>
+        )}
+        <input ref={inputRef} type="file" accept="image/*" style={{ display:"none" }} onChange={async e => {
+          const f = e.target.files?.[0]; if (!f) return;
+          const b64 = await imageToBase64(f); onChange(b64);
+        }} />
+      </div>
+    </div>
+  );
+}
+
+function ErrorForm({ onSubmit, onClose }: any) {
+  const [form, setForm] = useState({
+    subject: "Physics" as ErrorEntry["subject"],
+    chapter: "",
+    questionType: "Numerical" as ErrorEntry["questionType"],
+    mistakeType: "Conceptual" as ErrorEntry["mistakeType"],
+    difficulty: "Medium" as ErrorEntry["difficulty"],
+    questionText: "",
+    solution: "",
+    lesson: "",
+    whyMistake: "",
+    formula: "",
+    questionImageUrl: null as string|null,
+    answerImageUrl: null as string|null,
+  });
+  const set = (k: string) => (e: any) => setForm(p => ({ ...p, [k]: e.target.value }));
+
+  return (
+    <div style={{ position:"fixed",inset:0,background:"rgba(0,0,0,0.85)",backdropFilter:"blur(4px)",zIndex:100,display:"flex",alignItems:"center",justifyContent:"center",padding:20 }}>
+      <div style={{ width:"100%",maxWidth:600,maxHeight:"94vh",overflow:"auto",scrollbarWidth:"none" as any }}>
         <GlassCard hover={false} style={{ padding:28 }}>
           <div style={{ display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20 }}>
             <h2 style={{ margin:0,fontSize:20,color:"#00d4ff",fontFamily:"'Bebas Neue',cursive",letterSpacing:2 }}>+ NEW ERROR ENTRY</h2>
             <button onClick={onClose} style={{ background:"none",border:"none",color:"#64748b",fontSize:20,cursor:"pointer" }}>✕</button>
           </div>
-          <div style={{ display:"flex",flexDirection:"column",gap:12 }}>
+          <div style={{ display:"flex",flexDirection:"column",gap:14 }}>
+            {/* Subject + Chapter */}
             <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:12 }}>
               <div><label style={{ fontSize:11,color:"#64748b",display:"block",marginBottom:4 }}>SUBJECT</label>
                 <select style={{ ...INP_STYLE,cursor:"pointer" }} value={form.subject} onChange={set("subject")}>
@@ -910,6 +960,7 @@ function ErrorForm({ onSubmit, onClose }: any) {
                 <input style={INP_STYLE} placeholder="e.g. Kinematics" value={form.chapter} onChange={set("chapter")} />
               </div>
             </div>
+            {/* Type selects */}
             <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:12 }}>
               <div><label style={{ fontSize:11,color:"#64748b",display:"block",marginBottom:4 }}>QUESTION TYPE</label>
                 <select style={{ ...INP_STYLE,cursor:"pointer" }} value={form.questionType} onChange={set("questionType")}>
@@ -927,12 +978,23 @@ function ErrorForm({ onSubmit, onClose }: any) {
                 </select>
               </div>
             </div>
+            {/* Question text */}
+            <div><label style={{ fontSize:11,color:"#64748b",display:"block",marginBottom:4 }}>📋 THE QUESTION (write it out)</label>
+              <textarea style={{ ...INP_STYLE,height:72,resize:"vertical" } as any} placeholder="Write the question here so you can remember what it was..." value={form.questionText} onChange={set("questionText")} />
+            </div>
+            {/* Photo uploads */}
+            <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:12 }}>
+              <PhotoUploadBox label="📷 QUESTION PHOTO (optional)" value={form.questionImageUrl} onChange={v => setForm(p => ({ ...p, questionImageUrl: v }))} />
+              <PhotoUploadBox label="📷 ANSWER PHOTO (optional)" value={form.answerImageUrl} onChange={v => setForm(p => ({ ...p, answerImageUrl: v }))} />
+            </div>
+            {/* Why + Solution */}
             <div><label style={{ fontSize:11,color:"#64748b",display:"block",marginBottom:4 }}>❓ WHY DID I MAKE THIS MISTAKE?</label>
-              <textarea style={{ ...INP_STYLE,height:64,resize:"vertical" } as any} placeholder="Be brutally honest..." value={form.whyMistake} onChange={set("whyMistake")} />
+              <textarea style={{ ...INP_STYLE,height:60,resize:"vertical" } as any} placeholder="Be brutally honest..." value={form.whyMistake} onChange={set("whyMistake")} />
             </div>
             <div><label style={{ fontSize:11,color:"#64748b",display:"block",marginBottom:4 }}>✅ CORRECT SOLUTION / CONCEPT</label>
-              <textarea style={{ ...INP_STYLE,height:80,resize:"vertical" } as any} placeholder="Write the correct approach..." value={form.solution} onChange={set("solution")} />
+              <textarea style={{ ...INP_STYLE,height:72,resize:"vertical" } as any} placeholder="Write the correct approach..." value={form.solution} onChange={set("solution")} />
             </div>
+            {/* Formula + Lesson */}
             <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:12 }}>
               <div><label style={{ fontSize:11,color:"#64748b",display:"block",marginBottom:4 }}>🔢 FORMULA / KEY POINT</label>
                 <input style={INP_STYLE} placeholder="e.g. F = ma" value={form.formula} onChange={set("formula")} />
@@ -942,8 +1004,8 @@ function ErrorForm({ onSubmit, onClose }: any) {
               </div>
             </div>
             <button
-              onClick={()=>{ if(!form.chapter.trim()){return;} onSubmit({...form,date:new Date().toISOString().split("T")[0]}); onClose(); }}
-              style={{ padding:"12px",borderRadius:10,border:"none",background:"linear-gradient(135deg,#ff2254,#ff6b35)",color:"#fff",fontFamily:"inherit",fontSize:14,fontWeight:700,cursor:"pointer",letterSpacing:1 }}>
+              onClick={() => { if (!form.chapter.trim()) { return; } onSubmit({ ...form, date: new Date().toISOString().split("T")[0] }); onClose(); }}
+              style={{ padding:"13px",borderRadius:10,border:"none",background:"linear-gradient(135deg,#ff2254,#ff6b35)",color:"#fff",fontFamily:"inherit",fontSize:14,fontWeight:700,cursor:"pointer",letterSpacing:1 }}>
               RECORD MISTAKE (+{XP_REWARDS.addError} XP) ⚡
             </button>
           </div>
@@ -1206,11 +1268,122 @@ function SpacedRevision({ userId, onXP }: { userId:string; onXP:(xp:number)=>voi
   );
 }
 
+// ─── ERROR DETAIL MODAL ───────────────────────────────────────────────────────
+
+function ErrorDetailModal({ err, onClose, onDelete }: { err: ErrorEntry; onClose: () => void; onDelete?: () => void }) {
+  return (
+    <div style={{ position:"fixed",inset:0,background:"rgba(0,0,0,0.88)",backdropFilter:"blur(10px)",zIndex:300,display:"flex",alignItems:"center",justifyContent:"center",padding:16 }} onClick={onClose}>
+      <div style={{ width:"100%",maxWidth:560,maxHeight:"92vh",overflowY:"auto",scrollbarWidth:"none" as any }} onClick={e=>e.stopPropagation()}>
+        <GlassCard hover={false} style={{ padding:24, borderLeft:`4px solid ${MASTERY_COLORS[err.masteryStage??"red"]}` }}>
+          {/* Header */}
+          <div style={{ display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:18,gap:10 }}>
+            <div>
+              <div style={{ display:"flex",gap:6,marginBottom:8,flexWrap:"wrap" as const }}>
+                <span style={{ padding:"3px 12px",borderRadius:20,fontSize:11,fontWeight:700,background:`${SUBJECT_COLORS[err.subject]||"#888"}22`,color:SUBJECT_COLORS[err.subject]||"#888",border:`1px solid ${SUBJECT_COLORS[err.subject]||"#888"}44` }}>{err.subject}</span>
+                <span style={{ padding:"3px 12px",borderRadius:20,fontSize:11,fontWeight:700,background:`${MISTAKE_COLORS[err.mistakeType]||"#888"}22`,color:MISTAKE_COLORS[err.mistakeType]||"#888",border:`1px solid ${MISTAKE_COLORS[err.mistakeType]||"#888"}44` }}>{err.mistakeType}</span>
+                <span style={{ padding:"3px 10px",borderRadius:20,fontSize:10,background:"rgba(255,255,255,0.06)",color:"#64748b" }}>{err.difficulty}</span>
+                <span style={{ padding:"3px 10px",borderRadius:20,fontSize:10,background:"rgba(255,255,255,0.06)",color:"#64748b" }}>{err.questionType}</span>
+              </div>
+              <div style={{ fontSize:20,fontWeight:800,color:"#e2e8f0" }}>{err.chapter}</div>
+              <div style={{ fontSize:11,color:"#475569",marginTop:2 }}>{err.date}</div>
+            </div>
+            <button onClick={onClose} style={{ background:"rgba(255,255,255,0.06)",border:"1px solid rgba(255,255,255,0.1)",color:"#64748b",fontSize:16,cursor:"pointer",borderRadius:10,width:32,height:32,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0 }}>✕</button>
+          </div>
+
+          {/* Mastery */}
+          <div style={{ marginBottom:16 }}>
+            <MasteryBar level={err.masteryLevel??0} stage={err.masteryStage??"red"} />
+          </div>
+          {err.nextReviewDate && <div style={{ marginBottom:16 }}><RevisionBadge nextDate={err.nextReviewDate} /></div>}
+
+          {/* Question text */}
+          {(err as any).questionText && (
+            <div style={{ marginBottom:14,padding:"12px 14px",background:"rgba(0,212,255,0.06)",borderRadius:12,border:"1px solid rgba(0,212,255,0.15)" }}>
+              <div style={{ fontSize:10,color:"#00d4ff",fontWeight:700,letterSpacing:1,marginBottom:6 }}>📋 THE QUESTION</div>
+              <div style={{ fontSize:13,color:"#e2e8f0",lineHeight:1.6 }}>{(err as any).questionText}</div>
+            </div>
+          )}
+
+          {/* Question + Answer photos */}
+          {((err as any).questionImageUrl || (err as any).answerImageUrl) && (
+            <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:14 }}>
+              {(err as any).questionImageUrl && (
+                <div>
+                  <div style={{ fontSize:10,color:"#64748b",fontWeight:700,marginBottom:6 }}>📷 QUESTION PHOTO</div>
+                  <img src={(err as any).questionImageUrl} alt="Question" style={{ width:"100%",borderRadius:10,objectFit:"contain",maxHeight:200,background:"rgba(0,0,0,0.3)" }} />
+                </div>
+              )}
+              {(err as any).answerImageUrl && (
+                <div>
+                  <div style={{ fontSize:10,color:"#64748b",fontWeight:700,marginBottom:6 }}>📷 ANSWER PHOTO</div>
+                  <img src={(err as any).answerImageUrl} alt="Answer" style={{ width:"100%",borderRadius:10,objectFit:"contain",maxHeight:200,background:"rgba(0,0,0,0.3)" }} />
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Why mistake */}
+          {err.whyMistake && (
+            <div style={{ marginBottom:12,padding:"12px 14px",background:"rgba(255,34,84,0.07)",borderRadius:12,border:"1px solid rgba(255,34,84,0.18)" }}>
+              <div style={{ fontSize:10,color:"#ff2254",fontWeight:700,letterSpacing:1,marginBottom:6 }}>❓ WHY I MADE THIS MISTAKE</div>
+              <div style={{ fontSize:13,color:"#e2e8f0",lineHeight:1.6 }}>{err.whyMistake}</div>
+            </div>
+          )}
+
+          {/* Solution */}
+          {err.solution && (
+            <div style={{ marginBottom:12,padding:"12px 14px",background:"rgba(34,197,94,0.07)",borderRadius:12,border:"1px solid rgba(34,197,94,0.18)" }}>
+              <div style={{ fontSize:10,color:"#22c55e",fontWeight:700,letterSpacing:1,marginBottom:6 }}>✅ CORRECT SOLUTION</div>
+              <div style={{ fontSize:13,color:"#e2e8f0",lineHeight:1.6 }}>{err.solution}</div>
+            </div>
+          )}
+
+          {/* Formula */}
+          {err.formula && (
+            <div style={{ marginBottom:12,padding:"10px 14px",background:"rgba(0,212,255,0.06)",borderRadius:10,border:"1px solid rgba(0,212,255,0.15)",fontFamily:"monospace" }}>
+              <div style={{ fontSize:10,color:"#00d4ff",fontWeight:700,letterSpacing:1,marginBottom:4 }}>🔢 FORMULA</div>
+              <div style={{ fontSize:14,color:"#00d4ff" }}>∫ {err.formula}</div>
+            </div>
+          )}
+
+          {/* Lesson */}
+          {err.lesson && (
+            <div style={{ marginBottom:16,padding:"10px 14px",background:"rgba(255,215,0,0.07)",borderRadius:10,border:"1px solid rgba(255,215,0,0.2)" }}>
+              <div style={{ fontSize:10,color:"#ffd700",fontWeight:700,letterSpacing:1,marginBottom:4 }}>💡 LESSON LEARNED</div>
+              <div style={{ fontSize:13,color:"#ffd700",lineHeight:1.5 }}>{err.lesson}</div>
+            </div>
+          )}
+
+          {/* Review history */}
+          {(err.reviewHistory?.length ?? 0) > 0 && (
+            <div style={{ marginBottom:16 }}>
+              <div style={{ fontSize:10,color:"#475569",fontWeight:700,letterSpacing:1,marginBottom:8 }}>📅 REVIEW HISTORY ({err.reviewHistory?.length} times)</div>
+              <div style={{ display:"flex",gap:6,flexWrap:"wrap" as const }}>
+                {err.reviewHistory?.slice(-8).map((d,i) => <span key={i} style={{ padding:"2px 8px",borderRadius:6,background:"rgba(0,212,255,0.08)",color:"#00d4ff",fontSize:10,border:"1px solid rgba(0,212,255,0.2)" }}>{d}</span>)}
+              </div>
+            </div>
+          )}
+
+          {/* Delete */}
+          {onDelete && (
+            <button onClick={() => { onDelete(); onClose(); }} style={{ width:"100%",padding:"10px",borderRadius:10,border:"1px solid rgba(255,34,84,0.3)",background:"rgba(255,34,84,0.08)",color:"#ff2254",fontSize:13,cursor:"pointer",fontFamily:"inherit",fontWeight:600 }}>🗑 Delete this error</button>
+          )}
+        </GlassCard>
+      </div>
+    </div>
+  );
+}
+
 // ─── ERROR BOOK ───────────────────────────────────────────────────────────────
 
 function ErrorBook({ userId, onEntryAdded }: { userId:string; onEntryAdded:(n:number)=>void }) {
-  const [errors,setErrors]=useState<ErrorEntry[]>([]),[showForm,setShowForm]=useState(false),[fs,setFs]=useState("All"),[fm,setFm]=useState("All"),[search,setSearch]=useState(""),[loading,setLoading]=useState(true);
+  const [errors,setErrors]=useState<ErrorEntry[]>([]),[showForm,setShowForm]=useState(false);
+  const [fs,setFs]=useState("All"),[fm,setFm]=useState("All"),[search,setSearch]=useState("");
+  const [loading,setLoading]=useState(true);
+  const [viewMode,setViewMode]=useState<"today"|"all">("today");
+  const [selectedError,setSelectedError]=useState<ErrorEntry|null>(null);
   const { toasts, add: addToast } = useToast();
+  const todayStr = new Date().toISOString().split("T")[0];
 
   useEffect(()=>{getErrors(userId).then(d=>{setErrors(d);setLoading(false);});},[userId]);
 
@@ -1227,7 +1400,11 @@ function ErrorBook({ userId, onEntryAdded }: { userId:string; onEntryAdded:(n:nu
 
   const handleDel=async(id:string)=>{ await deleteError(id); setErrors(p=>p.filter(e=>e.id!==id)); };
 
-  const filtered=errors.filter((e:ErrorEntry)=>{
+  // Today's errors vs all
+  const todayErrors = errors.filter(e => e.date === todayStr);
+  const sourceErrors = viewMode === "today" ? todayErrors : errors;
+
+  const filtered=sourceErrors.filter((e:ErrorEntry)=>{
     if(fs!=="All"&&e.subject!==fs) return false;
     if(fm!=="All"&&e.mistakeType!==fm) return false;
     if(search&&!e.chapter?.toLowerCase().includes(search.toLowerCase())&&!e.subject?.toLowerCase().includes(search.toLowerCase())) return false;
@@ -1246,10 +1423,13 @@ function ErrorBook({ userId, onEntryAdded }: { userId:string; onEntryAdded:(n:nu
     <div style={{ paddingBottom:40 }}>
       <ToastContainer toasts={toasts}/>
       {showForm&&<ErrorForm onSubmit={handleAdd} onClose={()=>setShowForm(false)}/>}
+      {selectedError && <ErrorDetailModal err={selectedError} onClose={()=>setSelectedError(null)} onDelete={selectedError.id ? ()=>handleDel(selectedError.id!) : undefined} />}
+
+      {/* Stats row */}
       <div style={{ display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(130px,1fr))",gap:12,marginBottom:20 }}>
         {[
           { label:"Total Errors",value:errors.length,icon:"📝",color:"#00d4ff" },
-          { label:"This Week",value:tw,icon:"📅",color:"#ff2254" },
+          { label:"Today",value:todayErrors.length,icon:"📅",color:"#ff2254" },
           { label:"Mastered",value:masteredCount,icon:"🟢",color:"#22c55e" },
         ].map(s=>(
           <GlassCard key={s.label} style={{ padding:16,textAlign:"center" }}>
@@ -1259,10 +1439,12 @@ function ErrorBook({ userId, onEntryAdded }: { userId:string; onEntryAdded:(n:nu
           </GlassCard>
         ))}
       </div>
+
       {mr&&<div style={{ padding:"12px 16px",borderRadius:10,marginBottom:16,background:"rgba(255,34,84,0.1)",border:"1px solid rgba(255,34,84,0.3)",display:"flex",alignItems:"center",gap:10 }}>
         <span style={{ fontSize:20 }}>⚠️</span>
         <span style={{ fontSize:13,color:"#ff8099" }}>Most repeated: <strong style={{ color:"#ff2254" }}>{mr[0]}</strong> ({mr[1]} times)</span>
       </div>}
+
       {pieData.length>0&&(
         <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:20 }}>
           <GlassCard style={{ padding:20 }}>
@@ -1278,42 +1460,71 @@ function ErrorBook({ userId, onEntryAdded }: { userId:string; onEntryAdded:(n:nu
           </GlassCard>
         </div>
       )}
-      <div style={{ display:"flex",gap:10,marginBottom:16,flexWrap:"wrap" as const,alignItems:"center" }}>
-        <input style={{ flex:1,minWidth:160,...INP_STYLE }} placeholder="🔍 Search errors..." value={search} onChange={e=>setSearch(e.target.value)} />
-        <button onClick={()=>setShowForm(true)} style={{ padding:"9px 18px",borderRadius:8,border:"none",background:"linear-gradient(135deg,#00d4ff,#0066ff)",color:"#fff",fontFamily:"inherit",fontSize:13,fontWeight:700,cursor:"pointer" }}>+ Add Error</button>
+
+      {/* Controls */}
+      <div style={{ display:"flex",gap:10,marginBottom:12,flexWrap:"wrap" as const,alignItems:"center" }}>
+        <input style={{ flex:1,minWidth:140,...INP_STYLE }} placeholder="🔍 Search errors..." value={search} onChange={e=>setSearch(e.target.value)} />
+        <button onClick={()=>setShowForm(true)} style={{ padding:"9px 18px",borderRadius:8,border:"none",background:"linear-gradient(135deg,#00d4ff,#0066ff)",color:"#fff",fontFamily:"inherit",fontSize:13,fontWeight:700,cursor:"pointer",whiteSpace:"nowrap" as const }}>+ Add Error</button>
       </div>
+
+      {/* Today / All toggle */}
+      <div style={{ display:"flex",gap:6,marginBottom:14,background:"rgba(255,255,255,0.03)",padding:4,borderRadius:12,border:"1px solid rgba(255,255,255,0.07)" }}>
+        {[{id:"today",label:`📅 Today (${todayErrors.length})`},{id:"all",label:`📚 All Errors (${errors.length})`}].map(v=>(
+          <button key={v.id} onClick={()=>setViewMode(v.id as any)} style={{ flex:1,padding:"8px",borderRadius:9,border:"none",background:viewMode===v.id?"rgba(0,212,255,0.15)":"transparent",color:viewMode===v.id?"#00d4ff":"#475569",fontFamily:"inherit",fontSize:12,fontWeight:700,cursor:"pointer",transition:"all 0.2s" }}>{v.label}</button>
+        ))}
+      </div>
+
+      {/* Filters */}
       <div style={{ display:"flex",gap:8,marginBottom:16,flexWrap:"wrap" as const }}>
         {["All","Physics","Chemistry","Math","Other"].map(s=><button key={s} style={CHIP(fs===s,"#00d4ff")} onClick={()=>setFs(s)}>{s}</button>)}
         <span style={{ borderLeft:"1px solid rgba(255,255,255,0.1)",margin:"0 4px" }}/>
         {["All","Conceptual","Calculation","Silly mistake","Time pressure"].map(m=><button key={m} style={CHIP(fm===m,"#ff2254")} onClick={()=>setFm(m)}>{m}</button>)}
       </div>
+
       {loading?<div style={{ textAlign:"center",padding:40,color:"#475569" }}>Loading...</div>:(
         <div style={{ display:"flex",flexDirection:"column",gap:10 }}>
-          {filtered.length===0&&<div style={{ textAlign:"center",padding:40,color:"#475569" }}>No errors found. Clean slate! 🎯</div>}
+          {filtered.length===0&&(
+            <div style={{ textAlign:"center",padding:40,color:"#475569" }}>
+              {viewMode==="today"?"No errors logged today. Start by tapping + Add Error! 🎯":"No errors found. Clean slate! 🎯"}
+            </div>
+          )}
           {filtered.map((err:ErrorEntry)=>(
-            <GlassCard key={err.id} style={{ padding:16,borderLeft:`3px solid ${MASTERY_COLORS[err.masteryStage??"red"]}` }}>
-              <div style={{ display:"flex",alignItems:"flex-start",gap:14,flexWrap:"wrap" as const }}>
+            <div
+              key={err.id}
+              onClick={()=>setSelectedError(err)}
+              style={{
+                padding:16, borderRadius:16,
+                background:"rgba(255,255,255,0.04)", backdropFilter:"blur(12px)",
+                border:`1px solid rgba(255,255,255,0.08)`,
+                borderLeft:`4px solid ${MASTERY_COLORS[err.masteryStage??"red"]}`,
+                cursor:"pointer", transition:"all 0.2s",
+                boxShadow:"0 2px 12px rgba(0,0,0,0.2)",
+              }}
+              onMouseEnter={e=>(e.currentTarget.style.transform="translateY(-2px)")}
+              onMouseLeave={e=>(e.currentTarget.style.transform="none")}
+            >
+              <div style={{ display:"flex",alignItems:"flex-start",gap:12,flexWrap:"wrap" as const }}>
                 <div style={{ flex:1,minWidth:200 }}>
-                  <div style={{ display:"flex",gap:8,marginBottom:8,flexWrap:"wrap" as const }}>
+                  <div style={{ display:"flex",gap:8,marginBottom:6,flexWrap:"wrap" as const }}>
                     <span style={{ padding:"2px 10px",borderRadius:20,fontSize:11,background:`${SUBJECT_COLORS[err.subject]||"#888"}22`,color:SUBJECT_COLORS[err.subject]||"#888",border:`1px solid ${SUBJECT_COLORS[err.subject]||"#888"}44` }}>{err.subject}</span>
                     <span style={{ padding:"2px 10px",borderRadius:20,fontSize:11,background:`${MISTAKE_COLORS[err.mistakeType]||"#888"}22`,color:MISTAKE_COLORS[err.mistakeType]||"#888",border:`1px solid ${MISTAKE_COLORS[err.mistakeType]||"#888"}44` }}>{err.mistakeType}</span>
                     <span style={{ padding:"2px 8px",borderRadius:20,fontSize:10,background:"rgba(255,255,255,0.04)",color:"#64748b" }}>{err.difficulty}</span>
                   </div>
-                  <div style={{ fontSize:15,fontWeight:600,color:"#e2e8f0",marginBottom:4 }}>{err.chapter}</div>
-                  <div style={{ fontSize:12,color:"#94a3b8",marginBottom:6 }}>{err.solution}</div>
-                  {err.formula&&<div style={{ fontSize:11,color:"#00d4ff",fontFamily:"monospace",marginBottom:6 }}>∫ {err.formula}</div>}
-                  {err.lesson&&<div style={{ fontSize:12,color:"#ffd700",borderLeft:"2px solid #ffd70044",paddingLeft:8,marginBottom:8 }}>💡 {err.lesson}</div>}
+                  <div style={{ fontSize:15,fontWeight:700,color:"#e2e8f0",marginBottom:3 }}>{err.chapter}</div>
+                  {(err as any).questionText && <div style={{ fontSize:12,color:"#64748b",marginBottom:4,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" as const }}>📋 {(err as any).questionText}</div>}
+                  <div style={{ fontSize:11,color:"#94a3b8",marginBottom:6,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" as const }}>{err.solution}</div>
                   <div style={{ maxWidth:200 }}>
-                    <MasteryBar level={err.masteryLevel??0} stage={err.masteryStage??"red"}/>
+                    <MasteryBar level={err.masteryLevel??0} stage={err.masteryStage??"red"} showLabel={false}/>
                   </div>
                 </div>
-                <div style={{ display:"flex",flexDirection:"column",alignItems:"flex-end",gap:8,flexShrink:0 }}>
+                <div style={{ display:"flex",flexDirection:"column",alignItems:"flex-end",gap:6,flexShrink:0 }}>
                   <div style={{ fontSize:11,color:"#475569" }}>{err.date}</div>
                   {err.nextReviewDate&&<RevisionBadge nextDate={err.nextReviewDate}/>}
-                  <button onClick={()=>handleDel(err.id!)} style={{ padding:"4px 10px",borderRadius:6,border:"1px solid rgba(255,34,84,0.3)",background:"rgba(255,34,84,0.08)",color:"#ff2254",fontSize:11,cursor:"pointer",fontFamily:"inherit" }}>🗑 Delete</button>
+                  {((err as any).questionImageUrl||(err as any).answerImageUrl) && <span style={{ fontSize:10,color:"#a855f7",background:"rgba(168,85,247,0.12)",border:"1px solid rgba(168,85,247,0.25)",padding:"2px 8px",borderRadius:6 }}>📷 Has photos</span>}
+                  <span style={{ fontSize:10,color:"#475569" }}>Tap to view →</span>
                 </div>
               </div>
-            </GlassCard>
+            </div>
           ))}
         </div>
       )}
@@ -1579,9 +1790,52 @@ function AITabLoader({ userId }: { userId: string }) {
 
 // ─── HEAT CALENDAR TAB LOADER ─────────────────────────────────────────────────
 
+function DayErrorsModal({ date, errors, onClose, onSelectError }: { date:string; errors:ErrorEntry[]; onClose:()=>void; onSelectError:(e:ErrorEntry)=>void }) {
+  const dayErrors = errors.filter(e => e.date === date);
+  const fmt = new Date(date + "T00:00:00").toLocaleDateString("en-IN", { weekday:"long", day:"numeric", month:"long", year:"numeric" });
+  return (
+    <div style={{ position:"fixed",inset:0,background:"rgba(0,0,0,0.88)",backdropFilter:"blur(10px)",zIndex:350,display:"flex",alignItems:"center",justifyContent:"center",padding:16 }} onClick={onClose}>
+      <div style={{ width:"100%",maxWidth:520,maxHeight:"88vh",overflowY:"auto",scrollbarWidth:"none" as any }} onClick={e=>e.stopPropagation()}>
+        <div style={{ background:"rgba(10,14,26,0.96)",border:"1px solid rgba(255,255,255,0.1)",borderRadius:20,padding:24,backdropFilter:"blur(24px)" }}>
+          <div style={{ display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:18 }}>
+            <div>
+              <div style={{ fontSize:11,color:"#475569",fontWeight:700,letterSpacing:1,marginBottom:4 }}>📅 ERRORS ON</div>
+              <div style={{ fontSize:17,fontWeight:800,color:"#e2e8f0" }}>{fmt}</div>
+            </div>
+            <button onClick={onClose} style={{ background:"rgba(255,255,255,0.06)",border:"1px solid rgba(255,255,255,0.1)",color:"#64748b",fontSize:16,cursor:"pointer",borderRadius:10,width:34,height:34,display:"flex",alignItems:"center",justifyContent:"center" }}>✕</button>
+          </div>
+          {dayErrors.length === 0 ? (
+            <div style={{ textAlign:"center",padding:32,color:"#475569" }}>No errors logged this day 🎯</div>
+          ) : (
+            <div style={{ display:"flex",flexDirection:"column",gap:10 }}>
+              {dayErrors.map(err => (
+                <div key={err.id} onClick={() => { onSelectError(err); }} style={{ padding:"14px 16px",borderRadius:14,background:"rgba(255,255,255,0.04)",border:`1px solid rgba(255,255,255,0.08)`,borderLeft:`4px solid ${MASTERY_COLORS[err.masteryStage??"red"]}`,cursor:"pointer",transition:"all 0.2s" }}
+                  onMouseEnter={e=>(e.currentTarget.style.background="rgba(255,255,255,0.08)")}
+                  onMouseLeave={e=>(e.currentTarget.style.background="rgba(255,255,255,0.04)")}
+                >
+                  <div style={{ display:"flex",gap:6,marginBottom:6,flexWrap:"wrap" as const }}>
+                    <span style={{ padding:"2px 10px",borderRadius:20,fontSize:10,background:`${SUBJECT_COLORS[err.subject]||"#888"}22`,color:SUBJECT_COLORS[err.subject]||"#888",border:`1px solid ${SUBJECT_COLORS[err.subject]||"#888"}44` }}>{err.subject}</span>
+                    <span style={{ padding:"2px 10px",borderRadius:20,fontSize:10,background:`${MISTAKE_COLORS[err.mistakeType]||"#888"}22`,color:MISTAKE_COLORS[err.mistakeType]||"#888",border:`1px solid ${MISTAKE_COLORS[err.mistakeType]||"#888"}44` }}>{err.mistakeType}</span>
+                    <span style={{ padding:"2px 8px",borderRadius:20,fontSize:10,background:"rgba(255,255,255,0.04)",color:"#64748b" }}>{err.difficulty}</span>
+                  </div>
+                  <div style={{ fontSize:15,fontWeight:700,color:"#e2e8f0",marginBottom:2 }}>{err.chapter}</div>
+                  {(err as any).questionText && <div style={{ fontSize:11,color:"#64748b",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" as const }}>📋 {(err as any).questionText}</div>}
+                  <div style={{ fontSize:10,color:"#475569",marginTop:4 }}>Tap to view details →</div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function HeatCalendarLoader({ userId }: { userId: string }) {
   const [errors, setErrors] = useState<ErrorEntry[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedDate, setSelectedDate] = useState<string|null>(null);
+  const [selectedError, setSelectedError] = useState<ErrorEntry|null>(null);
 
   useEffect(() => {
     getErrors(userId).then(e => { setErrors(e); setLoading(false); });
@@ -1594,7 +1848,25 @@ function HeatCalendarLoader({ userId }: { userId: string }) {
     </div>
   );
 
-  return <HeatCalendar errors={errors} />;
+  return (
+    <>
+      {selectedDate && !selectedError && (
+        <DayErrorsModal
+          date={selectedDate}
+          errors={errors}
+          onClose={() => setSelectedDate(null)}
+          onSelectError={err => { setSelectedError(err); }}
+        />
+      )}
+      {selectedError && (
+        <ErrorDetailModal
+          err={selectedError}
+          onClose={() => setSelectedError(null)}
+        />
+      )}
+      <HeatCalendar errors={errors} onDayClick={(date: string) => setSelectedDate(date)} />
+    </>
+  );
 }
 
 // ─── NAVIGATION CONFIG ────────────────────────────────────────────────────────
@@ -1912,22 +2184,6 @@ export default function App() {
         {/* COMPACT TOP HEADER */}
         <header style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"12px 0", borderBottom:"1px solid rgba(255,255,255,0.05)", marginBottom:16, gap:10 }}>
           <div style={{ display:"flex", alignItems:"center", gap:10 }}>
-            {/* ℹ️ Info icon — replaces /3 */}
-            <button
-              onClick={() => setShowInfo(true)}
-              title="How to use ErrorVerse"
-              style={{
-                width: 34, height: 34, borderRadius: "50%",
-                background: "rgba(0,212,255,0.1)",
-                border: "1px solid rgba(0,212,255,0.3)",
-                color: "#fff",
-                fontSize: 16, fontWeight: 900,
-                cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
-                fontFamily: "serif",
-                transition: "all 0.2s",
-                flexShrink: 0,
-              }}
-            >ℹ</button>
             <span style={{ fontFamily:"'Bebas Neue',cursive", fontSize:24, letterSpacing:4, background:"linear-gradient(135deg,#00d4ff,#ff2254)", WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent" }}>ERRORVERSE</span>
           </div>
 
@@ -1938,13 +2194,27 @@ export default function App() {
               <span style={{ fontSize:12, color:streak>0?"#ffd700":"#475569", fontWeight:700 }}>{streak}d</span>
             </button>
 
-            {/* Daily progress pill */}
-            <div style={{ padding:"5px 10px", borderRadius:12, background:todayCount>=3?"rgba(34,197,94,0.12)":"rgba(0,212,255,0.08)", border:`1px solid ${todayCount>=3?"rgba(34,197,94,0.3)":"rgba(0,212,255,0.2)"}`, fontSize:11, color:todayCount>=3?"#22c55e":"#00d4ff", fontWeight:700 }}>{todayCount}/3 ✓</div>
+            {/* ℹ️ Info icon — WHERE 0/3 WAS */}
+            <button
+              onClick={() => setShowInfo(true)}
+              title="How to use ErrorVerse"
+              style={{
+                display:"flex", alignItems:"center", gap:5,
+                padding:"5px 11px", borderRadius:20,
+                background:"rgba(0,212,255,0.1)",
+                border:"1px solid rgba(0,212,255,0.3)",
+                color:"#fff", fontSize:14, fontWeight:900,
+                cursor:"pointer", fontFamily:"serif",
+                transition:"all 0.2s",
+              }}
+            >ℹ</button>
 
-            {/* XP pill */}
+            {/* XP pill with badge icon inside */}
             {xpData && (
-              <button onClick={() => setShowXPPanel(true)} style={{ padding:"5px 10px", borderRadius:12, background:"rgba(123,97,255,0.12)", border:"1px solid rgba(123,97,255,0.3)", fontSize:11, color:"#a78bfa", fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>
-                ⚡ {xpData.totalXP} · Lv{xpData.level}
+              <button onClick={() => setShowXPPanel(true)} style={{ display:"flex", alignItems:"center", gap:5, padding:"5px 10px", borderRadius:12, background:"rgba(123,97,255,0.12)", border:"1px solid rgba(123,97,255,0.3)", fontSize:11, color:"#a78bfa", fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>
+                <span>⚡</span>
+                <span>{xpData.totalXP} · Lv{xpData.level}</span>
+                <span style={{ fontSize:12 }}>🏅</span>
               </button>
             )}
 
