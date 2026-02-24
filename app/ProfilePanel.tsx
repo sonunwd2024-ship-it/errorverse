@@ -22,15 +22,41 @@ export async function saveUserProfile(userId: string, data: {
   photoURL?: string | null;
   bio?: string;
 }) {
+  // Check photo size — Firestore max doc is 1MB, base64 photo must be small
+  const photoSize = data.photoURL ? new Blob([data.photoURL]).size : 0;
+  const saveData = photoSize > 700_000
+    ? { ...data, photoURL: null }   // drop photo if too large
+    : data;
+
   try {
     await setDoc(doc(db, "userProfiles", userId), {
-      ...data,
+      displayName: saveData.displayName || "Warrior",
+      avatar: saveData.avatar || "av_luffy",
+      photoURL: saveData.photoURL ?? null,
+      bio: saveData.bio ?? "",
       updatedAt: serverTimestamp(),
     }, { merge: true });
     return true;
-  } catch (err) {
-    console.error("saveUserProfile error:", err);
-    return false;
+  } catch (err: any) {
+    console.error("saveUserProfile error:", err?.code, err?.message);
+    // If permission denied, try without photo (might be size issue)
+    if (err?.code === "permission-denied") {
+      console.error("Firestore permission denied — check security rules for userProfiles collection");
+    }
+    // Try saving just the essential fields without photo
+    try {
+      await setDoc(doc(db, "userProfiles", userId), {
+        displayName: saveData.displayName || "Warrior",
+        avatar: saveData.avatar || "av_luffy",
+        photoURL: null,
+        bio: saveData.bio ?? "",
+        updatedAt: serverTimestamp(),
+      }, { merge: true });
+      return true;
+    } catch (err2: any) {
+      console.error("saveUserProfile fallback also failed:", err2?.code, err2?.message);
+      return false;
+    }
   }
 }
 
@@ -419,8 +445,15 @@ export function ProfilePanel({ user, xpData, streak, todayCount, onClose, onLogo
         setView("main");
       }, 1200);
     } catch (err: any) {
-      setSaveError("Failed to save. Please try again.");
-      console.error(err);
+      const code = err?.code || "";
+      if (code === "permission-denied") {
+        setSaveError("Permission denied. Check Firestore rules for userProfiles.");
+      } else if (code === "resource-exhausted") {
+        setSaveError("Data too large. Try removing your photo.");
+      } else {
+        setSaveError(`Failed to save: ${err?.message || "Unknown error"}`);
+      }
+      console.error("handleSave error:", err?.code, err?.message);
     }
     setSaving(false);
   };
