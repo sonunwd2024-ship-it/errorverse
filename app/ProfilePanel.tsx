@@ -340,17 +340,18 @@ function MenuSection({ title }: { title: string }) {
 function MenuItem({ icon, label, sub, onClick, badge }: { icon:string; label:string; sub?:string; onClick?:()=>void; badge?:string|number }) {
   const [hov, setHov] = useState(false);
   return (
-    <div
+    <button
       onClick={onClick}
       onMouseEnter={() => setHov(true)}
       onMouseLeave={() => setHov(false)}
       style={{
         display:"flex", alignItems:"center", gap:14,
-        padding:"12px 14px", borderRadius:12,
-        background: hov ? "rgba(255,255,255,0.06)" : "rgba(255,255,255,0.02)",
-        border: "1px solid rgba(255,255,255,0.05)",
-        cursor: onClick ? "pointer" : "default",
-        transition: "all 0.2s",
+        padding:"12px 14px", borderRadius:12, width:"100%",
+        background: hov ? "rgba(255,255,255,0.08)" : "rgba(255,255,255,0.02)",
+        border: "1px solid rgba(255,255,255,0.06)",
+        cursor: "pointer", transition: "all 0.2s",
+        fontFamily:"inherit", textAlign:"left" as const,
+        WebkitTapHighlightColor: "transparent",
       }}
     >
       <span style={{ fontSize:20 }}>{icon}</span>
