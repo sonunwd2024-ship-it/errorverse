@@ -67,18 +67,35 @@ const DEFAULT_THEMES = [
   { accent:"#fca5a5", bg:"linear-gradient(135deg,#1a0a0a,#7f1d1d,#dc2626)", emoji:"🎭" },
 ];
 
+// ── EXPANDED QUOTES LIST ───────────────────────────────────────────────────────
 const QUOTES = [
   "Mistakes are the portals of discovery. — James Joyce",
   "An error doesn't become a mistake until you refuse to correct it.",
   "Every expert was once a beginner. — Helen Hayes",
   "The only real mistake is the one from which we learn nothing. — Henry Ford",
   "Pain is temporary. Glory is forever.",
+  "Fall seven times, stand up eight. — Japanese Proverb",
+  "Success is stumbling from failure to failure with no loss of enthusiasm. — Winston Churchill",
+  "Your mistakes do not define you. Your response to them does.",
+  "The man who never made a mistake never tried anything new. — Albert Einstein",
+  "Failure is the tuition you pay for success. — Walter Brunell",
+  "It's not how many times you fall, it's how many times you get back up.",
+  "Don't fear failure. Fear being in the same place next year as you are today.",
+  "Champions aren't made in gyms. Champions are made from something deep inside them. — Muhammad Ali",
+  "Every mistake you make is progress. Mistakes aren't bad — they teach you what not to do.",
+  "The harder you work for something, the greater you'll feel when you achieve it.",
+  "Push yourself because no one else is going to do it for you.",
+  "Doubt kills more dreams than failure ever will. — Suzy Kassem",
+  "One mistake at a time, you build a fortress of knowledge.",
+  "Errors are the proof that you are trying. Keep going.",
+  "Review your mistakes today so they cannot defeat you tomorrow.",
 ];
 
 const MISTAKE_COLORS: Record<string, string> = { Conceptual:"#00d4ff", Calculation:"#ff2254", "Silly mistake":"#ffd700", "Time pressure":"#a855f7" };
 const SUBJECT_COLORS: Record<string, string> = { Physics:"#00d4ff", Math:"#ff2254", Chemistry:"#22c55e", Other:"#f97316" };
 const STATUS_COLORS: Record<string, string> = { Completed:"#22c55e", Watching:"#00d4ff", Reading:"#ffd700" };
 const MASTERY_COLORS = { red: "#ff2254", yellow: "#ffd700", green: "#22c55e" };
+
 // ─── HXH NEN LEAGUES ─────────────────────────────────────────────────────────
 export const NEN_LEAGUES = [
   { id:"enhancer",    name:"Enhancer",    icon:"💪", color:"#f97316", minXP:0,    desc:"You boost your own power! Every mistake you log makes you stronger.",    character:"Gon Freecss",    quote:"The basics are everything." },
@@ -452,13 +469,16 @@ function StreakCalendar({ userId, streak, onClose }: { userId:string; streak:num
     </div>
   );
 }
+
+// ─── INFO PANEL (how to use) ──────────────────────────────────────────────────
+
 function InfoPanel({ onClose }: { onClose: () => void }) {
   const [page, setPage] = useState(0);
   const pages = [
     { icon:"⚡", title:"Welcome to ErrorVerse!", color:"#00d4ff", content:"ErrorVerse is like your **training journal** — but way cooler!\n\nEvery time you get a question wrong in school, you write it here. Then the app helps you fix it and never forget it again!", tip:"Think of it like catching your mistakes before they catch you in the exam! 🎯", visual:(<div style={{display:"flex",justifyContent:"center",alignItems:"center",gap:8,margin:"16px 0"}}>{[{e:"📝",l:"Write it"},{e:"→",l:""},{e:"🔁",l:"Review"},{e:"→",l:""},{e:"🏆",l:"Master it!"}].map((s,i)=>(<div key={i} style={{display:"flex",flexDirection:"column",alignItems:"center",gap:4}}><div style={{fontSize:s.e==="→"?20:32}}>{s.e}</div>{s.l&&<div style={{fontSize:9,color:"#64748b"}}>{s.l}</div>}</div>))}</div>) },
     { icon:"📝", title:"Learn Tab — Your Error Book", color:"#ff2254", content:"This is where you **write down your mistakes**!\n\nWhen you get something wrong, tap the **+ Add Error** button and fill in the subject, chapter, why you got it wrong, and the correct answer.", tip:"Be honest about WHY you made the mistake — that's the secret sauce! 🔑", visual:(<div style={{background:"rgba(255,34,84,0.1)",border:"1px solid rgba(255,34,84,0.3)",borderRadius:12,padding:12,margin:"12px 0"}}><div style={{fontSize:11,color:"#ff8099",marginBottom:6}}>Example entry:</div><div style={{fontSize:13,color:"#e2e8f0"}}>📚 Physics → Kinematics</div><div style={{fontSize:12,color:"#94a3b8",marginTop:4}}>❌ Why: Forgot to square the velocity</div><div style={{fontSize:12,color:"#22c55e",marginTop:4}}>✅ Correct: v² = u² + 2as</div></div>) },
     { icon:"🔁", title:"Review Tab — Don't Forget!", color:"#00d4ff", content:"This is the **magic part**!\n\nThe app sends your old mistakes back at the PERFECT time — just when you're about to forget. Scientists call this **Spaced Repetition** and it's the fastest way to remember anything forever!", tip:"Hit ✅ Mastered when you can solve it easily. Hit 📖 Reviewed if you still need practice! 💪", visual:(<div style={{display:"flex",gap:6,margin:"12px 0",flexWrap:"wrap" as const}}>{[{label:"Day 1",color:"#ff2254",text:"Learn it"},{label:"Day 3",color:"#ffd700",text:"Review"},{label:"Day 7",color:"#f97316",text:"Review"},{label:"Day 30",color:"#22c55e",text:"Mastered!"}].map(s=>(<div key={s.label} style={{flex:1,minWidth:60,padding:"8px 4px",borderRadius:8,background:`${s.color}18`,border:`1px solid ${s.color}44`,textAlign:"center" as const}}><div style={{fontSize:10,color:s.color,fontWeight:700}}>{s.label}</div><div style={{fontSize:10,color:"#94a3b8",marginTop:2}}>{s.text}</div></div>))}</div>) },
-    { icon:"📊", title:"Stats — See Your Progress", color:"#a855f7", content:"This shows you **cool charts and graphs** about your mistakes!\n\nYou can see which subject trips you up most, how many you fixed this week, and which chapters are your weakest spots.", tip:"The chapters with the tallest bars need the most practice! 📈", visual:(<div style={{margin:"12px 0"}}>{[{label:"Physics",pct:80,color:"#00d4ff"},{label:"Math",pct:55,color:"#ff2254"},{label:"Chemistry",pct:35,color:"#22c55e"}].map(s=>(<div key={s.label} style={{marginBottom:8}}><div style={{display:"flex",justifyContent:"space-between",fontSize:11,color:"#94a3b8",marginBottom:3}}><span>{s.label}</span><span>{s.pct}%</span></div><div style={{height:8,background:"rgba(255,255,255,0.06)",borderRadius:4,overflow:"hidden"}}><div style={{height:"100%",width:`${s.pct}%`,background:`linear-gradient(90deg,${s.color},${s.color}88)`,borderRadius:4}}/></div></div>))}</div>) },
+    { icon:"📊", title:"Stats — See Your Progress", color:"#a855f7", content:"This shows you **cool charts and graphs** about your mistakes!\n\nYou can see which subject trips you up most, how many you fixed this week, and which chapters are your weakest spots.\n\nAccess Stats by tapping **Review** then the 📊 icon inside!", tip:"The chapters with the tallest bars need the most practice! 📈", visual:(<div style={{margin:"12px 0"}}>{[{label:"Physics",pct:80,color:"#00d4ff"},{label:"Math",pct:55,color:"#ff2254"},{label:"Chemistry",pct:35,color:"#22c55e"}].map(s=>(<div key={s.label} style={{marginBottom:8}}><div style={{display:"flex",justifyContent:"space-between",fontSize:11,color:"#94a3b8",marginBottom:3}}><span>{s.label}</span><span>{s.pct}%</span></div><div style={{height:8,background:"rgba(255,255,255,0.06)",borderRadius:4,overflow:"hidden"}}><div style={{height:"100%",width:`${s.pct}%`,background:`linear-gradient(90deg,${s.color},${s.color}88)`,borderRadius:4}}/></div></div>))}</div>) },
     { icon:"🔥", title:"Heat Map — Your Activity", color:"#f97316", content:"The **Heat Map** shows every day you used the app!\n\nThe **brighter the square**, the more you studied that day. Try to make your whole calendar glow!", tip:"Green squares = active days. Try to make a long chain without any dark spots! 🟩🟩🟩", visual:(<div style={{display:"grid",gridTemplateColumns:"repeat(10,1fr)",gap:3,margin:"12px 0"}}>{[0,0,1,2,3,2,1,0,2,3,3,2,1,2,3,0,1,2,3,3,2,3,3,2,1,2,3,3,3,3].map((n,i)=>{const c=["rgba(255,255,255,0.05)","rgba(249,115,22,0.3)","rgba(249,115,22,0.6)","rgba(249,115,22,1)"];return <div key={i} style={{aspectRatio:"1",borderRadius:3,background:c[n]}}/>;})}
 </div>) },
     { icon:"🏆", title:"Rank Tab — Beat Everyone!", color:"#ffd700", content:"See where you stand against **all other students** in your Nen League!\n\nEvery week, the **top 3 warriors PROMOTE** up! The bottom 3 go back down — just like Duolingo!", tip:"The secret to ranking up? ZERO repeated mistakes! 🎯", visual:(<div style={{margin:"12px 0"}}>{[{rank:"🥇",name:"Gojo_Fan99",m:0,c:"#ffd700"},{rank:"🥈",name:"NarutoKing",m:1,c:"#c0c0c0"},{rank:"🥉",name:"You!",m:2,c:"#cd7f32"}].map(p=>(<div key={p.rank} style={{display:"flex",alignItems:"center",gap:10,padding:"8px 10px",borderRadius:8,background:`${p.c}10`,marginBottom:6}}><span style={{fontSize:18}}>{p.rank}</span><span style={{flex:1,fontSize:13,color:"#e2e8f0",fontWeight:600}}>{p.name}</span><span style={{fontSize:11,color:p.m===0?"#22c55e":"#ff8099"}}>♻ {p.m} repeats</span></div>))}</div>) },
@@ -498,6 +518,293 @@ function InfoPanel({ onClose }: { onClose: () => void }) {
           </div>
           <div style={{textAlign:"center",marginTop:12,fontSize:11,color:"#334155"}}>{page+1} / {pages.length}</div>
         </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── WELCOME PAGE (new user onboarding) ───────────────────────────────────────
+
+function WelcomePage({ onDone }: { onDone: () => void }) {
+  const [step, setStep] = useState(0);
+  const [leaving, setLeaving] = useState(false);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  // Animated star field background
+  useEffect(() => {
+    const c = canvasRef.current; if (!c) return;
+    const ctx = c.getContext("2d"); if (!ctx) return;
+    let W = c.width = window.innerWidth, H = c.height = window.innerHeight;
+    const stars = Array.from({ length: 120 }, () => ({
+      x: Math.random() * W, y: Math.random() * H,
+      r: Math.random() * 2 + 0.3,
+      speed: Math.random() * 0.4 + 0.1,
+      col: ["#00d4ff", "#ff2254", "#ffd700", "#a855f7", "#22c55e"][Math.floor(Math.random() * 5)],
+      a: Math.random() * 0.7 + 0.2,
+      pulse: Math.random() * Math.PI * 2,
+    }));
+    let raf: number, t = 0;
+    const draw = () => {
+      t += 0.02;
+      ctx.clearRect(0, 0, W, H);
+      stars.forEach(s => {
+        const alpha = s.a * (0.6 + 0.4 * Math.sin(t + s.pulse));
+        ctx.beginPath();
+        ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+        ctx.fillStyle = s.col;
+        ctx.globalAlpha = alpha;
+        ctx.fill();
+        s.y -= s.speed;
+        if (s.y < -5) { s.y = H + 5; s.x = Math.random() * W; }
+      });
+      ctx.globalAlpha = 1;
+      raf = requestAnimationFrame(draw);
+    };
+    draw();
+    const resize = () => { W = c.width = window.innerWidth; H = c.height = window.innerHeight; };
+    window.addEventListener("resize", resize);
+    return () => { cancelAnimationFrame(raf); window.removeEventListener("resize", resize); };
+  }, []);
+
+  const steps = [
+    {
+      icon: "⚡",
+      iconGlow: "#00d4ff",
+      title: "Welcome to",
+      titleHighlight: "ErrorVerse",
+      sub: "The smartest way to study",
+      desc: "Turn every mistake into a superpower. This app is your personal training ground — log errors, track progress, and never repeat the same mistake twice.",
+      visual: (
+        <div style={{ display: "flex", justifyContent: "center", gap: 20, margin: "24px 0" }}>
+          {["📝", "🔁", "🏆"].map((e, i) => (
+            <div key={i} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
+              <div style={{
+                width: 60, height: 60, borderRadius: 16,
+                background: `rgba(0,212,255,${0.1 + i * 0.05})`,
+                border: "1px solid rgba(0,212,255,0.3)",
+                display: "flex", alignItems: "center", justifyContent: "center",
+                fontSize: 28,
+                animation: `floatUp${i} 2s ease-in-out ${i * 0.3}s infinite alternate`,
+              }}>{e}</div>
+              <span style={{ fontSize: 11, color: "#64748b" }}>{["Log it", "Review it", "Own it"][i]}</span>
+            </div>
+          ))}
+        </div>
+      ),
+      color: "#00d4ff",
+    },
+    {
+      icon: "📝",
+      iconGlow: "#ff2254",
+      title: "Log Your",
+      titleHighlight: "Mistakes",
+      sub: "Every error is a lesson",
+      desc: "Whenever you get something wrong — in class, homework, or mock tests — just open ErrorVerse and tap '+ Add Error'. Fill in the subject, chapter, and what went wrong.",
+      visual: (
+        <div style={{ background: "rgba(255,34,84,0.08)", border: "1px solid rgba(255,34,84,0.25)", borderRadius: 16, padding: 16, margin: "20px 0" }}>
+          <div style={{ display: "flex", gap: 10, marginBottom: 10 }}>
+            {["Physics", "Math", "Chemistry"].map((s, i) => (
+              <div key={s} style={{ padding: "5px 12px", borderRadius: 20, fontSize: 11, fontWeight: 700, background: `${Object.values(SUBJECT_COLORS)[i]}18`, color: Object.values(SUBJECT_COLORS)[i], border: `1px solid ${Object.values(SUBJECT_COLORS)[i]}44` }}>{s}</div>
+            ))}
+          </div>
+          <div style={{ fontSize: 13, color: "#e2e8f0", marginBottom: 6 }}>📚 Chapter: Kinematics</div>
+          <div style={{ fontSize: 12, color: "#94a3b8", marginBottom: 4 }}>❌ Why: Forgot to use v² = u² + 2as</div>
+          <div style={{ fontSize: 12, color: "#22c55e" }}>✅ Fix: Always list what's given first</div>
+        </div>
+      ),
+      color: "#ff2254",
+    },
+    {
+      icon: "🔁",
+      iconGlow: "#00d4ff",
+      title: "Review at the",
+      titleHighlight: "Right Time",
+      sub: "Science-backed spaced repetition",
+      desc: "The app reminds you to review each mistake at exactly the right time — Day 1, Day 3, Day 7, Day 30. This is called Spaced Repetition and it's how top scorers actually study!",
+      visual: (
+        <div style={{ display: "flex", gap: 8, margin: "20px 0", flexWrap: "wrap" as const }}>
+          {[{ d: "Day 1", c: "#ff2254", p: 100 }, { d: "Day 3", c: "#ffd700", p: 75 }, { d: "Day 7", c: "#f97316", p: 50 }, { d: "Day 30", c: "#22c55e", p: 25 }].map(s => (
+            <div key={s.d} style={{ flex: 1, minWidth: 60, padding: "10px 8px", borderRadius: 12, background: `${s.c}12`, border: `1px solid ${s.c}33`, textAlign: "center" as const }}>
+              <div style={{ fontSize: 11, fontWeight: 800, color: s.c }}>{s.d}</div>
+              <div style={{ height: 40, display: "flex", alignItems: "flex-end", justifyContent: "center", margin: "6px 0" }}>
+                <div style={{ width: 16, height: `${s.p}%`, background: `linear-gradient(to top,${s.c},${s.c}66)`, borderRadius: 4 }} />
+              </div>
+              <div style={{ fontSize: 9, color: "#64748b" }}>review</div>
+            </div>
+          ))}
+        </div>
+      ),
+      color: "#00d4ff",
+    },
+    {
+      icon: "🏆",
+      iconGlow: "#ffd700",
+      title: "Climb the",
+      titleHighlight: "Leaderboard",
+      sub: "Compete like a champion",
+      desc: "Earn XP by logging and mastering mistakes. Climb from Enhancer 💪 all the way to Specialist ♾️ — the rarest Nen type, just like your favourite HxH characters!",
+      visual: (
+        <div style={{ margin: "16px 0" }}>
+          <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
+            {NEN_LEAGUES.slice(0, 3).map((l, i) => (
+              <div key={l.id} style={{ flex: 1, padding: "8px 6px", borderRadius: 10, background: `${l.color}12`, border: `1px solid ${l.color}33`, textAlign: "center" as const }}>
+                <div style={{ fontSize: 20 }}>{l.icon}</div>
+                <div style={{ fontSize: 9, color: l.color, fontWeight: 700, marginTop: 4 }}>{l.name}</div>
+              </div>
+            ))}
+          </div>
+          <div style={{ textAlign: "center", fontSize: 12, color: "#64748b" }}>Start → Earn XP → Level Up → ♾️</div>
+        </div>
+      ),
+      color: "#ffd700",
+    },
+    {
+      icon: "🚀",
+      iconGlow: "#22c55e",
+      title: "You're",
+      titleHighlight: "Ready!",
+      sub: "Your journey starts now",
+      desc: "Log 3 mistakes a day to build your streak 🔥. Master every error, climb the leaderboard, and become the version of yourself that never repeats mistakes.",
+      visual: (
+        <div style={{ textAlign: "center", margin: "20px 0" }}>
+          <div style={{ fontSize: 64, marginBottom: 12, animation: "spinOnce 1s ease-out" }}>🚀</div>
+          <div style={{ display: "flex", justifyContent: "center", gap: 10, flexWrap: "wrap" as const }}>
+            {["Log daily 📝", "Review smart 🔁", "Rank up 🏆", "Never repeat ♾️"].map(t => (
+              <div key={t} style={{ padding: "6px 14px", borderRadius: 20, background: "rgba(34,197,94,0.12)", border: "1px solid rgba(34,197,94,0.3)", fontSize: 12, color: "#22c55e", fontWeight: 600 }}>{t}</div>
+            ))}
+          </div>
+        </div>
+      ),
+      color: "#22c55e",
+    },
+  ];
+
+  const cur = steps[step];
+  const isLast = step === steps.length - 1;
+
+  const handleNext = () => {
+    if (isLast) {
+      setLeaving(true);
+      setTimeout(onDone, 600);
+    } else {
+      setStep(s => s + 1);
+    }
+  };
+
+  return (
+    <div style={{
+      position: "fixed", inset: 0, zIndex: 500,
+      background: "#050810",
+      display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
+      padding: 20,
+      opacity: leaving ? 0 : 1,
+      transition: "opacity 0.6s ease",
+    }}>
+      <style>{`
+        @keyframes floatUp0 { from { transform: translateY(0px); } to { transform: translateY(-8px); } }
+        @keyframes floatUp1 { from { transform: translateY(0px); } to { transform: translateY(-8px); } }
+        @keyframes floatUp2 { from { transform: translateY(0px); } to { transform: translateY(-8px); } }
+        @keyframes spinOnce { from { transform: rotate(-20deg) scale(0.5); opacity:0; } to { transform: rotate(0deg) scale(1); opacity:1; } }
+        @keyframes welcomeFadeIn { from { opacity:0; transform:translateY(30px); } to { opacity:1; transform:translateY(0); } }
+        @keyframes pulseGlow { 0%,100% { box-shadow: 0 0 20px ${cur.iconGlow}44; } 50% { box-shadow: 0 0 50px ${cur.iconGlow}88, 0 0 80px ${cur.iconGlow}33; } }
+        @keyframes orbitLeft { from { transform: translateX(0) rotate(0deg); } to { transform: translateX(-10px) rotate(360deg); } }
+        @keyframes orbitRight { from { transform: translateX(0) rotate(0deg); } to { transform: translateX(10px) rotate(-360deg); } }
+      `}</style>
+
+      {/* Star canvas bg */}
+      <canvas ref={canvasRef} style={{ position: "fixed", inset: 0, zIndex: 0, pointerEvents: "none" }} />
+
+      {/* Glow orbs */}
+      <div style={{ position: "fixed", top: "10%", left: "5%", width: 300, height: 300, borderRadius: "50%", background: `${cur.color}08`, filter: "blur(80px)", pointerEvents: "none", zIndex: 0, animation: "orbitLeft 8s ease-in-out infinite alternate" }} />
+      <div style={{ position: "fixed", bottom: "10%", right: "5%", width: 250, height: 250, borderRadius: "50%", background: `#ff225408`, filter: "blur(80px)", pointerEvents: "none", zIndex: 0, animation: "orbitRight 10s ease-in-out infinite alternate" }} />
+
+      <div style={{ position: "relative", zIndex: 1, width: "100%", maxWidth: 440, animation: "welcomeFadeIn 0.5s ease" }} key={step}>
+
+        {/* Progress dots */}
+        <div style={{ display: "flex", justifyContent: "center", gap: 8, marginBottom: 32 }}>
+          {steps.map((_, i) => (
+            <div key={i} onClick={() => setStep(i)} style={{
+              height: 4, borderRadius: 2, cursor: "pointer", transition: "all 0.3s",
+              width: i === step ? 28 : 8,
+              background: i === step ? cur.color : i < step ? `${cur.color}55` : "rgba(255,255,255,0.12)",
+            }} />
+          ))}
+        </div>
+
+        {/* Main card */}
+        <div style={{
+          background: "rgba(8,12,24,0.96)",
+          border: `1px solid ${cur.color}30`,
+          borderRadius: 28,
+          padding: "32px 28px",
+          backdropFilter: "blur(24px)",
+          boxShadow: `0 24px 80px rgba(0,0,0,0.6), 0 0 0 1px ${cur.color}15`,
+          position: "relative", overflow: "hidden",
+        }}>
+          {/* Corner glow */}
+          <div style={{ position: "absolute", top: -40, right: -40, width: 180, height: 180, borderRadius: "50%", background: `${cur.color}12`, filter: "blur(40px)", pointerEvents: "none" }} />
+
+          {/* Icon */}
+          <div style={{ textAlign: "center", marginBottom: 20 }}>
+            <div style={{
+              display: "inline-flex", width: 90, height: 90, borderRadius: "50%",
+              background: `${cur.iconGlow}15`,
+              border: `2px solid ${cur.iconGlow}40`,
+              alignItems: "center", justifyContent: "center",
+              fontSize: 44,
+              animation: "pulseGlow 2.5s ease-in-out infinite",
+            }}>{cur.icon}</div>
+          </div>
+
+          {/* Title */}
+          <div style={{ textAlign: "center", marginBottom: 8 }}>
+            <div style={{ fontSize: 13, color: "#64748b", fontWeight: 600, letterSpacing: 2, textTransform: "uppercase" as const, marginBottom: 4 }}>{cur.sub}</div>
+            <div style={{ fontSize: 32, fontFamily: "'Bebas Neue',cursive", letterSpacing: 3, lineHeight: 1.1 }}>
+              <span style={{ color: "#e2e8f0" }}>{cur.title} </span>
+              <span style={{ color: cur.color }}>{cur.titleHighlight}</span>
+            </div>
+          </div>
+
+          {/* Description */}
+          <div style={{ fontSize: 14, color: "#94a3b8", lineHeight: 1.7, textAlign: "center", marginBottom: 4 }}>{cur.desc}</div>
+
+          {/* Visual */}
+          {cur.visual}
+
+          {/* Buttons */}
+          <div style={{ display: "flex", gap: 10, marginTop: 8 }}>
+            {step > 0 && (
+              <button onClick={() => setStep(s => s - 1)} style={{
+                flex: 0, padding: "13px 18px", borderRadius: 14,
+                border: "1px solid rgba(255,255,255,0.1)",
+                background: "rgba(255,255,255,0.04)",
+                color: "#64748b", fontFamily: "inherit", fontSize: 14, cursor: "pointer",
+              }}>←</button>
+            )}
+            <button onClick={handleNext} style={{
+              flex: 1, padding: "14px", borderRadius: 14, border: "none",
+              background: `linear-gradient(135deg,${cur.color},${cur.color}99)`,
+              color: "#fff", fontFamily: "inherit", fontSize: 15, fontWeight: 800,
+              cursor: "pointer", letterSpacing: 1,
+              boxShadow: `0 8px 24px ${cur.color}44`,
+              transition: "all 0.2s",
+            }}>
+              {isLast ? "START MY JOURNEY ⚡" : "NEXT →"}
+            </button>
+          </div>
+
+          <div style={{ textAlign: "center", marginTop: 14, fontSize: 11, color: "#334155" }}>{step + 1} of {steps.length}</div>
+        </div>
+
+        {/* Skip button */}
+        {!isLast && (
+          <div style={{ textAlign: "center", marginTop: 16 }}>
+            <button onClick={() => { setLeaving(true); setTimeout(onDone, 600); }} style={{
+              background: "none", border: "none", color: "#334155", fontSize: 12,
+              cursor: "pointer", fontFamily: "inherit",
+            }}>Skip intro →</button>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -688,14 +995,21 @@ function CollectionForm({ onSubmit, onClose }: any) {
   );
 }
 
-// ─── SPACED REVISION ──────────────────────────────────────────────────────────
+// ─── SPACED REVISION (with Stats tab inside) ──────────────────────────────────
 
 function SpacedRevision({ userId, onXP }: { userId:string; onXP:(xp:number)=>void }) {
   const [dueErrors, setDueErrors] = useState<ErrorEntry[]>([]);
   const [schedule, setSchedule] = useState<{date:string;count:number}[]>([]);
   const [loading, setLoading] = useState(true);
   const [completing, setCompleting] = useState<string|null>(null);
+  const [innerTab, setInnerTab] = useState<"review"|"stats">("review");
   const { toasts, add: addToast } = useToast();
+
+  // Stats state
+  const [statsErrors, setStatsErrors] = useState<ErrorEntry[]>([]);
+  const [weeklyData, setWeeklyData] = useState<{week:string;count:number}[]>([]);
+  const [heatmap, setHeatmap] = useState<{chapter:string;subject:string;count:number}[]>([]);
+  const [statsLoading, setStatsLoading] = useState(true);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -706,6 +1020,13 @@ function SpacedRevision({ userId, onXP }: { userId:string; onXP:(xp:number)=>voi
   }, [userId]);
 
   useEffect(() => { load(); }, [load]);
+
+  useEffect(() => {
+    if (innerTab === "stats" && statsLoading) {
+      Promise.all([getErrors(userId), getWeeklyStats(userId), getChapterHeatmap(userId)])
+        .then(([e, w, h]) => { setStatsErrors(e); setWeeklyData(w); setHeatmap(h); setStatsLoading(false); });
+    }
+  }, [innerTab, userId, statsLoading]);
 
   const handleAction = async (error: ErrorEntry, action: "mastered"|"reviewed"|"skipped") => {
     if (!error.id || completing) return;
@@ -726,148 +1047,161 @@ function SpacedRevision({ userId, onXP }: { userId:string; onXP:(xp:number)=>voi
   const todayStr = new Date().toISOString().split("T")[0];
   const upcomingSchedule = schedule.filter(s => s.date > todayStr).slice(0,4);
 
-  return (
-    <div style={{ paddingBottom:40 }}>
-      <ToastContainer toasts={toasts} />
-      <div style={{ display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(130px,1fr))",gap:12,marginBottom:20 }}>
-        {[
-          { label:"Due Today",value:dueErrors.length,icon:"🎯",color:"#ff2254" },
-          { label:"Upcoming",value:schedule.filter(s=>s.date>todayStr).reduce((a,b)=>a+b.count,0),icon:"📅",color:"#00d4ff" },
-        ].map(s=>(
-          <GlassCard key={s.label} style={{ padding:16,textAlign:"center" }}>
-            <div style={{ fontSize:24 }}>{s.icon}</div>
-            <div style={{ fontSize:28,fontWeight:800,color:s.color,fontFamily:"'Bebas Neue',cursive",letterSpacing:2 }}>{s.value}</div>
-            <div style={{ fontSize:11,color:"#64748b",marginTop:2 }}>{s.label}</div>
-          </GlassCard>
-        ))}
-        {upcomingSchedule.map(s=>(
-          <GlassCard key={s.date} style={{ padding:16,textAlign:"center" }}>
-            <div style={{ fontSize:13,color:"#64748b",marginBottom:4 }}>📅 {s.date.slice(5)}</div>
-            <div style={{ fontSize:24,fontWeight:800,color:"#ffd700",fontFamily:"'Bebas Neue',cursive" }}>{s.count}</div>
-            <div style={{ fontSize:11,color:"#64748b" }}>due</div>
-          </GlassCard>
-        ))}
-      </div>
-      {loading ? <div style={{ textAlign:"center",padding:60,color:"#475569" }}>Loading revisions...</div> : (
-        dueErrors.length === 0 ? (
-          <div style={{ textAlign:"center",padding:60 }}>
-            <div style={{ fontSize:48,marginBottom:12 }}>🎉</div>
-            <div style={{ fontSize:18,fontWeight:700,color:"#22c55e",fontFamily:"'Bebas Neue',cursive",letterSpacing:2 }}>ALL DONE FOR TODAY!</div>
-            <div style={{ fontSize:13,color:"#64748b",marginTop:8 }}>Come back tomorrow to keep your streak alive.</div>
-          </div>
-        ) : (
-          <div style={{ display:"flex",flexDirection:"column",gap:14 }}>
-            {dueErrors.map(err=>(
-              <GlassCard key={err.id} style={{ padding:20,borderLeft:`3px solid ${MASTERY_COLORS[err.masteryStage??"red"]}` }}>
-                <div style={{ display:"flex",flexDirection:"column",gap:12 }}>
-                  <div style={{ display:"flex",justifyContent:"space-between",alignItems:"flex-start",flexWrap:"wrap" as const,gap:8 }}>
-                    <div style={{ flex:1 }}>
-                      <div style={{ display:"flex",gap:6,marginBottom:8,flexWrap:"wrap" as const }}>
-                        <span style={{ padding:"2px 10px",borderRadius:20,fontSize:11,background:`${SUBJECT_COLORS[err.subject]||"#888"}22`,color:SUBJECT_COLORS[err.subject]||"#888",border:`1px solid ${SUBJECT_COLORS[err.subject]||"#888"}44` }}>{err.subject}</span>
-                        <span style={{ padding:"2px 10px",borderRadius:20,fontSize:11,background:`${MISTAKE_COLORS[err.mistakeType]||"#888"}22`,color:MISTAKE_COLORS[err.mistakeType]||"#888",border:`1px solid ${MISTAKE_COLORS[err.mistakeType]||"#888"}44` }}>{err.mistakeType}</span>
-                        <span style={{ padding:"2px 10px",borderRadius:20,fontSize:11,background:"rgba(255,255,255,0.04)",color:"#64748b" }}>{err.difficulty}</span>
-                      </div>
-                      <div style={{ fontSize:16,fontWeight:700,color:"#e2e8f0",marginBottom:4 }}>{err.chapter}</div>
-                      {err.solution&&<div style={{ fontSize:12,color:"#94a3b8",marginBottom:6 }}>{err.solution}</div>}
-                      {err.formula&&<div style={{ fontSize:12,color:"#00d4ff",fontFamily:"monospace",padding:"4px 8px",background:"rgba(0,212,255,0.06)",borderRadius:6,display:"inline-block" }}>∫ {err.formula}</div>}
-                    </div>
-                    <div style={{ display:"flex",flexDirection:"column",alignItems:"flex-end",gap:8,flexShrink:0 }}>
-                      <RevisionBadge nextDate={err.nextReviewDate??""} />
-                    </div>
-                  </div>
-                  <MasteryBar level={err.masteryLevel??0} stage={err.masteryStage??"red"} />
-                  <div style={{ display:"flex",gap:8,flexWrap:"wrap" as const }}>
-                    <button disabled={!!completing} onClick={()=>handleAction(err,"mastered")} style={{ padding:"8px 16px",borderRadius:8,border:"none",background:"linear-gradient(135deg,#22c55e,#16a34a)",color:"#fff",fontFamily:"inherit",fontSize:12,fontWeight:700,cursor:"pointer",flex:1 }}>✅ Mastered (+{XP_REWARDS.masterError}xp)</button>
-                    <button disabled={!!completing} onClick={()=>handleAction(err,"reviewed")} style={{ padding:"8px 16px",borderRadius:8,border:"1px solid rgba(0,212,255,0.3)",background:"rgba(0,212,255,0.08)",color:"#00d4ff",fontFamily:"inherit",fontSize:12,fontWeight:700,cursor:"pointer",flex:1 }}>📖 Reviewed (+{XP_REWARDS.reviewError}xp)</button>
-                    <button disabled={!!completing} onClick={()=>handleAction(err,"skipped")} style={{ padding:"8px 14px",borderRadius:8,border:"1px solid rgba(255,255,255,0.1)",background:"rgba(255,255,255,0.04)",color:"#64748b",fontFamily:"inherit",fontSize:12,cursor:"pointer" }}>⏭ Skip</button>
-                  </div>
-                </div>
-              </GlassCard>
-            ))}
-          </div>
-        )
-      )}
-    </div>
-  );
-}
-
-// ─── ANALYTICS ────────────────────────────────────────────────────────────────
-
-function Analytics({ userId }: { userId:string }) {
-  const [errors, setErrors] = useState<ErrorEntry[]>([]);
-  const [weeklyData, setWeeklyData] = useState<{week:string;count:number}[]>([]);
-  const [heatmap, setHeatmap] = useState<{chapter:string;subject:string;count:number}[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    Promise.all([getErrors(userId), getWeeklyStats(userId), getChapterHeatmap(userId)])
-      .then(([e, w, h]) => { setErrors(e); setWeeklyData(w); setHeatmap(h); setLoading(false); });
-  }, [userId]);
-
-  const mc = errors.reduce((a:any,e)=>{a[e.mistakeType]=(a[e.mistakeType]||0)+1;return a;},{});
-  const sc = errors.reduce((a:any,e)=>{a[e.subject]=(a[e.subject]||0)+1;return a;},{});
-  const dc = errors.reduce((a:any,e)=>{a[e.difficulty]=(a[e.difficulty]||0)+1;return a;},{});
+  // Stats calculations
+  const mc = statsErrors.reduce((a:any,e)=>{a[e.mistakeType]=(a[e.mistakeType]||0)+1;return a;},{});
+  const sc = statsErrors.reduce((a:any,e)=>{a[e.subject]=(a[e.subject]||0)+1;return a;},{});
+  const dc = statsErrors.reduce((a:any,e)=>{a[e.difficulty]=(a[e.difficulty]||0)+1;return a;},{});
   const pieData=Object.entries(mc).map(([k,v])=>({label:k,value:v as number,color:MISTAKE_COLORS[k]||"#888"}));
   const barData=Object.entries(sc).map(([k,v])=>({label:k,value:v as number,color:SUBJECT_COLORS[k]||"#888"}));
   const diffData=Object.entries(dc).map(([k,v])=>({label:k,value:v as number,color:k==="Hard"?"#ff2254":k==="Medium"?"#ffd700":"#22c55e"}));
   const mr=Object.entries(mc).sort((a:any,b:any)=>b[1]-a[1])[0] as [string,number]|undefined;
-  const masteredCount=errors.filter(e=>e.masteryStage==="green").length;
-  const masteryPct=errors.length>0?Math.round((masteredCount/errors.length)*100):0;
-
-  if(loading) return <div style={{ textAlign:"center",padding:80,color:"#475569" }}>Loading analytics...</div>;
+  const masteredCount=statsErrors.filter(e=>e.masteryStage==="green").length;
+  const masteryPct=statsErrors.length>0?Math.round((masteredCount/statsErrors.length)*100):0;
 
   return (
     <div style={{ paddingBottom:40 }}>
-      <div style={{ display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(130px,1fr))",gap:12,marginBottom:24 }}>
+      <ToastContainer toasts={toasts} />
+
+      {/* Inner tab switcher */}
+      <div style={{ display:"flex", gap:8, marginBottom:20, background:"rgba(255,255,255,0.03)", padding:5, borderRadius:14, border:"1px solid rgba(255,255,255,0.07)" }}>
         {[
-          { label:"Total Errors",value:errors.length,icon:"📝",color:"#00d4ff" },
-          { label:"Mastered",value:masteredCount,icon:"🟢",color:"#22c55e" },
-          { label:"Mastery Rate",value:`${masteryPct}%`,icon:"📊",color:"#a855f7" },
-          { label:"This Week",value:weeklyData.slice(-1)[0]?.count??0,icon:"📅",color:"#ff2254" },
-        ].map(s=>(
-          <GlassCard key={s.label} style={{ padding:16,textAlign:"center" }}>
-            <div style={{ fontSize:22 }}>{s.icon}</div>
-            <div style={{ fontSize:26,fontWeight:800,color:s.color,fontFamily:"'Bebas Neue',cursive",letterSpacing:2 }}>{s.value}</div>
-            <div style={{ fontSize:11,color:"#64748b",marginTop:2 }}>{s.label}</div>
-          </GlassCard>
-        ))}
+          { id:"review", label:"Review", icon:"🔁", color:"#00d4ff" },
+          { id:"stats",  label:"Stats",  icon:"📊", color:"#a855f7" },
+        ].map(t => {
+          const isActive = innerTab === t.id;
+          return (
+            <button key={t.id} onClick={() => setInnerTab(t.id as any)} style={{
+              flex:1, padding:"10px", borderRadius:10, border:"none",
+              background: isActive ? `${t.color}18` : "transparent",
+              outline: isActive ? `1px solid ${t.color}44` : "none",
+              color: isActive ? t.color : "#475569",
+              fontFamily:"inherit", fontSize:13, fontWeight:700,
+              cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:6,
+              transition:"all 0.2s",
+            }}>
+              <span>{t.icon}</span><span>{t.label}</span>
+            </button>
+          );
+        })}
       </div>
-      {mr&&<div style={{ padding:"12px 16px",borderRadius:10,marginBottom:20,background:"rgba(255,34,84,0.1)",border:"1px solid rgba(255,34,84,0.3)",display:"flex",alignItems:"center",gap:10 }}>
-        <span style={{ fontSize:20 }}>⚠️</span>
-        <span style={{ fontSize:13,color:"#ff8099" }}>Most repeated mistake type: <strong style={{ color:"#ff2254" }}>{mr[0]}</strong> ({mr[1]} errors)</span>
-      </div>}
-      <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:16,marginBottom:16 }}>
-        <GlassCard style={{ padding:20 }}>
-          <h3 style={{ margin:"0 0 16px",fontSize:13,color:"#64748b",letterSpacing:1 }}>MISTAKE TYPE BREAKDOWN</h3>
-          {pieData.length>0?(
-            <div style={{ display:"flex",alignItems:"center",gap:20,flexWrap:"wrap" as const }}>
-              <PieChart data={pieData}/>
-              <div style={{ display:"flex",flexDirection:"column",gap:8 }}>
-                {pieData.map(d=>(
-                  <div key={d.label} style={{ display:"flex",alignItems:"center",gap:8 }}>
-                    <div style={{ width:10,height:10,borderRadius:"50%",background:d.color }}/>
-                    <span style={{ fontSize:12,color:"#94a3b8" }}>{d.label}</span>
-                    <span style={{ fontSize:12,color:d.color,fontWeight:700 }}>{d.value}</span>
-                  </div>
+
+      {/* REVIEW TAB */}
+      {innerTab === "review" && (
+        <>
+          <div style={{ display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(130px,1fr))",gap:12,marginBottom:20 }}>
+            {[
+              { label:"Due Today",value:dueErrors.length,icon:"🎯",color:"#ff2254" },
+              { label:"Upcoming",value:schedule.filter(s=>s.date>todayStr).reduce((a,b)=>a+b.count,0),icon:"📅",color:"#00d4ff" },
+            ].map(s=>(
+              <GlassCard key={s.label} style={{ padding:16,textAlign:"center" }}>
+                <div style={{ fontSize:24 }}>{s.icon}</div>
+                <div style={{ fontSize:28,fontWeight:800,color:s.color,fontFamily:"'Bebas Neue',cursive",letterSpacing:2 }}>{s.value}</div>
+                <div style={{ fontSize:11,color:"#64748b",marginTop:2 }}>{s.label}</div>
+              </GlassCard>
+            ))}
+            {upcomingSchedule.map(s=>(
+              <GlassCard key={s.date} style={{ padding:16,textAlign:"center" }}>
+                <div style={{ fontSize:13,color:"#64748b",marginBottom:4 }}>📅 {s.date.slice(5)}</div>
+                <div style={{ fontSize:24,fontWeight:800,color:"#ffd700",fontFamily:"'Bebas Neue',cursive" }}>{s.count}</div>
+                <div style={{ fontSize:11,color:"#64748b" }}>due</div>
+              </GlassCard>
+            ))}
+          </div>
+          {loading ? <div style={{ textAlign:"center",padding:60,color:"#475569" }}>Loading revisions...</div> : (
+            dueErrors.length === 0 ? (
+              <div style={{ textAlign:"center",padding:60 }}>
+                <div style={{ fontSize:48,marginBottom:12 }}>🎉</div>
+                <div style={{ fontSize:18,fontWeight:700,color:"#22c55e",fontFamily:"'Bebas Neue',cursive",letterSpacing:2 }}>ALL DONE FOR TODAY!</div>
+                <div style={{ fontSize:13,color:"#64748b",marginTop:8 }}>Come back tomorrow to keep your streak alive.</div>
+              </div>
+            ) : (
+              <div style={{ display:"flex",flexDirection:"column",gap:14 }}>
+                {dueErrors.map(err=>(
+                  <GlassCard key={err.id} style={{ padding:20,borderLeft:`3px solid ${MASTERY_COLORS[err.masteryStage??"red"]}` }}>
+                    <div style={{ display:"flex",flexDirection:"column",gap:12 }}>
+                      <div style={{ display:"flex",justifyContent:"space-between",alignItems:"flex-start",flexWrap:"wrap" as const,gap:8 }}>
+                        <div style={{ flex:1 }}>
+                          <div style={{ display:"flex",gap:6,marginBottom:8,flexWrap:"wrap" as const }}>
+                            <span style={{ padding:"2px 10px",borderRadius:20,fontSize:11,background:`${SUBJECT_COLORS[err.subject]||"#888"}22`,color:SUBJECT_COLORS[err.subject]||"#888",border:`1px solid ${SUBJECT_COLORS[err.subject]||"#888"}44` }}>{err.subject}</span>
+                            <span style={{ padding:"2px 10px",borderRadius:20,fontSize:11,background:`${MISTAKE_COLORS[err.mistakeType]||"#888"}22`,color:MISTAKE_COLORS[err.mistakeType]||"#888",border:`1px solid ${MISTAKE_COLORS[err.mistakeType]||"#888"}44` }}>{err.mistakeType}</span>
+                            <span style={{ padding:"2px 10px",borderRadius:20,fontSize:11,background:"rgba(255,255,255,0.04)",color:"#64748b" }}>{err.difficulty}</span>
+                          </div>
+                          <div style={{ fontSize:16,fontWeight:700,color:"#e2e8f0",marginBottom:4 }}>{err.chapter}</div>
+                          {err.solution&&<div style={{ fontSize:12,color:"#94a3b8",marginBottom:6 }}>{err.solution}</div>}
+                          {err.formula&&<div style={{ fontSize:12,color:"#00d4ff",fontFamily:"monospace",padding:"4px 8px",background:"rgba(0,212,255,0.06)",borderRadius:6,display:"inline-block" }}>∫ {err.formula}</div>}
+                        </div>
+                        <div style={{ display:"flex",flexDirection:"column",alignItems:"flex-end",gap:8,flexShrink:0 }}>
+                          <RevisionBadge nextDate={err.nextReviewDate??""} />
+                        </div>
+                      </div>
+                      <MasteryBar level={err.masteryLevel??0} stage={err.masteryStage??"red"} />
+                      <div style={{ display:"flex",gap:8,flexWrap:"wrap" as const }}>
+                        <button disabled={!!completing} onClick={()=>handleAction(err,"mastered")} style={{ padding:"8px 16px",borderRadius:8,border:"none",background:"linear-gradient(135deg,#22c55e,#16a34a)",color:"#fff",fontFamily:"inherit",fontSize:12,fontWeight:700,cursor:"pointer",flex:1 }}>✅ Mastered (+{XP_REWARDS.masterError}xp)</button>
+                        <button disabled={!!completing} onClick={()=>handleAction(err,"reviewed")} style={{ padding:"8px 16px",borderRadius:8,border:"1px solid rgba(0,212,255,0.3)",background:"rgba(0,212,255,0.08)",color:"#00d4ff",fontFamily:"inherit",fontSize:12,fontWeight:700,cursor:"pointer",flex:1 }}>📖 Reviewed (+{XP_REWARDS.reviewError}xp)</button>
+                        <button disabled={!!completing} onClick={()=>handleAction(err,"skipped")} style={{ padding:"8px 14px",borderRadius:8,border:"1px solid rgba(255,255,255,0.1)",background:"rgba(255,255,255,0.04)",color:"#64748b",fontFamily:"inherit",fontSize:12,cursor:"pointer" }}>⏭ Skip</button>
+                      </div>
+                    </div>
+                  </GlassCard>
                 ))}
               </div>
-            </div>
-          ):<div style={{ color:"#475569",fontSize:13,textAlign:"center",padding:40 }}>No data yet</div>}
-        </GlassCard>
-        <GlassCard style={{ padding:20 }}>
-          <h3 style={{ margin:"0 0 16px",fontSize:13,color:"#64748b",letterSpacing:1 }}>SUBJECT DISTRIBUTION</h3>
-          {barData.length>0?<BarChart data={barData}/>:<div style={{ color:"#475569",fontSize:13,textAlign:"center",padding:40 }}>No data yet</div>}
-          {diffData.length>0&&<><h3 style={{ margin:"20px 0 12px",fontSize:13,color:"#64748b",letterSpacing:1 }}>DIFFICULTY SPLIT</h3><BarChart data={diffData}/></>}
-        </GlassCard>
-      </div>
-      <GlassCard style={{ padding:20,marginBottom:16 }}>
-        <h3 style={{ margin:"0 0 16px",fontSize:13,color:"#64748b",letterSpacing:1 }}>📈 WEEKLY ERROR TREND</h3>
-        <LineChart data={weeklyData}/>
-      </GlassCard>
-      <GlassCard style={{ padding:20 }}>
-        <h3 style={{ margin:"0 0 16px",fontSize:13,color:"#64748b",letterSpacing:1 }}>🔥 WEAK CHAPTER HEATMAP</h3>
-        {heatmap.length>0?<HeatmapBar chapters={heatmap}/>:<div style={{ color:"#475569",fontSize:13,textAlign:"center",padding:40 }}>No data yet</div>}
-      </GlassCard>
+            )
+          )}
+        </>
+      )}
+
+      {/* STATS TAB (inside Review) */}
+      {innerTab === "stats" && (
+        <div style={{ paddingBottom:20 }}>
+          {statsLoading ? <div style={{ textAlign:"center",padding:80,color:"#475569" }}><div style={{ fontSize:40,marginBottom:12 }}>📊</div><div style={{ fontSize:14 }}>Loading stats...</div></div> : (
+            <>
+              <div style={{ display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(130px,1fr))",gap:12,marginBottom:24 }}>
+                {[
+                  { label:"Total Errors",value:statsErrors.length,icon:"📝",color:"#00d4ff" },
+                  { label:"Mastered",value:masteredCount,icon:"🟢",color:"#22c55e" },
+                  { label:"Mastery Rate",value:`${masteryPct}%`,icon:"📊",color:"#a855f7" },
+                  { label:"This Week",value:weeklyData.slice(-1)[0]?.count??0,icon:"📅",color:"#ff2254" },
+                ].map(s=>(
+                  <GlassCard key={s.label} style={{ padding:16,textAlign:"center" }}>
+                    <div style={{ fontSize:22 }}>{s.icon}</div>
+                    <div style={{ fontSize:26,fontWeight:800,color:s.color,fontFamily:"'Bebas Neue',cursive",letterSpacing:2 }}>{s.value}</div>
+                    <div style={{ fontSize:11,color:"#64748b",marginTop:2 }}>{s.label}</div>
+                  </GlassCard>
+                ))}
+              </div>
+              {mr&&<div style={{ padding:"12px 16px",borderRadius:10,marginBottom:20,background:"rgba(255,34,84,0.1)",border:"1px solid rgba(255,34,84,0.3)",display:"flex",alignItems:"center",gap:10 }}>
+                <span style={{ fontSize:20 }}>⚠️</span>
+                <span style={{ fontSize:13,color:"#ff8099" }}>Most repeated mistake type: <strong style={{ color:"#ff2254" }}>{mr[0]}</strong> ({mr[1]} errors)</span>
+              </div>}
+              <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:16,marginBottom:16 }}>
+                <GlassCard style={{ padding:20 }}>
+                  <h3 style={{ margin:"0 0 16px",fontSize:13,color:"#64748b",letterSpacing:1 }}>MISTAKE TYPE BREAKDOWN</h3>
+                  {pieData.length>0?(
+                    <div style={{ display:"flex",alignItems:"center",gap:20,flexWrap:"wrap" as const }}>
+                      <PieChart data={pieData}/>
+                      <div style={{ display:"flex",flexDirection:"column",gap:8 }}>
+                        {pieData.map(d=>(<div key={d.label} style={{ display:"flex",alignItems:"center",gap:8 }}><div style={{ width:10,height:10,borderRadius:"50%",background:d.color }}/><span style={{ fontSize:12,color:"#94a3b8" }}>{d.label}</span><span style={{ fontSize:12,color:d.color,fontWeight:700 }}>{d.value}</span></div>))}
+                      </div>
+                    </div>
+                  ):<div style={{ color:"#475569",fontSize:13,textAlign:"center",padding:40 }}>No data yet</div>}
+                </GlassCard>
+                <GlassCard style={{ padding:20 }}>
+                  <h3 style={{ margin:"0 0 16px",fontSize:13,color:"#64748b",letterSpacing:1 }}>SUBJECT DISTRIBUTION</h3>
+                  {barData.length>0?<BarChart data={barData}/>:<div style={{ color:"#475569",fontSize:13,textAlign:"center",padding:40 }}>No data yet</div>}
+                  {diffData.length>0&&<><h3 style={{ margin:"20px 0 12px",fontSize:13,color:"#64748b",letterSpacing:1 }}>DIFFICULTY SPLIT</h3><BarChart data={diffData}/></>}
+                </GlassCard>
+              </div>
+              <GlassCard style={{ padding:20,marginBottom:16 }}>
+                <h3 style={{ margin:"0 0 16px",fontSize:13,color:"#64748b",letterSpacing:1 }}>📈 WEEKLY ERROR TREND</h3>
+                <LineChart data={weeklyData}/>
+              </GlassCard>
+              <GlassCard style={{ padding:20 }}>
+                <h3 style={{ margin:"0 0 16px",fontSize:13,color:"#64748b",letterSpacing:1 }}>🔥 WEAK CHAPTER HEATMAP</h3>
+                {heatmap.length>0?<HeatmapBar chapters={heatmap}/>:<div style={{ color:"#475569",fontSize:13,textAlign:"center",padding:40 }}>No data yet</div>}
+              </GlassCard>
+            </>
+          )}
+        </div>
+      )}
     </div>
   );
 }
@@ -1075,7 +1409,7 @@ function AnimeCollection({ userId, onEntryAdded }: { userId:string; onEntryAdded
   );
 }
 
-// ─── LEADERBOARD ─────────────────────────────────────────────────────────────
+// ─── LEADERBOARD (with avatars) ───────────────────────────────────────────────
 
 function Leaderboard({ currentUserId }: { currentUserId: string }) {
   const [leaders, setLeaders] = useState<any[]>([]);
@@ -1104,7 +1438,6 @@ function Leaderboard({ currentUserId }: { currentUserId: string }) {
 
   return (
     <div style={{ paddingBottom: 40 }}>
-      {/* My Nen type badge */}
       {myEntry && (
         <div style={{ padding: "14px 16px", borderRadius: 14, marginBottom: 20, background: `${myNen.color}12`, border: `1px solid ${myNen.color}30`, display: "flex", alignItems: "center", gap: 14 }}>
           <span style={{ fontSize: 36 }}>{myNen.icon}</span>
@@ -1117,7 +1450,6 @@ function Leaderboard({ currentUserId }: { currentUserId: string }) {
         </div>
       )}
 
-      {/* League selector tabs */}
       <div style={{ marginBottom: 16 }}>
         <div style={{ fontSize: 11, color: "#64748b", letterSpacing: 1, marginBottom: 10 }}>⚡ SELECT NEN LEAGUE DIVISION</div>
         <div style={{ display: "flex", gap: 6, overflowX: "auto", paddingBottom: 6 }}>
@@ -1135,7 +1467,6 @@ function Leaderboard({ currentUserId }: { currentUserId: string }) {
         </div>
       </div>
 
-      {/* Active league info */}
       <div style={{ padding: "16px", borderRadius: 14, marginBottom: 16, background: `linear-gradient(135deg,${activeLg.color}15,transparent)`, border: `1px solid ${activeLg.color}30` }}>
         <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 8 }}>
           <span style={{ fontSize: 32 }}>{activeLg.icon}</span>
@@ -1150,7 +1481,6 @@ function Leaderboard({ currentUserId }: { currentUserId: string }) {
         </div>
       </div>
 
-      {/* Stats row */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 10, marginBottom: 20 }}>
         {[{ icon: "👥", label: "In League", value: leagueLeaders.length, color: "#00d4ff" }, { icon: "🏅", label: "My Rank", value: myRank > 0 ? `#${myRank}` : "—", color: "#a855f7" }, { icon: "⬆", label: "Promote at", value: "Top 3", color: "#22c55e" }].map(s => (
           <div key={s.label} style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 12, padding: "12px 10px", textAlign: "center" }}>
@@ -1174,11 +1504,29 @@ function Leaderboard({ currentUserId }: { currentUserId: string }) {
           <div style={{ fontSize: 11, color: "#22c55e", fontWeight: 700, letterSpacing: 1, marginBottom: 10 }}>⬆ PROMOTION ZONE (Top 3)</div>
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             {leagueLeaders.map((l: any, i: number) => {
-              const uid = l.userId ?? l.id, profile = profiles[uid], name = profile?.displayName || l.displayName || "Warrior";
-              const isMe = uid === currentUserId, isMedal = i < 3, isDemotion = i >= leagueLeaders.length - 3 && leagueLeaders.length > 5;
+              const uid = l.userId ?? l.id;
+              const profile = profiles[uid];
+              const name = profile?.displayName || l.displayName || "Warrior";
+              const isMe = uid === currentUserId;
+              const isMedal = i < 3;
+              const isDemotion = i >= leagueLeaders.length - 3 && leagueLeaders.length > 5;
+              // Avatar: get from profile
+              const avatarKey = profile?.avatar || "av_luffy";
+              const photoURL = profile?.photoURL || null;
+
               return (
                 <div key={uid} style={{ padding: "14px 16px", borderRadius: 14, display: "flex", alignItems: "center", gap: 14, background: isMe ? "rgba(123,97,255,0.12)" : isMedal ? `${RANK_COLORS[i]}08` : "rgba(255,255,255,0.03)", border: isMe ? "1px solid rgba(123,97,255,0.35)" : isMedal ? `1px solid ${RANK_COLORS[i]}30` : "1px solid rgba(255,255,255,0.06)", position: "relative" as const }}>
-                  <div style={{ fontSize: isMedal ? 26 : 14, minWidth: 36, textAlign: "center", color: isMedal ? RANK_COLORS[i] : "#475569", fontWeight: 800, fontFamily: "'Bebas Neue',cursive", flexShrink: 0 }}>{isMedal ? MEDALS[i] : `#${i + 1}`}</div>
+
+                  {/* Rank */}
+                  <div style={{ fontSize: isMedal ? 26 : 14, minWidth: 36, textAlign: "center", color: isMedal ? RANK_COLORS[i] : "#475569", fontWeight: 800, fontFamily: "'Bebas Neue',cursive", flexShrink: 0 }}>
+                    {isMedal ? MEDALS[i] : `#${i + 1}`}
+                  </div>
+
+                  {/* Avatar */}
+                  <div style={{ flexShrink: 0 }}>
+                    <AvatarDisplay avatar={avatarKey} photoURL={photoURL} displayName={name} size={40} />
+                  </div>
+
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" as const }}>
                       <span style={{ fontSize: 15, fontWeight: 700, color: isMe ? "#a78bfa" : "#e2e8f0" }}>{name}{isMe ? " (You)" : ""}</span>
@@ -1205,6 +1553,7 @@ function Leaderboard({ currentUserId }: { currentUserId: string }) {
     </div>
   );
 }
+
 // ─── AI TAB LOADER ─────────────────────────────────────────────────────────────
 
 function AITabLoader({ userId }: { userId: string }) {
@@ -1249,19 +1598,19 @@ function HeatCalendarLoader({ userId }: { userId: string }) {
 }
 
 // ─── NAVIGATION CONFIG ────────────────────────────────────────────────────────
+// Changes: Heat moved to PRIMARY_TABS icon collection, Watch moved to SECONDARY_TABS
 
 const PRIMARY_TABS = [
-  { id:"errors",      label:"Learn",   icon:"📝", color:"#ff2254", glow:"rgba(255,34,84,0.5)" },
-  { id:"revision",    label:"Review",  icon:"🔁", color:"#00d4ff", glow:"rgba(0,212,255,0.5)" },
-  { id:"analytics",   label:"Stats",   icon:"📊", color:"#a855f7", glow:"rgba(168,85,247,0.5)" },
-  { id:"leaderboard", label:"Rank",    icon:"🏆", color:"#ffd700", glow:"rgba(255,215,0,0.5)" },
-  { id:"collection",  label:"Watch",   icon:"🎌", color:"#f97316", glow:"rgba(249,115,22,0.5)" },
+  { id:"errors",      label:"Learn",      icon:"📝", color:"#ff2254", glow:"rgba(255,34,84,0.5)" },
+  { id:"revision",    label:"Review",     icon:"🔁", color:"#00d4ff", glow:"rgba(0,212,255,0.5)" },
+  { id:"leaderboard", label:"Rank",       icon:"🏆", color:"#ffd700", glow:"rgba(255,215,0,0.5)" },
+  { id:"heatmap",     label:"Heat",       icon:"🔥", color:"#f97316", glow:"rgba(249,115,22,0.5)" },
+  { id:"achievements",label:"Badges",     icon:"🏅", color:"#22c55e", glow:"rgba(34,197,94,0.5)" },
 ];
 
 const SECONDARY_TABS = [
-  { id:"achievements", label:"Badges", icon:"🏅", color:"#22c55e", glow:"rgba(34,197,94,0.5)" },
-  { id:"ai",           label:"AI Hub", icon:"🤖", color:"#a855f7", glow:"rgba(168,85,247,0.5)" },
-  { id:"heatmap",      label:"Heat",   icon:"🔥", color:"#f97316", glow:"rgba(249,115,22,0.5)" },
+  { id:"collection",  label:"Watch",  icon:"🎌", color:"#a855f7", glow:"rgba(168,85,247,0.5)" },
+  { id:"ai",          label:"AI Hub", icon:"🤖", color:"#a855f7", glow:"rgba(168,85,247,0.5)" },
 ];
 
 function BottomNav({ active, setActive }: { active:string; setActive:(t:string)=>void }) {
@@ -1272,15 +1621,10 @@ function BottomNav({ active, setActive }: { active:string; setActive:(t:string)=
 
   return (
     <>
-      {/* Backdrop when More is open */}
       {showMore && (
-        <div
-          style={{ position:"fixed", inset:0, zIndex:99 }}
-          onClick={() => setShowMore(false)}
-        />
+        <div style={{ position:"fixed", inset:0, zIndex:99 }} onClick={() => setShowMore(false)} />
       )}
 
-      {/* Secondary tabs floating panel */}
       {showMore && (
         <div style={{
           position:"fixed", bottom:68, left:0, right:0, zIndex:100,
@@ -1297,27 +1641,15 @@ function BottomNav({ active, setActive }: { active:string; setActive:(t:string)=
             {SECONDARY_TABS.map(t => {
               const isActive = active === t.id;
               return (
-                <button
-                  key={t.id}
-                  onClick={() => { setActive(t.id); setShowMore(false); }}
-                  style={{
-                    display:"flex", flexDirection:"column", alignItems:"center", gap:5,
-                    padding:"10px 18px", borderRadius:14, border:"none",
-                    background: isActive ? `${t.color}18` : "rgba(255,255,255,0.04)",
-                    outline: isActive ? `1px solid ${t.color}44` : "1px solid rgba(255,255,255,0.06)",
-                    cursor:"pointer", fontFamily:"inherit", transition:"all 0.2s",
-                  }}
-                >
-                  <span style={{
-                    fontSize:26, lineHeight:1,
-                    filter: isActive ? `drop-shadow(0 0 10px ${t.color})` : "none",
-                    transition:"filter 0.2s",
-                  }}>{t.icon}</span>
-                  <span style={{
-                    fontSize:10, fontWeight: isActive ? 800 : 500,
-                    color: isActive ? t.color : "#64748b",
-                    letterSpacing:0.3,
-                  }}>{t.label}</span>
+                <button key={t.id} onClick={() => { setActive(t.id); setShowMore(false); }} style={{
+                  display:"flex", flexDirection:"column", alignItems:"center", gap:5,
+                  padding:"10px 18px", borderRadius:14, border:"none",
+                  background: isActive ? `${t.color}18` : "rgba(255,255,255,0.04)",
+                  outline: isActive ? `1px solid ${t.color}44` : "1px solid rgba(255,255,255,0.06)",
+                  cursor:"pointer", fontFamily:"inherit", transition:"all 0.2s",
+                }}>
+                  <span style={{ fontSize:26, lineHeight:1, filter: isActive ? `drop-shadow(0 0 10px ${t.color})` : "none", transition:"filter 0.2s" }}>{t.icon}</span>
+                  <span style={{ fontSize:10, fontWeight: isActive ? 800 : 500, color: isActive ? t.color : "#64748b", letterSpacing:0.3 }}>{t.label}</span>
                 </button>
               );
             })}
@@ -1325,7 +1657,6 @@ function BottomNav({ active, setActive }: { active:string; setActive:(t:string)=
         </div>
       )}
 
-      {/* Main bottom nav */}
       <nav style={{
         position:"fixed", bottom:0, left:0, right:0, zIndex:101,
         height:64,
@@ -1337,19 +1668,14 @@ function BottomNav({ active, setActive }: { active:string; setActive:(t:string)=
         {PRIMARY_TABS.map(t => {
           const isActive = active === t.id;
           return (
-            <button
-              key={t.id}
-              onClick={() => { setActive(t.id); setShowMore(false); }}
-              style={{
-                flex:1, display:"flex", flexDirection:"column", alignItems:"center",
-                justifyContent:"center", gap:3,
-                border:"none", background:"transparent",
-                cursor:"pointer", fontFamily:"inherit",
-                position:"relative", padding:"6px 2px 8px",
-                transition:"all 0.15s",
-              }}
-            >
-              {/* Top accent line */}
+            <button key={t.id} onClick={() => { setActive(t.id); setShowMore(false); }} style={{
+              flex:1, display:"flex", flexDirection:"column", alignItems:"center",
+              justifyContent:"center", gap:3,
+              border:"none", background:"transparent",
+              cursor:"pointer", fontFamily:"inherit",
+              position:"relative", padding:"6px 2px 8px",
+              transition:"all 0.15s",
+            }}>
               <div style={{
                 position:"absolute", top:0, left:"50%", transform:"translateX(-50%)",
                 width: isActive ? 32 : 0,
@@ -1358,15 +1684,12 @@ function BottomNav({ active, setActive }: { active:string; setActive:(t:string)=
                 boxShadow: isActive ? `0 2px 12px ${t.glow}` : "none",
                 transition:"width 0.25s ease, box-shadow 0.25s ease",
               }} />
-
               <span style={{
-                fontSize: isActive ? 24 : 21,
-                lineHeight:1,
+                fontSize: isActive ? 24 : 21, lineHeight:1,
                 filter: isActive ? `drop-shadow(0 0 10px ${t.glow})` : "none",
                 transition:"all 0.2s",
                 transform: isActive ? "translateY(-1px)" : "none",
               }}>{t.icon}</span>
-
               <span style={{
                 fontSize:9.5, fontWeight: isActive ? 800 : 400,
                 color: isActive ? t.color : "#3d4d63",
@@ -1376,19 +1699,15 @@ function BottomNav({ active, setActive }: { active:string; setActive:(t:string)=
           );
         })}
 
-        {/* More / secondary tab button */}
-        <button
-          onClick={() => setShowMore(s => !s)}
-          style={{
-            flex:1, display:"flex", flexDirection:"column", alignItems:"center",
-            justifyContent:"center", gap:3,
-            border:"none", background:"transparent",
-            cursor:"pointer", fontFamily:"inherit",
-            position:"relative", padding:"6px 2px 8px",
-            transition:"all 0.15s",
-          }}
-        >
-          {/* Top accent when secondary active */}
+        {/* More button */}
+        <button onClick={() => setShowMore(s => !s)} style={{
+          flex:1, display:"flex", flexDirection:"column", alignItems:"center",
+          justifyContent:"center", gap:3,
+          border:"none", background:"transparent",
+          cursor:"pointer", fontFamily:"inherit",
+          position:"relative", padding:"6px 2px 8px",
+          transition:"all 0.15s",
+        }}>
           <div style={{
             position:"absolute", top:0, left:"50%", transform:"translateX(-50%)",
             width: isSecondaryActive ? 32 : 0,
@@ -1399,34 +1718,14 @@ function BottomNav({ active, setActive }: { active:string; setActive:(t:string)=
           }} />
 
           {isSecondaryActive ? (
-            /* Show active secondary tab icon */
             <>
-              <span style={{
-                fontSize:24, lineHeight:1,
-                filter: `drop-shadow(0 0 10px ${(activeTab as any)?.glow ?? "#64748b"})`,
-                transform:"translateY(-1px)",
-              }}>{activeTab?.icon}</span>
-              <span style={{
-                fontSize:9.5, fontWeight:800,
-                color: activeTab?.color ?? "#64748b",
-                letterSpacing:0.2,
-              }}>{activeTab?.label}</span>
+              <span style={{ fontSize:24, lineHeight:1, filter: `drop-shadow(0 0 10px ${(activeTab as any)?.glow ?? "#64748b"})`, transform:"translateY(-1px)" }}>{activeTab?.icon}</span>
+              <span style={{ fontSize:9.5, fontWeight:800, color: activeTab?.color ?? "#64748b", letterSpacing:0.2 }}>{activeTab?.label}</span>
             </>
           ) : (
-            /* Show More button */
             <>
-              <span style={{
-                fontSize:20, lineHeight:1,
-                color: showMore ? "#94a3b8" : "#3d4d63",
-                transform: showMore ? "rotate(45deg)" : "none",
-                transition:"all 0.25s ease",
-                display:"block",
-              }}>⊕</span>
-              <span style={{
-                fontSize:9.5, fontWeight:400,
-                color: showMore ? "#94a3b8" : "#3d4d63",
-                letterSpacing:0.2, transition:"color 0.15s",
-              }}>More</span>
+              <span style={{ fontSize:20, lineHeight:1, color: showMore ? "#94a3b8" : "#3d4d63", transform: showMore ? "rotate(45deg)" : "none", transition:"all 0.25s ease", display:"block" }}>⊕</span>
+              <span style={{ fontSize:9.5, fontWeight:400, color: showMore ? "#94a3b8" : "#3d4d63", letterSpacing:0.2, transition:"color 0.15s" }}>More</span>
             </>
           )}
         </button>
@@ -1448,11 +1747,13 @@ export default function App() {
 
   const [showProfile, setShowProfile] = useState(false);
   const [showXPPanel, setShowXPPanel] = useState(false);
+  const [showInfo, setShowInfo] = useState(false);
+  const [showWelcome, setShowWelcome] = useState(false);
   const [userAvatar, setUserAvatar] = useState("av_luffy");
   const [userPhoto, setUserPhoto] = useState<string|null>(null);
   const [displayName, setDisplayName] = useState("");
+  const [isNewUser, setIsNewUser] = useState(false);
 
-  // ── Update leaderboard with latest profile data ────────────────────────
   const syncLeaderboard = useCallback(async (uid: string, name: string, stk: number) => {
     try {
       const errors = await getErrors(uid);
@@ -1467,27 +1768,27 @@ export default function App() {
     if (data.displayName) setDisplayName(data.displayName);
     if (data.avatar) setUserAvatar(data.avatar);
     if (data.photoURL !== undefined) setUserPhoto(data.photoURL ?? null);
-    // Sync to leaderboard immediately with new name
     if (user) {
       await syncLeaderboard(user.uid, data.displayName || displayName, streak);
     }
   }, [user, displayName, streak, syncLeaderboard]);
 
-  const loadStats = useCallback(async (uid: string, name: string) => {
+  const loadStats = useCallback(async (uid: string, name: string, isNew?: boolean) => {
     const [s, t, xp] = await Promise.all([getStreak(uid), getTodayEntryCount(uid), getUserXP(uid)]);
     setStreak(s); setTodayCount(t); setXpData(xp);
-    // Load saved profile
     const profile = await loadUserProfile(uid);
     if (profile) {
       const resolvedName = profile.displayName || name;
       if (profile.displayName) setDisplayName(profile.displayName);
       if (profile.avatar) setUserAvatar(profile.avatar);
       if (profile.photoURL !== undefined) setUserPhoto(profile.photoURL ?? null);
-      // Sync leaderboard with stored profile name
       await syncLeaderboard(uid, resolvedName, s);
     } else {
-      // First time — sync with auth name
       await syncLeaderboard(uid, name, s);
+    }
+    // Show welcome for brand new users (no XP data yet)
+    if (isNew || (!xp && !profile)) {
+      setShowWelcome(true);
     }
   }, [syncLeaderboard]);
 
@@ -1514,7 +1815,9 @@ export default function App() {
       if (u) {
         const name = u.displayName || u.email?.split("@")[0] || "Warrior";
         setDisplayName(name);
-        loadStats(u.uid, name);
+        // Detect new users: check if metadata shows account was just created
+        const isNew = u.metadata?.creationTime === u.metadata?.lastSignInTime;
+        loadStats(u.uid, name, isNew);
       }
     });
     return () => unsub();
@@ -1541,15 +1844,14 @@ export default function App() {
       `}</style>
       <Particles/>
       <div style={{ position:"relative", zIndex:1 }}>
-        <AuthScreen onLogin={u => { setUser(u); const name = u.displayName||u.email?.split("@")[0]||"Warrior"; setDisplayName(name); loadStats(u.uid, name); }} />
+        <AuthScreen onLogin={u => { setUser(u); const name = u.displayName||u.email?.split("@")[0]||"Warrior"; setDisplayName(name); loadStats(u.uid, name, true); }} />
       </div>
     </div>
   );
 
   const PAGE_TITLES: Record<string,{title:string;sub:string;color:string}> = {
     errors:       { title:"DAILY ERROR BOOK",  sub:"errors",       color:"#ff2254" },
-    revision:     { title:"SPACED REVISION",   sub:"revision",     color:"#00d4ff" },
-    analytics:    { title:"ANALYTICS",         sub:"analytics",    color:"#a855f7" },
+    revision:     { title:"REVIEW & STATS",    sub:"revision",     color:"#00d4ff" },
     achievements: { title:"ACHIEVEMENTS",      sub:"achievements", color:"#ffd700" },
     collection:   { title:"ANIME COLLECTION",  sub:"collection",   color:"#a855f7" },
     leaderboard:  { title:"LEADERBOARD",       sub:"leaderboard",  color:"#ffd700" },
@@ -1576,6 +1878,8 @@ export default function App() {
       <ToastContainer toasts={toasts}/>
       {xpPopup && <XPPopup xp={xpPopup} onDone={()=>setXpPopup(null)}/>}
       {showCal && <StreakCalendar userId={user.uid} streak={streak} onClose={()=>setShowCal(false)}/>}
+      {showInfo && <InfoPanel onClose={() => setShowInfo(false)} />}
+      {showWelcome && <WelcomePage onDone={() => setShowWelcome(false)} />}
 
       {showProfile && (
         <ProfilePanel
@@ -1608,7 +1912,22 @@ export default function App() {
         {/* COMPACT TOP HEADER */}
         <header style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"12px 0", borderBottom:"1px solid rgba(255,255,255,0.05)", marginBottom:16, gap:10 }}>
           <div style={{ display:"flex", alignItems:"center", gap:10 }}>
-            <span style={{ fontSize:22 }}>⚡</span>
+            {/* ℹ️ Info icon — replaces /3 */}
+            <button
+              onClick={() => setShowInfo(true)}
+              title="How to use ErrorVerse"
+              style={{
+                width: 34, height: 34, borderRadius: "50%",
+                background: "rgba(0,212,255,0.1)",
+                border: "1px solid rgba(0,212,255,0.3)",
+                color: "#fff",
+                fontSize: 16, fontWeight: 900,
+                cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
+                fontFamily: "serif",
+                transition: "all 0.2s",
+                flexShrink: 0,
+              }}
+            >ℹ</button>
             <span style={{ fontFamily:"'Bebas Neue',cursive", fontSize:24, letterSpacing:4, background:"linear-gradient(135deg,#00d4ff,#ff2254)", WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent" }}>ERRORVERSE</span>
           </div>
 
@@ -1639,9 +1958,16 @@ export default function App() {
           </div>
         </header>
 
-        {/* Scrolling quote */}
-        <div style={{ marginBottom:12, overflow:"hidden" }}>
-          <span style={{ fontSize:11, color:"#334155", fontStyle:"italic" }}>"{QUOTES[quoteIdx]}"</span>
+        {/* Scrolling quote — bold white, clearly readable */}
+        <div style={{ marginBottom:14, overflow:"hidden", minHeight:22 }}>
+          <span style={{
+            fontSize:13,
+            color:"#ffffff",
+            fontWeight:700,
+            fontStyle:"italic",
+            letterSpacing:0.3,
+            textShadow:"0 0 20px rgba(0,212,255,0.3)",
+          }}>"{QUOTES[quoteIdx]}"</span>
         </div>
 
         {/* Page banners */}
@@ -1662,7 +1988,6 @@ export default function App() {
         {/* Tab content */}
         {activeTab==="errors"       && <ErrorBook userId={user.uid} onEntryAdded={handleEntryAdded}/>}
         {activeTab==="revision"     && <SpacedRevision userId={user.uid} onXP={handleXPGained}/>}
-        {activeTab==="analytics"    && <Analytics userId={user.uid}/>}
         {activeTab==="achievements" && <BadgesPanel earned={xpData?.badges??[]}/>}
         {activeTab==="collection"   && <AnimeCollection userId={user.uid} onEntryAdded={handleEntryAdded}/>}
         {activeTab==="leaderboard"  && <Leaderboard currentUserId={user.uid}/>}
@@ -1670,7 +1995,7 @@ export default function App() {
         {activeTab==="heatmap"      && <HeatCalendarLoader userId={user.uid}/>}
       </div>
 
-      {/* Redesigned bottom nav */}
+      {/* Bottom nav */}
       <BottomNav active={activeTab} setActive={setActiveTab} />
     </div>
   );
