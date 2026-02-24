@@ -363,7 +363,7 @@ function MenuItem({ icon, label, sub, onClick, badge }: { icon:string; label:str
         <span style={{ fontSize:11, padding:"2px 8px", borderRadius:10, background:"rgba(255,34,84,0.2)", color:"#ff2254", fontWeight:700 }}>{badge}</span>
       )}
       <span style={{ fontSize:16, color:"#334155" }}>›</span>
-    </div>
+    </button>
   );
 }
 
