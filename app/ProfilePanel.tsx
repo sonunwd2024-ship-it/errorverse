@@ -4,7 +4,6 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { db, auth } from "../lib/firebase";
 import { doc, setDoc, getDoc, serverTimestamp, collection, getDocs, deleteDoc, query, where } from "firebase/firestore";
 import {
-
   updatePassword,
   sendEmailVerification,
   sendPasswordResetEmail,
@@ -22,11 +21,8 @@ export async function saveUserProfile(userId: string, data: {
   photoURL?: string | null;
   bio?: string;
 }) {
-  // Check photo size — Firestore max doc is 1MB, base64 photo must be small
   const photoSize = data.photoURL ? new Blob([data.photoURL]).size : 0;
-  const saveData = photoSize > 700_000
-    ? { ...data, photoURL: null }   // drop photo if too large
-    : data;
+  const saveData = photoSize > 700_000 ? { ...data, photoURL: null } : data;
 
   try {
     await setDoc(doc(db, "userProfiles", userId), {
@@ -39,11 +35,6 @@ export async function saveUserProfile(userId: string, data: {
     return true;
   } catch (err: any) {
     console.error("saveUserProfile error:", err?.code, err?.message);
-    // If permission denied, try without photo (might be size issue)
-    if (err?.code === "permission-denied") {
-      console.error("Firestore permission denied — check security rules for userProfiles collection");
-    }
-    // Try saving just the essential fields without photo
     try {
       await setDoc(doc(db, "userProfiles", userId), {
         displayName: saveData.displayName || "Warrior",
@@ -77,100 +68,75 @@ export async function loadUserProfile(userId: string) {
 }
 
 // ─── ANIME AVATAR CATALOG ─────────────────────────────────────────────────────
-// Real anime themed avatars with distinct visual identities
 
 export const AVATARS = [
-  // ONE PIECE
   { id:"av_luffy",    emoji:"🏴‍☠️", label:"Luffy",       color:"#FF4444", bg:"linear-gradient(135deg,#7f1d1d,#dc2626)",    series:"One Piece",    style:"⚡ STRAW HAT" },
   { id:"av_zoro",     emoji:"⚔️",   label:"Zoro",        color:"#22c55e", bg:"linear-gradient(135deg,#14532d,#16a34a)",    series:"One Piece",    style:"🗡 3-SWORD" },
   { id:"av_nami",     emoji:"🌩️",   label:"Nami",        color:"#f97316", bg:"linear-gradient(135deg,#7c2d12,#ea580c)",    series:"One Piece",    style:"⚡ NAVIGATOR" },
   { id:"av_sanji",    emoji:"🔥",   label:"Sanji",       color:"#fbbf24", bg:"linear-gradient(135deg,#78350f,#d97706)",    series:"One Piece",    style:"🦵 BLACK LEG" },
   { id:"av_shanks",   emoji:"👑",   label:"Shanks",      color:"#dc2626", bg:"linear-gradient(135deg,#450a0a,#b91c1c)",    series:"One Piece",    style:"🌊 YONKO" },
   { id:"av_ace",      emoji:"🔥",   label:"Ace",         color:"#f97316", bg:"linear-gradient(135deg,#431407,#c2410c)",    series:"One Piece",    style:"🔥 FIRE FIST" },
-  // NARUTO
   { id:"av_naruto",   emoji:"🦊",   label:"Naruto",      color:"#fb923c", bg:"linear-gradient(135deg,#7c2d12,#f97316)",    series:"Naruto",       style:"☯ NINE-TAILS" },
   { id:"av_sasuke",   emoji:"⚡",   label:"Sasuke",      color:"#8b5cf6", bg:"linear-gradient(135deg,#1e1b4b,#7c3aed)",    series:"Naruto",       style:"👁 SHARINGAN" },
   { id:"av_itachi",   emoji:"🌙",   label:"Itachi",      color:"#a78bfa", bg:"linear-gradient(135deg,#0f0a1a,#4c1d95)",    series:"Naruto",       style:"🪽 MANGEKYOU" },
   { id:"av_minato",   emoji:"⚡",   label:"Minato",      color:"#fde68a", bg:"linear-gradient(135deg,#713f12,#ca8a04)",    series:"Naruto",       style:"🌀 4TH HOKAGE" },
   { id:"av_madara",   emoji:"🌑",   label:"Madara",      color:"#dc2626", bg:"linear-gradient(135deg,#1c1917,#7f1d1d)",    series:"Naruto",       style:"☯ UCHIHA" },
-  // AOT
   { id:"av_eren",     emoji:"🪖",   label:"Eren",        color:"#78716c", bg:"linear-gradient(135deg,#1c1917,#44403c)",    series:"AOT",          style:"💀 TITAN" },
   { id:"av_mikasa",   emoji:"🔴",   label:"Mikasa",      color:"#ef4444", bg:"linear-gradient(135deg,#7f1d1d,#b91c1c)",    series:"AOT",          style:"🗡 ACKERMAN" },
   { id:"av_levi",     emoji:"🧹",   label:"Levi",        color:"#94a3b8", bg:"linear-gradient(135deg,#0f172a,#334155)",    series:"AOT",          style:"⚡ CAPTAIN" },
   { id:"av_armin",    emoji:"💡",   label:"Armin",       color:"#fde68a", bg:"linear-gradient(135deg,#713f12,#b45309)",    series:"AOT",          style:"🧠 STRATEGIST" },
-  // DEMON SLAYER
   { id:"av_tanjiro",  emoji:"💧",   label:"Tanjiro",     color:"#0ea5e9", bg:"linear-gradient(135deg,#0c4a6e,#0284c7)",    series:"Demon Slayer", style:"🌊 WATER BREATH" },
   { id:"av_nezuko",   emoji:"🎋",   label:"Nezuko",      color:"#f9a8d4", bg:"linear-gradient(135deg,#500724,#be185d)",    series:"Demon Slayer", style:"🌸 BLOOD DEMON" },
   { id:"av_zenitsu",  emoji:"⚡",   label:"Zenitsu",     color:"#fde68a", bg:"linear-gradient(135deg,#713f12,#d97706)",    series:"Demon Slayer", style:"⚡ THUNDER" },
   { id:"av_rengoku",  emoji:"🔥",   label:"Rengoku",     color:"#f97316", bg:"linear-gradient(135deg,#7c2d12,#dc2626)",    series:"Demon Slayer", style:"🔥 FLAME PILLAR" },
   { id:"av_douma",    emoji:"🌸",   label:"Douma",       color:"#fb7185", bg:"linear-gradient(135deg,#4a044e,#9d174d)",    series:"Demon Slayer", style:"🌸 UPPER MOON" },
-  // JJK
   { id:"av_gojo",     emoji:"♾️",   label:"Gojo",        color:"#ffffff", bg:"linear-gradient(135deg,#0a0a0a,#1e40af)",    series:"JJK",          style:"∞ INFINITY" },
   { id:"av_yuji",     emoji:"👊",   label:"Yuji",        color:"#ff2254", bg:"linear-gradient(135deg,#7f1d1d,#dc2626)",    series:"JJK",          style:"💪 DIVERGENT" },
   { id:"av_megumi",   emoji:"🐾",   label:"Megumi",      color:"#38bdf8", bg:"linear-gradient(135deg,#0c4a6e,#1d4ed8)",    series:"JJK",          style:"🐾 TEN SHADOWS" },
   { id:"av_sukuna",   emoji:"☯️",   label:"Sukuna",      color:"#ff2254", bg:"linear-gradient(135deg,#450a0a,#991b1b)",    series:"JJK",          style:"👹 KING OF CURSES" },
   { id:"av_nobara",   emoji:"🔨",   label:"Nobara",      color:"#fbbf24", bg:"linear-gradient(135deg,#78350f,#b45309)",    series:"JJK",          style:"🔩 STRAW DOLL" },
-  // DEATH NOTE
   { id:"av_light",    emoji:"📓",   label:"Light",       color:"#fbbf24", bg:"linear-gradient(135deg,#713f12,#b45309)",    series:"Death Note",   style:"🖊 KIRA" },
   { id:"av_l",        emoji:"🍰",   label:"L",           color:"#e2e8f0", bg:"linear-gradient(135deg,#0a0a0a,#1f2937)",    series:"Death Note",   style:"🧠 DETECTIVE" },
   { id:"av_ryuk",     emoji:"🍎",   label:"Ryuk",        color:"#6366f1", bg:"linear-gradient(135deg,#1e1b4b,#312e81)",    series:"Death Note",   style:"😈 SHINIGAMI" },
-  // SOLO LEVELING
   { id:"av_jinwoo",   emoji:"🗡️",   label:"Sung Jinwoo", color:"#818cf8", bg:"linear-gradient(135deg,#1e1b4b,#4338ca)",    series:"Solo Leveling", style:"👤 SHADOW MONARCH" },
   { id:"av_beru",     emoji:"🐜",   label:"Beru",        color:"#22c55e", bg:"linear-gradient(135deg,#14532d,#166534)",    series:"Solo Leveling", style:"🐜 SHADOW KNIGHT" },
-  // CHAINSAW MAN
   { id:"av_denji",    emoji:"🪚",   label:"Denji",       color:"#fca5a5", bg:"linear-gradient(135deg,#7f1d1d,#b91c1c)",    series:"Chainsaw Man", style:"🪚 CHAINSAW DEVIL" },
   { id:"av_power",    emoji:"🩸",   label:"Power",       color:"#ff2254", bg:"linear-gradient(135deg,#450a0a,#dc2626)",    series:"Chainsaw Man", style:"🩸 BLOOD DEVIL" },
   { id:"av_aki",      emoji:"⛩️",   label:"Aki",         color:"#38bdf8", bg:"linear-gradient(135deg,#0c1a4e,#1d4ed8)",    series:"Chainsaw Man", style:"⛩ FUTURE DEVIL" },
-  // HxH
   { id:"av_gon",      emoji:"🎣",   label:"Gon",         color:"#84cc16", bg:"linear-gradient(135deg,#1a2e05,#4d7c0f)",    series:"HxH",          style:"⚡ JAJANKEN" },
   { id:"av_killua",   emoji:"⚡",   label:"Killua",      color:"#7dd3fc", bg:"linear-gradient(135deg,#0c1a4e,#0e7490)",    series:"HxH",          style:"⚡ GODSPEED" },
   { id:"av_hisoka",   emoji:"🃏",   label:"Hisoka",      color:"#f43f5e", bg:"linear-gradient(135deg,#4a044e,#be185d)",    series:"HxH",          style:"🃏 BUNGEE GUM" },
   { id:"av_meruem",   emoji:"👑",   label:"Meruem",      color:"#a855f7", bg:"linear-gradient(135deg,#1e1b4b,#4c1d95)",    series:"HxH",          style:"👑 CHIMERA ANT" },
-  // DRAGON BALL
   { id:"av_goku",     emoji:"🐉",   label:"Goku",        color:"#f59e0b", bg:"linear-gradient(135deg,#78350f,#d97706)",    series:"Dragon Ball",  style:"⚡ ULTRA INSTINCT" },
   { id:"av_vegeta",   emoji:"👸",   label:"Vegeta",      color:"#a855f7", bg:"linear-gradient(135deg,#1e1b4b,#7c3aed)",    series:"Dragon Ball",  style:"💎 SUPER SAIYAN" },
   { id:"av_broly",    emoji:"💚",   label:"Broly",       color:"#22c55e", bg:"linear-gradient(135deg,#14532d,#15803d)",    series:"Dragon Ball",  style:"💪 LEGENDARY" },
-  // MHA
   { id:"av_deku",     emoji:"💪",   label:"Deku",        color:"#22d3ee", bg:"linear-gradient(135deg,#0c4a6e,#0e7490)",    series:"MHA",          style:"☀️ ONE FOR ALL" },
   { id:"av_bakugo",   emoji:"💥",   label:"Bakugo",      color:"#f97316", bg:"linear-gradient(135deg,#7c2d12,#c2410c)",    series:"MHA",          style:"💥 EXPLOSION" },
   { id:"av_todoroki", emoji:"❄️",   label:"Todoroki",    color:"#38bdf8", bg:"linear-gradient(135deg,#0c4a6e,#1e40af)",    series:"MHA",          style:"🔥❄ HALF-COLD" },
-  // FMA
   { id:"av_ed",       emoji:"⚙️",   label:"Edward",      color:"#fcd34d", bg:"linear-gradient(135deg,#713f12,#b45309)",    series:"FMA",          style:"⚗ FULLMETAL" },
   { id:"av_roy",      emoji:"🔥",   label:"Roy Mustang", color:"#dc2626", bg:"linear-gradient(135deg,#7f1d1d,#b91c1c)",    series:"FMA",          style:"🔥 FLAME ALCH" },
-  // MANHWA / MANHWA
   { id:"av_baam",     emoji:"🌀",   label:"Baam",        color:"#38bdf8", bg:"linear-gradient(135deg,#0c1a4e,#0284c7)",    series:"Tower of God", style:"🌀 IRREGULAR" },
   { id:"av_xiao",     emoji:"🔥",   label:"Xiao Yan",    color:"#f97316", bg:"linear-gradient(135deg,#7c2d12,#ea580c)",    series:"Battle Through", style:"🔥 HEAVENLY FLAME" },
   { id:"av_wanglin",  emoji:"⚡",   label:"Wang Lin",    color:"#a855f7", bg:"linear-gradient(135deg,#1e1b4b,#4c1d95)",    series:"Renegade",     style:"⚡ CELESTIAL" },
   { id:"av_mubai",    emoji:"🌑",   label:"Mu Bai",      color:"#94a3b8", bg:"linear-gradient(135deg,#0f172a,#334155)",    series:"Martial Peak",  style:"🗡 PEAK WARRIOR" },
-  // SPY x FAMILY
   { id:"av_anya",     emoji:"🥜",   label:"Anya",        color:"#f9a8d4", bg:"linear-gradient(135deg,#4a044e,#86198f)",    series:"Spy x Family", style:"🧠 TELEPATH" },
   { id:"av_loid",     emoji:"🕵️",   label:"Loid",        color:"#6366f1", bg:"linear-gradient(135deg,#1e1b4b,#4338ca)",    series:"Spy x Family", style:"🎭 SPY" },
-  // RE:ZERO
   { id:"av_rem",      emoji:"💙",   label:"Rem",         color:"#3b82f6", bg:"linear-gradient(135deg,#1e1b4b,#1d4ed8)",    series:"Re:Zero",      style:"💙 ONI" },
   { id:"av_subaru",   emoji:"♻️",   label:"Subaru",      color:"#94a3b8", bg:"linear-gradient(135deg,#0f172a,#1e293b)",    series:"Re:Zero",      style:"♻ RETURN BY DEATH" },
-  // OVERLORD
   { id:"av_ainz",     emoji:"💀",   label:"Ainz",        color:"#a78bfa", bg:"linear-gradient(135deg,#0f0a1a,#4c1d95)",    series:"Overlord",     style:"💀 SORCERER KING" },
-  // VINLAND
   { id:"av_thorfinn", emoji:"🪓",   label:"Thorfinn",    color:"#93c5fd", bg:"linear-gradient(135deg,#1e3a5f,#1d4ed8)",    series:"Vinland Saga", style:"🪓 ASKELADD" },
   { id:"av_askeladd", emoji:"⚔️",   label:"Askeladd",   color:"#94a3b8", bg:"linear-gradient(135deg,#1c1917,#374151)",    series:"Vinland Saga", style:"⚡ MERCENARY" },
-  // BERSERK
   { id:"av_guts",     emoji:"🗡️",   label:"Guts",        color:"#d6d3d1", bg:"linear-gradient(135deg,#1c1917,#292524)",    series:"Berserk",      style:"⚔ BLACK SWORDSMAN" },
   { id:"av_griffith", emoji:"🦅",   label:"Griffith",    color:"#fde68a", bg:"linear-gradient(135deg,#713f12,#ca8a04)",    series:"Berserk",      style:"🌙 FEMTO" },
-  // SAO
   { id:"av_kirito",   emoji:"🗡️",   label:"Kirito",      color:"#1e40af", bg:"linear-gradient(135deg,#1e1b4b,#1d4ed8)",    series:"SAO",          style:"⚔ DUAL BLADE" },
   { id:"av_asuna",    emoji:"⚡",   label:"Asuna",       color:"#ff6b9d", bg:"linear-gradient(135deg,#4a044e,#be185d)",    series:"SAO",          style:"⚡ LIGHTNING FLASH" },
-  // FAIRY TAIL
   { id:"av_natsu",    emoji:"🔥",   label:"Natsu",       color:"#f97316", bg:"linear-gradient(135deg,#7c2d12,#ea580c)",    series:"Fairy Tail",   style:"🐉 DRAGON SLAYER" },
   { id:"av_erza",     emoji:"⚔️",   label:"Erza",        color:"#ef4444", bg:"linear-gradient(135deg,#7f1d1d,#b91c1c)",    series:"Fairy Tail",   style:"🛡 SCARLET" },
-  // KONOSUBA
   { id:"av_kazuma",   emoji:"😅",   label:"Kazuma",      color:"#94a3b8", bg:"linear-gradient(135deg,#0f172a,#1e293b)",    series:"Konosuba",     style:"🎲 ADVENTURER" },
   { id:"av_aqua",     emoji:"💧",   label:"Aqua",        color:"#38bdf8", bg:"linear-gradient(135deg,#0c4a6e,#0284c7)",    series:"Konosuba",     style:"💧 GODDESS" },
-  // 7 DEADLY SINS
   { id:"av_meliodas", emoji:"🐷",   label:"Meliodas",    color:"#22c55e", bg:"linear-gradient(135deg,#14532d,#15803d)",    series:"7DS",          style:"🐉 DRAGON SIN" },
   { id:"av_escanor",  emoji:"☀️",   label:"Escanor",     color:"#fde68a", bg:"linear-gradient(135deg,#713f12,#d97706)",    series:"7DS",          style:"☀ LION SIN" },
-  // TENSEI SLIME
   { id:"av_rimuru",   emoji:"🧪",   label:"Rimuru",      color:"#06b6d4", bg:"linear-gradient(135deg,#0c4a6e,#0e7490)",    series:"Slime",        style:"🌀 DEMON LORD" },
-  // BLACK CLOVER
   { id:"av_asta",     emoji:"⬛",   label:"Asta",        color:"#94a3b8", bg:"linear-gradient(135deg,#0f172a,#334155)",    series:"Black Clover", style:"⬛ ANTI-MAGIC" },
   { id:"av_yami",     emoji:"🌑",   label:"Yami",        color:"#1f2937", bg:"linear-gradient(135deg,#030712,#111827)",    series:"Black Clover", style:"🌑 DARK MAGIC" },
 ];
@@ -245,32 +211,19 @@ export function AvatarDisplay({ avatar, photoURL, displayName, size = 40, style 
         src={photoURL}
         alt={displayName || "avatar"}
         style={{
-          width: size,
-          height: size,
-          borderRadius: "50%",
-          objectFit: "cover",
-          flexShrink: 0,
-          border: `2px solid ${av.color}55`,
-          ...style,
+          width: size, height: size, borderRadius: "50%",
+          objectFit: "cover", flexShrink: 0,
+          border: `2px solid ${av.color}55`, ...style,
         }}
       />
     );
   }
   return (
     <div style={{
-      width: size,
-      height: size,
-      borderRadius: "50%",
-      background: av.bg,
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-      fontSize: size * 0.44,
-      flexShrink: 0,
-      border: `2px solid ${av.color}44`,
-      position: "relative",
-      overflow: "hidden",
-      ...style,
+      width: size, height: size, borderRadius: "50%",
+      background: av.bg, display: "flex", alignItems: "center",
+      justifyContent: "center", fontSize: size * 0.44, flexShrink: 0,
+      border: `2px solid ${av.color}44`, position: "relative", overflow: "hidden", ...style,
     }}>
       <span style={{ lineHeight: 1 }}>{av.emoji}</span>
     </div>
@@ -283,13 +236,10 @@ function Overlay({ children, onClose }: { children: React.ReactNode; onClose: ()
   return (
     <div
       style={{
-        position: "fixed", inset: 0,
-        background: "rgba(0,0,0,0.88)",
-        backdropFilter: "blur(10px)",
-        zIndex: 300,
+        position: "fixed", inset: 0, background: "rgba(0,0,0,0.88)",
+        backdropFilter: "blur(10px)", zIndex: 300,
         display: "flex", alignItems: "center", justifyContent: "center",
-        padding: 16,
-        overflowY: "auto",
+        padding: 16, overflowY: "auto",
       }}
       onClick={e => { if (e.target === e.currentTarget) onClose(); }}
     >
@@ -301,11 +251,8 @@ function Overlay({ children, onClose }: { children: React.ReactNode; onClose: ()
 function Glass({ children, style = {} }: any) {
   return (
     <div style={{
-      background: "rgba(255,255,255,0.04)",
-      backdropFilter: "blur(12px)",
-      border: "1px solid rgba(255,255,255,0.08)",
-      borderRadius: 14,
-      ...style,
+      background: "rgba(255,255,255,0.04)", backdropFilter: "blur(12px)",
+      border: "1px solid rgba(255,255,255,0.08)", borderRadius: 14, ...style,
     }}>
       {children}
     </div>
@@ -315,16 +262,10 @@ function Glass({ children, style = {} }: any) {
 function Panel({ children, wide = false }: { children: React.ReactNode; wide?: boolean }) {
   return (
     <div style={{
-      width: "100%",
-      maxWidth: wide ? 560 : 440,
-      maxHeight: "94vh",
-      overflowY: "auto",
-      scrollbarWidth: "none" as any,
-      background: "rgba(8,12,24,0.97)",
-      backdropFilter: "blur(20px)",
-      border: "1px solid rgba(255,255,255,0.08)",
-      borderRadius: 20,
-      padding: 24,
+      width: "100%", maxWidth: wide ? 560 : 440, maxHeight: "94vh",
+      overflowY: "auto", scrollbarWidth: "none" as any,
+      background: "rgba(8,12,24,0.97)", backdropFilter: "blur(20px)",
+      border: "1px solid rgba(255,255,255,0.08)", borderRadius: 20, padding: 24,
     }}>
       {children}
     </div>
@@ -392,7 +333,6 @@ export function ProfilePanel({ user, xpData, streak, todayCount, onClose, onLogo
   const [notifications, setNotifications] = useState({ streakReminder:true, revisionDue:true, weeklyReport:false, badgeEarned:true });
   const fileRef = useRef<HTMLInputElement>(null);
 
-  // ── Load from Firebase on open ────────────────────────────────────────────
   useEffect(() => {
     loadUserProfile(user.uid).then(profile => {
       if (!profile) return;
@@ -406,7 +346,6 @@ export function ProfilePanel({ user, xpData, streak, todayCount, onClose, onLogo
   const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    // Compress/resize before storing to keep Firestore size manageable
     const reader = new FileReader();
     reader.onload = ev => {
       const img = new Image();
@@ -427,39 +366,23 @@ export function ProfilePanel({ user, xpData, streak, todayCount, onClose, onLogo
   };
 
   const handleSave = async () => {
-    setSaving(true);
-    setSaveError("");
+    setSaving(true); setSaveError("");
     try {
-      const profileData = {
-        displayName: editName.trim() || "Warrior",
-        avatar: selectedAvatar,
-        photoURL: photoURL,
-        bio: editBio,
-      };
+      const profileData = { displayName: editName.trim() || "Warrior", avatar: selectedAvatar, photoURL, bio: editBio };
       const ok = await saveUserProfile(user.uid, profileData);
       if (!ok) throw new Error("Save failed");
-      // Update parent component state immediately
       onUpdateProfile(profileData);
       setSaved(true);
-      setTimeout(() => {
-        setSaved(false);
-        setView("main");
-      }, 1200);
+      setTimeout(() => { setSaved(false); setView("main"); }, 1200);
     } catch (err: any) {
       const code = err?.code || "";
-      if (code === "permission-denied") {
-        setSaveError("Permission denied. Check Firestore rules for userProfiles.");
-      } else if (code === "resource-exhausted") {
-        setSaveError("Data too large. Try removing your photo.");
-      } else {
-        setSaveError(`Failed to save: ${err?.message || "Unknown error"}`);
-      }
-      console.error("handleSave error:", err?.code, err?.message);
+      if (code === "permission-denied") setSaveError("Permission denied. Check Firestore rules.");
+      else if (code === "resource-exhausted") setSaveError("Data too large. Try removing your photo.");
+      else setSaveError(`Failed to save: ${err?.message || "Unknown error"}`);
     }
     setSaving(false);
   };
 
-  // ── Computed ──────────────────────────────────────────────────────────────
   const currentLevel  = LEVELS.find((l:any) => l.level === (xpData?.level ?? 1)) ?? LEVELS[0];
   const nextLevel     = LEVELS.find((l:any) => l.level === (xpData?.level ?? 1) + 1);
   const progress      = nextLevel ? (((xpData?.totalXP??0) - currentLevel.minXP) / (nextLevel.minXP - currentLevel.minXP)) * 100 : 100;
@@ -472,6 +395,24 @@ export function ProfilePanel({ user, xpData, streak, todayCount, onClose, onLogo
     <button onClick={() => setView("main")} style={{ background:"none", border:"none", color:"#64748b", fontSize:22, cursor:"pointer", padding:0, marginRight:8 }}>←</button>
   );
 
+  // ── Route to security and privacy (proper standalone components — no re-mount bug) ──
+  if (view === "security") return (
+    <SecurityPanel
+      user={user}
+      onBack={() => setView("main")}
+      onClose={onClose}
+      onLogout={onLogout}
+    />
+  );
+
+  if (view === "privacy") return (
+    <PrivacyPanel
+      user={user}
+      onBack={() => setView("main")}
+      onClose={onClose}
+    />
+  );
+
   // ════ MAIN ════════════════════════════════════════════════════════════════
   if (view === "main") return (
     <Overlay onClose={onClose}>
@@ -481,7 +422,6 @@ export function ProfilePanel({ user, xpData, streak, todayCount, onClose, onLogo
           <button onClick={onClose} style={{ background:"none", border:"none", color:"#64748b", fontSize:22, cursor:"pointer" }}>✕</button>
         </div>
 
-        {/* Avatar hero */}
         <div style={{ textAlign:"center", marginBottom:24 }}>
           <div style={{ position:"relative", display:"inline-block", marginBottom:12, cursor:"pointer" }} onClick={() => setView("edit")}>
             <AvatarDisplay avatar={selectedAvatar} photoURL={photoURL} displayName={editName} size={88} />
@@ -497,7 +437,6 @@ export function ProfilePanel({ user, xpData, streak, todayCount, onClose, onLogo
           </div>
         </div>
 
-        {/* XP bar */}
         <Glass style={{ padding:16, marginBottom:12, background:"linear-gradient(135deg,rgba(124,58,237,0.1),rgba(0,212,255,0.05))", border:"1px solid rgba(124,58,237,0.25)" }}>
           <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:8 }}>
             <span style={{ fontSize:13, fontWeight:700, color:"#a78bfa" }}>{currentLevel.icon} {currentLevel.name}</span>
@@ -512,7 +451,6 @@ export function ProfilePanel({ user, xpData, streak, todayCount, onClose, onLogo
           </div>
         </Glass>
 
-        {/* Stats */}
         <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:8, marginBottom:16 }}>
           {[
             { label:"Streak", value:`${streak}🔥`,                     color:"#ffd700" },
@@ -526,7 +464,6 @@ export function ProfilePanel({ user, xpData, streak, todayCount, onClose, onLogo
           ))}
         </div>
 
-        {/* Menu items */}
         <div style={{ display:"flex", flexDirection:"column", gap:3 }}>
           <MenuSection title="ACCOUNT" />
           <MenuItem icon="✏️" label="Edit Profile"           sub="Name, bio & avatar"                             onClick={() => setView("edit")} />
@@ -591,9 +528,7 @@ export function ProfilePanel({ user, xpData, streak, todayCount, onClose, onLogo
             <input style={{ ...INP, opacity:0.45, cursor:"not-allowed" }} value={user.email || ""} disabled />
           </div>
           {saveError && (
-            <div style={{ fontSize:12, color:"#ff2254", padding:"8px 12px", background:"rgba(255,34,84,0.1)", borderRadius:8 }}>
-              ⚠️ {saveError}
-            </div>
+            <div style={{ fontSize:12, color:"#ff2254", padding:"8px 12px", background:"rgba(255,34,84,0.1)", borderRadius:8 }}>⚠️ {saveError}</div>
           )}
           <button
             onClick={handleSave}
@@ -622,8 +557,6 @@ export function ProfilePanel({ user, xpData, streak, todayCount, onClose, onLogo
           <BackBtn />
           <span style={{ fontSize:18, fontWeight:800, color:"#e2e8f0", fontFamily:"'Bebas Neue',cursive", letterSpacing:2 }}>CHOOSE AVATAR</span>
         </div>
-
-        {/* Photo upload section */}
         <div style={{ marginBottom:20 }}>
           <div style={{ fontSize:11, color:"#64748b", marginBottom:10, letterSpacing:1 }}>📷 UPLOAD YOUR PHOTO</div>
           <div
@@ -655,8 +588,6 @@ export function ProfilePanel({ user, xpData, streak, todayCount, onClose, onLogo
             </button>
           )}
         </div>
-
-        {/* Category tabs */}
         <div style={{ fontSize:11, color:"#64748b", marginBottom:10, letterSpacing:1 }}>🎭 ANIME / MANHWA AVATARS ({AVATARS.length} characters)</div>
         <div style={{ display:"flex", gap:5, flexWrap:"wrap" as const, marginBottom:14 }}>
           {AVATAR_CATEGORIES.map(cat => (
@@ -675,8 +606,6 @@ export function ProfilePanel({ user, xpData, streak, todayCount, onClose, onLogo
             </button>
           ))}
         </div>
-
-        {/* Avatar grid — styled cards with series info */}
         <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:10 }}>
           {categoryAvatarIds.map(id => {
             const av = getAvatar(id);
@@ -690,8 +619,7 @@ export function ProfilePanel({ user, xpData, streak, todayCount, onClose, onLogo
                   border:`2px solid ${selected ? av.color : "rgba(255,255,255,0.06)"}`,
                   background: selected ? `${av.color}14` : "rgba(255,255,255,0.03)",
                   boxShadow: selected ? `0 0 20px ${av.color}44` : "none",
-                  padding:12, textAlign:"center", transition:"all 0.2s",
-                  position:"relative",
+                  padding:12, textAlign:"center", transition:"all 0.2s", position:"relative",
                 }}
               >
                 {selected && (
@@ -706,7 +634,6 @@ export function ProfilePanel({ user, xpData, streak, todayCount, onClose, onLogo
             );
           })}
         </div>
-
         <button
           onClick={() => setView("edit")}
           style={{ width:"100%", marginTop:20, padding:"12px", borderRadius:10, border:"none", background:"linear-gradient(135deg,#00d4ff,#7c3aed)", color:"#fff", fontFamily:"inherit", fontSize:14, fontWeight:800, cursor:"pointer" }}
@@ -874,9 +801,6 @@ export function ProfilePanel({ user, xpData, streak, todayCount, onClose, onLogo
     </Overlay>
   );
 
-  // ════ SECURITY ════════════════════════════════════════════════════════════
-  if (view === "security") return <SecurityPanel user={user} onBack={() => setView("main")} onClose={onClose} onLogout={onLogout} />;
-
   // ════ NOTIFICATIONS ═══════════════════════════════════════════════════════
   if (view === "notifications") return (
     <Overlay onClose={onClose}>
@@ -912,564 +836,145 @@ export function ProfilePanel({ user, xpData, streak, todayCount, onClose, onLogo
     </Overlay>
   );
 
-  // ════ PRIVACY ═════════════════════════════════════════════════════════════
-  if (view === "privacy") return (
-    <Overlay onClose={onClose}>
-      <Panel>
-        <div style={{ display:"flex", alignItems:"center", marginBottom:24 }}><BackBtn /><span style={{ fontSize:18, fontWeight:800, color:"#e2e8f0", fontFamily:"'Bebas Neue',cursive", letterSpacing:2 }}>PRIVACY</span></div>
-        <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
-          {[
-            { icon:"👁️", label:"Leaderboard Visibility", sub:"Show your name on leaderboard" },
-            { icon:"📊", label:"Share Analytics",         sub:"Allow community insights" },
-            { icon:"💾", label:"Export My Data",          sub:"Download all your error entries" },
-            { icon:"🧹", label:"Clear All Data",          sub:"Remove all errors and stats" },
-          ].map(item => (
-            <div key={item.label} style={{ display:"flex", alignItems:"center", gap:14, padding:"14px 16px", borderRadius:12, background:"rgba(255,255,255,0.03)", border:"1px solid rgba(255,255,255,0.06)", cursor:"pointer" }}>
-              <span style={{ fontSize:22 }}>{item.icon}</span>
-              <div style={{ flex:1 }}>
-                <div style={{ fontSize:14, fontWeight:600, color:"#e2e8f0" }}>{item.label}</div>
-                <div style={{ fontSize:12, color:"#64748b" }}>{item.sub}</div>
-              </div>
-              <span style={{ fontSize:12, color:"#64748b" }}>→</span>
-            </div>
-          ))}
-        </div>
-      </Panel>
-    </Overlay>
-  );
-
   return null;
 }
 
-// ─── SECURITY PANEL (full working Firebase Auth) ──────────────────────────────
+// ─── SECURITY PANEL ───────────────────────────────────────────────────────────
+// Sub-panels are defined OUTSIDE as top-level components (fixes the re-mount/state-wipe bug)
 
-type SecView = "main" | "changePassword" | "verifyEmail" | "resetPassword" | "sessions" | "deleteAccount";
+type SecView = "main" | "changePassword" | "verifyEmail" | "sessions" | "deleteAccount";
 
-function SecurityPanel({ user, onBack, onClose, onLogout }: { user:any; onBack:()=>void; onClose:()=>void; onLogout:()=>void }) {
-  const [secView, setSecView] = useState<SecView>("main");
-
-  const BackToSec = () => (
-    <button onClick={() => setSecView("main")} style={{ background:"none", border:"none", color:"#64748b", fontSize:22, cursor:"pointer", padding:0, marginRight:8 }}>←</button>
-  );
+// ── Change Password ───────────────────────────────────────────────────────────
+function ChangePasswordPanel({ user, onBack, onClose }: { user: any; onBack: () => void; onClose: () => void }) {
+  const [currentPw, setCurrentPw] = useState("");
+  const [newPw, setNewPw] = useState("");
+  const [confirmPw, setConfirmPw] = useState("");
+  const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
+  const [msg, setMsg] = useState("");
+  const [showCurrent, setShowCurrent] = useState(false);
+  const [showNew, setShowNew] = useState(false);
+  const [resetSent, setResetSent] = useState(false);
 
   const INP_S: React.CSSProperties = {
-    width:"100%", padding:"11px 14px", background:"rgba(255,255,255,0.05)",
-    border:"1px solid rgba(255,255,255,0.1)", borderRadius:10, color:"#e2e8f0",
-    fontSize:14, outline:"none", fontFamily:"inherit", boxSizing:"border-box",
+    width: "100%", padding: "11px 14px", background: "rgba(255,255,255,0.05)",
+    border: "1px solid rgba(255,255,255,0.1)", borderRadius: 10, color: "#e2e8f0",
+    fontSize: 14, outline: "none", fontFamily: "inherit", boxSizing: "border-box",
   };
 
-  // ── CHANGE PASSWORD ─────────────────────────────────────────────────────
-  function ChangePasswordView() {
-    const [currentPw, setCurrentPw] = useState("");
-    const [newPw, setNewPw] = useState("");
-    const [confirmPw, setConfirmPw] = useState("");
-    const [status, setStatus] = useState<"idle"|"loading"|"success"|"error">("idle");
-    const [msg, setMsg] = useState("");
-    const [showCurrent, setShowCurrent] = useState(false);
-    const [showNew, setShowNew] = useState(false);
+  const strength =
+    newPw.length === 0 ? 0
+    : newPw.length < 6 ? 1
+    : newPw.length < 10 ? 2
+    : /[A-Z]/.test(newPw) && /[0-9]/.test(newPw) && /[^A-Za-z0-9]/.test(newPw) ? 4
+    : 3;
+  const strengthColor = ["transparent", "#ff2254", "#ffd700", "#22c55e", "#00d4ff"][strength];
+  const strengthLabel = ["", "Weak", "Fair", "Strong", "Unbreakable"][strength];
 
-    const strength = newPw.length === 0 ? 0 : newPw.length < 6 ? 1 : newPw.length < 10 ? 2 : /[A-Z]/.test(newPw) && /[0-9]/.test(newPw) && /[^A-Za-z0-9]/.test(newPw) ? 4 : 3;
-    const strengthColor = ["transparent","#ff2254","#ffd700","#22c55e","#00d4ff"][strength];
-    const strengthLabel = ["","Weak","Fair","Strong","Unbreakable"][strength];
+  const handleUpdate = async () => {
+    if (!currentPw) { setMsg("Enter your current password."); setStatus("error"); return; }
+    if (newPw.length < 6) { setMsg("New password must be at least 6 characters."); setStatus("error"); return; }
+    if (newPw !== confirmPw) { setMsg("Passwords don't match."); setStatus("error"); return; }
+    if (newPw === currentPw) { setMsg("New password must differ from current."); setStatus("error"); return; }
+    setStatus("loading"); setMsg("");
+    try {
+      const u = auth.currentUser;
+      if (!u || !u.email) throw new Error("Not authenticated");
+      const cred = EmailAuthProvider.credential(u.email, currentPw);
+      await reauthenticateWithCredential(u, cred);
+      await updatePassword(u, newPw);
+      setStatus("success");
+      setMsg("Password updated successfully! 🔒");
+      setCurrentPw(""); setNewPw(""); setConfirmPw("");
+    } catch (e: any) {
+      setStatus("error");
+      if (e.code === "auth/wrong-password" || e.code === "auth/invalid-credential") setMsg("Current password is incorrect.");
+      else if (e.code === "auth/too-many-requests") setMsg("Too many attempts. Try again later.");
+      else if (e.code === "auth/requires-recent-login") setMsg("Session expired. Please log out and log back in.");
+      else setMsg(e.message || "Something went wrong.");
+    }
+  };
 
-    const handle = async () => {
-      if (!currentPw) { setMsg("Enter your current password."); setStatus("error"); return; }
-      if (newPw.length < 6) { setMsg("New password must be at least 6 characters."); setStatus("error"); return; }
-      if (newPw !== confirmPw) { setMsg("Passwords don't match."); setStatus("error"); return; }
-      if (newPw === currentPw) { setMsg("New password must be different from current."); setStatus("error"); return; }
-      setStatus("loading"); setMsg("");
-      try {
-        
-        const u = auth.currentUser;
-        if (!u || !u.email) throw new Error("Not authenticated");
-        const cred = EmailAuthProvider.credential(u.email, currentPw);
-        await reauthenticateWithCredential(u, cred);
-        await updatePassword(u, newPw);
-        setStatus("success"); setMsg("Password updated successfully! 🔒");
-        setCurrentPw(""); setNewPw(""); setConfirmPw("");
-      } catch(e: any) {
-        setStatus("error");
-        if (e.code === "auth/wrong-password" || e.code === "auth/invalid-credential") setMsg("Current password is incorrect.");
-        else if (e.code === "auth/too-many-requests") setMsg("Too many attempts. Try again later.");
-        else if (e.code === "auth/requires-recent-login") setMsg("Session expired. Please log out and log back in.");
-        else setMsg(e.message || "Something went wrong.");
-      }
-    };
-
-    return (
-      <Overlay onClose={onClose}>
-        <Panel>
-          <div style={{ display:"flex", alignItems:"center", marginBottom:24 }}>
-            <BackToSec />
-            <span style={{ fontSize:18, fontWeight:800, color:"#e2e8f0", fontFamily:"'Bebas Neue',cursive", letterSpacing:2 }}>CHANGE PASSWORD</span>
-          </div>
-          <div style={{ display:"flex", flexDirection:"column", gap:14 }}>
-            {/* Current password */}
-            <div>
-              <label style={{ fontSize:11, color:"#64748b", display:"block", marginBottom:6, letterSpacing:1 }}>CURRENT PASSWORD</label>
-              <div style={{ position:"relative" }}>
-                <input
-                  style={INP_S} type={showCurrent?"text":"password"}
-                  placeholder="Enter current password"
-                  value={currentPw} onChange={e => setCurrentPw(e.target.value)}
-                />
-                <button onClick={() => setShowCurrent(s=>!s)} style={{ position:"absolute", right:12, top:"50%", transform:"translateY(-50%)", background:"none", border:"none", color:"#64748b", cursor:"pointer", fontSize:16 }}>
-                  {showCurrent ? "🙈" : "👁"}
-                </button>
-              </div>
-            </div>
-
-            {/* New password */}
-            <div>
-              <label style={{ fontSize:11, color:"#64748b", display:"block", marginBottom:6, letterSpacing:1 }}>NEW PASSWORD</label>
-              <div style={{ position:"relative" }}>
-                <input
-                  style={INP_S} type={showNew?"text":"password"}
-                  placeholder="Min. 6 characters"
-                  value={newPw} onChange={e => setNewPw(e.target.value)}
-                />
-                <button onClick={() => setShowNew(s=>!s)} style={{ position:"absolute", right:12, top:"50%", transform:"translateY(-50%)", background:"none", border:"none", color:"#64748b", cursor:"pointer", fontSize:16 }}>
-                  {showNew ? "🙈" : "👁"}
-                </button>
-              </div>
-              {/* Strength bar */}
-              {newPw.length > 0 && (
-                <div style={{ marginTop:8 }}>
-                  <div style={{ display:"flex", gap:4, marginBottom:4 }}>
-                    {[1,2,3,4].map(i => (
-                      <div key={i} style={{ flex:1, height:4, borderRadius:2, background:i<=strength?strengthColor:"rgba(255,255,255,0.06)", transition:"all 0.3s" }} />
-                    ))}
-                  </div>
-                  <div style={{ fontSize:11, color:strengthColor, fontWeight:600 }}>{strengthLabel}</div>
-                </div>
-              )}
-            </div>
-
-            {/* Confirm password */}
-            <div>
-              <label style={{ fontSize:11, color:"#64748b", display:"block", marginBottom:6, letterSpacing:1 }}>CONFIRM NEW PASSWORD</label>
-              <input
-                style={{ ...INP_S, borderColor: confirmPw && confirmPw !== newPw ? "#ff2254" : confirmPw && confirmPw === newPw ? "#22c55e" : "rgba(255,255,255,0.1)" }}
-                type="password" placeholder="Repeat new password"
-                value={confirmPw} onChange={e => setConfirmPw(e.target.value)}
-                onKeyDown={e => e.key === "Enter" && handle()}
-              />
-              {confirmPw && (
-                <div style={{ fontSize:11, color: confirmPw === newPw ? "#22c55e" : "#ff2254", marginTop:4 }}>
-                  {confirmPw === newPw ? "✓ Passwords match" : "✗ Passwords don't match"}
-                </div>
-              )}
-            </div>
-
-            {msg && (
-              <div style={{ fontSize:12, padding:"10px 14px", borderRadius:10, background:`rgba(${status==="success"?"34,197,94":"255,34,84"},0.1)`, border:`1px solid rgba(${status==="success"?"34,197,94":"255,34,84"},0.3)`, color: status==="success" ? "#22c55e" : "#ff2254" }}>
-                {msg}
-              </div>
-            )}
-
-            <button
-              onClick={handle}
-              disabled={status === "loading"}
-              style={{ padding:"13px", borderRadius:10, border:"none", background: status==="loading" ? "rgba(255,255,255,0.05)" : status==="success" ? "linear-gradient(135deg,#22c55e,#16a34a)" : "linear-gradient(135deg,#00d4ff,#7c3aed)", color: status==="loading" ? "#475569" : "#fff", fontFamily:"inherit", fontSize:14, fontWeight:800, cursor: status==="loading" ? "not-allowed" : "pointer", letterSpacing:1 }}
-            >
-              {status === "loading" ? "UPDATING..." : status === "success" ? "✅ UPDATED!" : "UPDATE PASSWORD"}
-            </button>
-
-            {/* Forgot password link */}
-            <div style={{ textAlign:"center" }}>
-              <button
-                onClick={async () => {
-                  try {
-                    await sendPasswordResetEmail(auth, user.email);
-                    setStatus("success"); setMsg("Reset email sent to " + user.email);
-                  } catch { setStatus("error"); setMsg("Failed to send reset email."); }
-                }}
-                style={{ background:"none", border:"none", color:"#64748b", fontSize:12, cursor:"pointer", fontFamily:"inherit", textDecoration:"underline" }}
-              >
-                Forgot current password? Send reset email
-              </button>
-            </div>
-          </div>
-        </Panel>
-      </Overlay>
-    );
-  }
-
-  // ── EMAIL VERIFICATION ──────────────────────────────────────────────────
-  function VerifyEmailView() {
-    const [sent, setSent] = useState(false);
-    const [loading, setLoading] = useState(false);
-    const [error, setError] = useState("");
-    const isVerified = auth.currentUser?.emailVerified ?? user.emailVerified;
-
-    const handleSend = async () => {
-      setLoading(true); setError("");
-      try {
-        const u = auth.currentUser;
-        if (!u) throw new Error("Not authenticated");
-        await sendEmailVerification(u);
-        setSent(true);
-      } catch(e: any) {
-        if (e.code === "auth/too-many-requests") setError("Too many requests. Wait a few minutes.");
-        else setError(e.message || "Failed to send verification email.");
-      }
-      setLoading(false);
-    };
-
-    return (
-      <Overlay onClose={onClose}>
-        <Panel>
-          <div style={{ display:"flex", alignItems:"center", marginBottom:24 }}>
-            <BackToSec />
-            <span style={{ fontSize:18, fontWeight:800, color:"#e2e8f0", fontFamily:"'Bebas Neue',cursive", letterSpacing:2 }}>EMAIL VERIFICATION</span>
-          </div>
-
-          {/* Status card */}
-          <div style={{ padding:24, borderRadius:16, marginBottom:20, textAlign:"center", background: isVerified ? "rgba(34,197,94,0.08)" : "rgba(255,215,0,0.06)", border:`1px solid ${isVerified?"rgba(34,197,94,0.3)":"rgba(255,215,0,0.25)"}` }}>
-            <div style={{ fontSize:48, marginBottom:12 }}>{isVerified ? "✅" : "📧"}</div>
-            <div style={{ fontSize:16, fontWeight:800, color: isVerified ? "#22c55e" : "#ffd700", fontFamily:"'Bebas Neue',cursive", letterSpacing:2, marginBottom:8 }}>
-              {isVerified ? "EMAIL VERIFIED" : "EMAIL NOT VERIFIED"}
-            </div>
-            <div style={{ fontSize:13, color:"#94a3b8", marginBottom:4 }}>{user.email}</div>
-            {!isVerified && <div style={{ fontSize:12, color:"#64748b", marginTop:8 }}>Verify your email to secure your account and unlock all features.</div>}
-          </div>
-
-          {!isVerified && (
-            <>
-              {sent ? (
-                <div style={{ padding:"14px 16px", borderRadius:12, background:"rgba(34,197,94,0.08)", border:"1px solid rgba(34,197,94,0.25)", marginBottom:16 }}>
-                  <div style={{ fontSize:14, fontWeight:700, color:"#22c55e", marginBottom:4 }}>✉️ Verification email sent!</div>
-                  <div style={{ fontSize:12, color:"#64748b" }}>Check your inbox at <strong style={{ color:"#94a3b8" }}>{user.email}</strong>. Click the link to verify. Then reload the app.</div>
-                </div>
-              ) : error ? (
-                <div style={{ padding:"12px 14px", borderRadius:10, background:"rgba(255,34,84,0.08)", border:"1px solid rgba(255,34,84,0.25)", marginBottom:16, fontSize:12, color:"#ff2254" }}>{error}</div>
-              ) : null}
-              <button
-                onClick={handleSend}
-                disabled={loading || sent}
-                style={{ width:"100%", padding:"13px", borderRadius:10, border:"none", background: sent ? "rgba(255,255,255,0.05)" : loading ? "rgba(255,255,255,0.05)" : "linear-gradient(135deg,#00d4ff,#7c3aed)", color: (sent||loading) ? "#475569" : "#fff", fontFamily:"inherit", fontSize:14, fontWeight:800, cursor:(sent||loading)?"not-allowed":"pointer", letterSpacing:1 }}
-              >
-                {loading ? "SENDING..." : sent ? "EMAIL SENT ✓" : "SEND VERIFICATION EMAIL"}
-              </button>
-              <button
-                onClick={() => { auth.currentUser?.reload().then(() => { if(auth.currentUser?.emailVerified) setSecView("main"); }); }}
-                style={{ width:"100%", marginTop:10, padding:"11px", borderRadius:10, border:"1px solid rgba(255,255,255,0.08)", background:"transparent", color:"#64748b", fontFamily:"inherit", fontSize:13, cursor:"pointer" }}
-              >
-                I've verified — Refresh status
-              </button>
-            </>
-          )}
-        </Panel>
-      </Overlay>
-    );
-  }
-
-  // ── ACTIVE SESSIONS ─────────────────────────────────────────────────────
-  function SessionsView() {
-    
-    const currentUser = auth.currentUser;
-    const signInTime = currentUser?.metadata?.lastSignInTime;
-    const creationTime = currentUser?.metadata?.creationTime;
-
-    const formatDate = (str?: string) => {
-      if (!str) return "Unknown";
-      return new Date(str).toLocaleString(undefined, { dateStyle:"medium", timeStyle:"short" });
-    };
-
-    return (
-      <Overlay onClose={onClose}>
-        <Panel>
-          <div style={{ display:"flex", alignItems:"center", marginBottom:24 }}>
-            <BackToSec />
-            <span style={{ fontSize:18, fontWeight:800, color:"#e2e8f0", fontFamily:"'Bebas Neue',cursive", letterSpacing:2 }}>ACTIVE SESSIONS</span>
-          </div>
-
-          {/* Current session */}
-          <div style={{ marginBottom:16 }}>
-            <div style={{ fontSize:11, color:"#64748b", letterSpacing:1, marginBottom:10 }}>CURRENT SESSION</div>
-            <div style={{ padding:"16px", borderRadius:14, background:"rgba(0,212,255,0.06)", border:"1px solid rgba(0,212,255,0.2)" }}>
-              <div style={{ display:"flex", alignItems:"center", gap:12, marginBottom:12 }}>
-                <div style={{ width:40, height:40, borderRadius:10, background:"rgba(0,212,255,0.15)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:20 }}>💻</div>
-                <div style={{ flex:1 }}>
-                  <div style={{ fontSize:14, fontWeight:700, color:"#e2e8f0" }}>This Device</div>
-                  <div style={{ fontSize:11, color:"#00d4ff" }}>● Active now</div>
-                </div>
-                <div style={{ fontSize:10, padding:"3px 10px", borderRadius:20, background:"rgba(0,212,255,0.15)", color:"#00d4ff", fontWeight:700 }}>CURRENT</div>
-              </div>
-              <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
-                {[
-                  { label:"Email", value: currentUser?.email || "—" },
-                  { label:"Last sign in", value: formatDate(signInTime) },
-                  { label:"Account created", value: formatDate(creationTime) },
-                  { label:"UID", value: currentUser?.uid?.slice(0,16)+"..." || "—" },
-                ].map(r => (
-                  <div key={r.label} style={{ display:"flex", justifyContent:"space-between", alignItems:"center", fontSize:12 }}>
-                    <span style={{ color:"#64748b" }}>{r.label}</span>
-                    <span style={{ color:"#94a3b8", fontFamily:r.label==="UID"?"monospace":"inherit", fontSize:r.label==="UID"?10:12 }}>{r.value}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          {/* Info box */}
-          <div style={{ padding:"12px 14px", borderRadius:10, background:"rgba(255,255,255,0.03)", border:"1px solid rgba(255,255,255,0.06)", marginBottom:16, fontSize:12, color:"#64748b", lineHeight:1.5 }}>
-            ℹ️ Firebase Authentication manages your sessions. To sign out all other devices, change your password — this invalidates existing tokens on other devices.
-          </div>
-
-          {/* Sign out current */}
-          <button
-            onClick={async () => {
-              try { await signOut(auth); onLogout(); } catch {}
-            }}
-            style={{ width:"100%", padding:"12px", borderRadius:10, border:"1px solid rgba(255,34,84,0.3)", background:"rgba(255,34,84,0.08)", color:"#ff2254", fontFamily:"inherit", fontSize:14, fontWeight:700, cursor:"pointer" }}
-          >
-            🚪 Sign Out This Device
-          </button>
-        </Panel>
-      </Overlay>
-    );
-  }
-
-  // ── DELETE ACCOUNT ──────────────────────────────────────────────────────
-  function DeleteAccountView() {
-    const [step, setStep] = useState<"confirm"|"reauth"|"deleting"|"done">("confirm");
-    const [password, setPassword] = useState("");
-    const [typed, setTyped] = useState("");
-    const [error, setError] = useState("");
-    const CONFIRM_PHRASE = "DELETE MY ACCOUNT";
-
-    const handleDelete = async () => {
-      if (!password) { setError("Enter your password."); return; }
-      setStep("deleting"); setError("");
-      try {
-        
-        const u = auth.currentUser;
-        if (!u || !u.email) throw new Error("Not authenticated");
-        // Re-authenticate first
-        const cred = EmailAuthProvider.credential(u.email, password);
-        await reauthenticateWithCredential(u, cred);
-        // Delete all user data from Firestore
-        const uid = u.uid;
-        const colls = ["errors","collection","dailyActivity","revisionLogs","userXP","leaderboard","userProfiles"];
-        for (const col of colls) {
-          try {
-            const q = query(collection(db, col), where("userId", "==", uid));
-            const snap = await getDocs(q);
-            for (const d of snap.docs) await deleteDoc(d.ref);
-            // Also try direct doc
-            await deleteDoc(doc(db, col, uid));
-          } catch {}
-        }
-        // Delete Firebase Auth user
-        await deleteUser(u);
-        setStep("done");
-        setTimeout(() => onLogout(), 2000);
-      } catch(e: any) {
-        setStep("reauth");
-        if (e.code === "auth/wrong-password" || e.code === "auth/invalid-credential") setError("Incorrect password.");
-        else if (e.code === "auth/too-many-requests") setError("Too many attempts. Try later.");
-        else if (e.code === "auth/requires-recent-login") setError("Session expired. Log out and back in first.");
-        else setError(e.message || "Failed to delete account.");
-      }
-    };
-
-    return (
-      <Overlay onClose={onClose}>
-        <Panel>
-          <div style={{ display:"flex", alignItems:"center", marginBottom:24 }}>
-            {step !== "deleting" && step !== "done" && <BackToSec />}
-            <span style={{ fontSize:18, fontWeight:800, color:"#ff2254", fontFamily:"'Bebas Neue',cursive", letterSpacing:2 }}>DELETE ACCOUNT</span>
-          </div>
-
-          {step === "done" && (
-            <div style={{ textAlign:"center", padding:40 }}>
-              <div style={{ fontSize:48, marginBottom:16 }}>💀</div>
-              <div style={{ fontSize:20, fontWeight:800, color:"#ff2254", fontFamily:"'Bebas Neue',cursive", letterSpacing:2 }}>ACCOUNT DELETED</div>
-              <div style={{ fontSize:13, color:"#64748b", marginTop:8 }}>All your data has been erased. Redirecting...</div>
-            </div>
-          )}
-
-          {step === "deleting" && (
-            <div style={{ textAlign:"center", padding:40 }}>
-              <div style={{ fontSize:40, marginBottom:16, animation:"pulse 1s infinite" }}>🗑️</div>
-              <div style={{ fontSize:14, color:"#94a3b8" }}>Erasing all your data...</div>
-              <div style={{ fontSize:12, color:"#64748b", marginTop:8 }}>This may take a moment.</div>
-            </div>
-          )}
-
-          {(step === "confirm" || step === "reauth") && (
-            <>
-              {/* Warning box */}
-              <div style={{ padding:"16px", borderRadius:14, marginBottom:20, background:"rgba(255,34,84,0.08)", border:"1px solid rgba(255,34,84,0.3)" }}>
-                <div style={{ fontSize:14, fontWeight:700, color:"#ff2254", marginBottom:10 }}>⚠️ This action is PERMANENT</div>
-                <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
-                  {["All your error entries will be deleted","Your XP, badges and streak will be lost","Your collection will be removed","Your leaderboard position will be erased","This cannot be undone"].map(w => (
-                    <div key={w} style={{ display:"flex", gap:8, alignItems:"flex-start", fontSize:12, color:"#94a3b8" }}>
-                      <span style={{ color:"#ff2254", flexShrink:0, marginTop:1 }}>✗</span>{w}
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Type confirmation */}
-              <div style={{ marginBottom:14 }}>
-                <label style={{ fontSize:11, color:"#64748b", display:"block", marginBottom:6, letterSpacing:1 }}>
-                  TYPE <span style={{ color:"#ff2254", fontWeight:800 }}>{CONFIRM_PHRASE}</span> TO CONFIRM
-                </label>
-                <input
-                  style={{ ...INP_S, borderColor: typed === CONFIRM_PHRASE ? "#ff2254" : "rgba(255,255,255,0.1)" }}
-                  placeholder={CONFIRM_PHRASE}
-                  value={typed}
-                  onChange={e => setTyped(e.target.value.toUpperCase())}
-                />
-              </div>
-
-              {/* Password */}
-              <div style={{ marginBottom:14 }}>
-                <label style={{ fontSize:11, color:"#64748b", display:"block", marginBottom:6, letterSpacing:1 }}>YOUR PASSWORD</label>
-                <input
-                  style={INP_S}
-                  type="password"
-                  placeholder="Confirm with your password"
-                  value={password}
-                  onChange={e => setPassword(e.target.value)}
-                  onKeyDown={e => e.key === "Enter" && typed === CONFIRM_PHRASE && handleDelete()}
-                />
-              </div>
-
-              {error && (
-                <div style={{ fontSize:12, padding:"10px 14px", borderRadius:10, background:"rgba(255,34,84,0.08)", border:"1px solid rgba(255,34,84,0.25)", color:"#ff2254", marginBottom:14 }}>
-                  {error}
-                </div>
-              )}
-
-              <button
-                onClick={handleDelete}
-                disabled={typed !== CONFIRM_PHRASE || !password}
-                style={{ width:"100%", padding:"13px", borderRadius:10, border:"none", background: typed === CONFIRM_PHRASE && password ? "linear-gradient(135deg,#7f1d1d,#dc2626)" : "rgba(255,255,255,0.05)", color: typed === CONFIRM_PHRASE && password ? "#fff" : "#475569", fontFamily:"inherit", fontSize:14, fontWeight:800, cursor: typed === CONFIRM_PHRASE && password ? "pointer" : "not-allowed", letterSpacing:1 }}
-              >
-                💀 PERMANENTLY DELETE ACCOUNT
-              </button>
-
-              <button
-                onClick={() => setSecView("main")}
-                style={{ width:"100%", marginTop:10, padding:"11px", borderRadius:10, border:"1px solid rgba(255,255,255,0.08)", background:"transparent", color:"#64748b", fontFamily:"inherit", fontSize:13, cursor:"pointer" }}
-              >
-                Cancel — Keep My Account
-              </button>
-            </>
-          )}
-        </Panel>
-      </Overlay>
-    );
-  }
-
-  // ── MAIN SECURITY MENU ──────────────────────────────────────────────────
-  if (secView === "changePassword") return <ChangePasswordView />;
-  if (secView === "verifyEmail")    return <VerifyEmailView />;
-  if (secView === "sessions")       return <SessionsView />;
-  if (secView === "deleteAccount")  return <DeleteAccountView />;
-
-  
-  const isVerified = auth.currentUser?.emailVerified ?? user.emailVerified;
+  const handleReset = async () => {
+    try {
+      await sendPasswordResetEmail(auth, user.email);
+      setResetSent(true);
+      setStatus("success");
+      setMsg("Reset email sent to " + user.email);
+    } catch (e: any) {
+      setStatus("error");
+      setMsg("Failed to send reset email: " + (e.message || "unknown error"));
+    }
+  };
 
   return (
     <Overlay onClose={onClose}>
       <Panel>
-        <div style={{ display:"flex", alignItems:"center", marginBottom:24 }}>
-          <button onClick={onBack} style={{ background:"none", border:"none", color:"#64748b", fontSize:22, cursor:"pointer", padding:0, marginRight:8 }}>←</button>
-          <span style={{ fontSize:18, fontWeight:800, color:"#e2e8f0", fontFamily:"'Bebas Neue',cursive", letterSpacing:2 }}>SECURITY</span>
+        <div style={{ display: "flex", alignItems: "center", marginBottom: 24 }}>
+          <button onClick={onBack} style={{ background: "none", border: "none", color: "#64748b", fontSize: 22, cursor: "pointer", padding: 0, marginRight: 8 }}>←</button>
+          <span style={{ fontSize: 18, fontWeight: 800, color: "#e2e8f0", fontFamily: "'Bebas Neue',cursive", letterSpacing: 2 }}>CHANGE PASSWORD</span>
         </div>
-
-        {/* Security score */}
-        {(() => {
-          const score = (isVerified ? 50 : 0) + 30 + (user.email ? 20 : 0);
-          const scoreColor = score >= 80 ? "#22c55e" : score >= 50 ? "#ffd700" : "#ff2254";
-          const scoreLabel = score >= 80 ? "Strong" : score >= 50 ? "Fair" : "Weak";
-          return (
-            <div style={{ padding:"16px", borderRadius:14, marginBottom:20, background:"rgba(255,255,255,0.03)", border:"1px solid rgba(255,255,255,0.06)" }}>
-              <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:10 }}>
-                <div>
-                  <div style={{ fontSize:13, fontWeight:700, color:"#e2e8f0", marginBottom:2 }}>Account Security</div>
-                  <div style={{ fontSize:11, color:"#64748b" }}>Protect your ErrorVerse account</div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+          <div>
+            <label style={{ fontSize: 11, color: "#64748b", display: "block", marginBottom: 6, letterSpacing: 1 }}>CURRENT PASSWORD</label>
+            <div style={{ position: "relative" }}>
+              <input style={INP_S} type={showCurrent ? "text" : "password"} placeholder="Enter current password" value={currentPw} onChange={e => setCurrentPw(e.target.value)} autoComplete="current-password" />
+              <button type="button" onClick={() => setShowCurrent(s => !s)} style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", color: "#64748b", cursor: "pointer", fontSize: 16 }}>
+                {showCurrent ? "🙈" : "👁"}
+              </button>
+            </div>
+          </div>
+          <div>
+            <label style={{ fontSize: 11, color: "#64748b", display: "block", marginBottom: 6, letterSpacing: 1 }}>NEW PASSWORD</label>
+            <div style={{ position: "relative" }}>
+              <input style={INP_S} type={showNew ? "text" : "password"} placeholder="Min. 6 characters" value={newPw} onChange={e => setNewPw(e.target.value)} autoComplete="new-password" />
+              <button type="button" onClick={() => setShowNew(s => !s)} style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", color: "#64748b", cursor: "pointer", fontSize: 16 }}>
+                {showNew ? "🙈" : "👁"}
+              </button>
+            </div>
+            {newPw.length > 0 && (
+              <div style={{ marginTop: 8 }}>
+                <div style={{ display: "flex", gap: 4, marginBottom: 4 }}>
+                  {[1,2,3,4].map(i => <div key={i} style={{ flex: 1, height: 4, borderRadius: 2, background: i <= strength ? strengthColor : "rgba(255,255,255,0.06)", transition: "all 0.3s" }} />)}
                 </div>
-                <div style={{ textAlign:"right" }}>
-                  <div style={{ fontSize:22, fontWeight:900, color:scoreColor, fontFamily:"'Bebas Neue',cursive" }}>{score}%</div>
-                  <div style={{ fontSize:10, color:scoreColor, fontWeight:700 }}>{scoreLabel}</div>
-                </div>
+                <div style={{ fontSize: 11, color: strengthColor, fontWeight: 600 }}>{strengthLabel}</div>
               </div>
-              <div style={{ height:6, background:"rgba(255,255,255,0.06)", borderRadius:3, overflow:"hidden" }}>
-                <div style={{ height:"100%", width:`${score}%`, background:`linear-gradient(90deg,${scoreColor},${scoreColor}cc)`, borderRadius:3, transition:"width 1s" }} />
+            )}
+          </div>
+          <div>
+            <label style={{ fontSize: 11, color: "#64748b", display: "block", marginBottom: 6, letterSpacing: 1 }}>CONFIRM NEW PASSWORD</label>
+            <input
+              style={{ ...INP_S, borderColor: confirmPw && confirmPw !== newPw ? "#ff2254" : confirmPw && confirmPw === newPw ? "#22c55e" : "rgba(255,255,255,0.1)" }}
+              type="password" placeholder="Repeat new password" value={confirmPw}
+              onChange={e => setConfirmPw(e.target.value)}
+              onKeyDown={e => e.key === "Enter" && handleUpdate()}
+              autoComplete="new-password"
+            />
+            {confirmPw && (
+              <div style={{ fontSize: 11, color: confirmPw === newPw ? "#22c55e" : "#ff2254", marginTop: 4 }}>
+                {confirmPw === newPw ? "✓ Passwords match" : "✗ Passwords don't match"}
               </div>
-            </div>
-          );
-        })()}
-
-        <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
-          {/* Change password */}
-          <div
-            onClick={() => setSecView("changePassword")}
-            style={{ display:"flex", alignItems:"center", gap:14, padding:"14px 16px", borderRadius:12, background:"rgba(0,212,255,0.04)", border:"1px solid rgba(0,212,255,0.12)", cursor:"pointer", transition:"all 0.2s" }}
-            onMouseEnter={e=>(e.currentTarget as any).style.background="rgba(0,212,255,0.08)"}
-            onMouseLeave={e=>(e.currentTarget as any).style.background="rgba(0,212,255,0.04)"}
-          >
-            <div style={{ width:42, height:42, borderRadius:12, background:"rgba(0,212,255,0.12)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:20 }}>🔑</div>
-            <div style={{ flex:1 }}>
-              <div style={{ fontSize:14, fontWeight:600, color:"#e2e8f0" }}>Change Password</div>
-              <div style={{ fontSize:11, color:"#64748b" }}>Update your account password</div>
-            </div>
-            <span style={{ fontSize:16, color:"#334155" }}>›</span>
+            )}
           </div>
-
-          {/* Email verification */}
-          <div
-            onClick={() => setSecView("verifyEmail")}
-            style={{ display:"flex", alignItems:"center", gap:14, padding:"14px 16px", borderRadius:12, background: isVerified ? "rgba(34,197,94,0.04)" : "rgba(255,215,0,0.06)", border: `1px solid ${isVerified?"rgba(34,197,94,0.15)":"rgba(255,215,0,0.25)"}`, cursor:"pointer", transition:"all 0.2s" }}
-            onMouseEnter={e=>(e.currentTarget as any).style.opacity="0.85"}
-            onMouseLeave={e=>(e.currentTarget as any).style.opacity="1"}
-          >
-            <div style={{ width:42, height:42, borderRadius:12, background: isVerified ? "rgba(34,197,94,0.12)" : "rgba(255,215,0,0.12)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:20 }}>📧</div>
-            <div style={{ flex:1 }}>
-              <div style={{ fontSize:14, fontWeight:600, color:"#e2e8f0" }}>Email Verification</div>
-              <div style={{ fontSize:11, color: isVerified ? "#22c55e" : "#ffd700" }}>{isVerified ? "✓ Verified" : "⚠ Not verified — tap to verify"}</div>
+          {msg && (
+            <div style={{ fontSize: 12, padding: "10px 14px", borderRadius: 10, background: `rgba(${status === "success" ? "34,197,94" : "255,34,84"},0.1)`, border: `1px solid rgba(${status === "success" ? "34,197,94" : "255,34,84"},0.3)`, color: status === "success" ? "#22c55e" : "#ff2254" }}>
+              {msg}
             </div>
-            <span style={{ fontSize:10, padding:"3px 10px", borderRadius:20, background: isVerified ? "rgba(34,197,94,0.15)" : "rgba(255,215,0,0.15)", color: isVerified ? "#22c55e" : "#ffd700", fontWeight:700 }}>
-              {isVerified ? "DONE" : "ACTION"}
-            </span>
-          </div>
-
-          {/* Active sessions */}
-          <div
-            onClick={() => setSecView("sessions")}
-            style={{ display:"flex", alignItems:"center", gap:14, padding:"14px 16px", borderRadius:12, background:"rgba(168,85,247,0.04)", border:"1px solid rgba(168,85,247,0.12)", cursor:"pointer", transition:"all 0.2s" }}
-            onMouseEnter={e=>(e.currentTarget as any).style.background="rgba(168,85,247,0.08)"}
-            onMouseLeave={e=>(e.currentTarget as any).style.background="rgba(168,85,247,0.04)"}
+          )}
+          <button
+            onClick={handleUpdate}
+            disabled={status === "loading"}
+            style={{ padding: "13px", borderRadius: 10, border: "none", background: status === "loading" ? "rgba(255,255,255,0.05)" : status === "success" ? "linear-gradient(135deg,#22c55e,#16a34a)" : "linear-gradient(135deg,#00d4ff,#7c3aed)", color: status === "loading" ? "#475569" : "#fff", fontFamily: "inherit", fontSize: 14, fontWeight: 800, cursor: status === "loading" ? "not-allowed" : "pointer", letterSpacing: 1 }}
           >
-            <div style={{ width:42, height:42, borderRadius:12, background:"rgba(168,85,247,0.12)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:20 }}>📱</div>
-            <div style={{ flex:1 }}>
-              <div style={{ fontSize:14, fontWeight:600, color:"#e2e8f0" }}>Active Sessions</div>
-              <div style={{ fontSize:11, color:"#64748b" }}>View account info & sign out</div>
-            </div>
-            <span style={{ fontSize:16, color:"#334155" }}>›</span>
-          </div>
-
-          {/* Divider */}
-          <div style={{ height:1, background:"rgba(255,255,255,0.06)", margin:"8px 0" }} />
-
-          {/* Delete account - danger */}
-          <div
-            onClick={() => setSecView("deleteAccount")}
-            style={{ display:"flex", alignItems:"center", gap:14, padding:"14px 16px", borderRadius:12, background:"rgba(255,34,84,0.05)", border:"1px solid rgba(255,34,84,0.2)", cursor:"pointer", transition:"all 0.2s" }}
-            onMouseEnter={e=>(e.currentTarget as any).style.background="rgba(255,34,84,0.1)"}
-            onMouseLeave={e=>(e.currentTarget as any).style.background="rgba(255,34,84,0.05)"}
-          >
-            <div style={{ width:42, height:42, borderRadius:12, background:"rgba(255,34,84,0.12)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:20 }}>💀</div>
-            <div style={{ flex:1 }}>
-              <div style={{ fontSize:14, fontWeight:600, color:"#ff2254" }}>Delete Account</div>
-              <div style={{ fontSize:11, color:"#64748b" }}>Permanently erase all data</div>
-            </div>
-            <span style={{ fontSize:16, color:"#7f1d1d" }}>›</span>
+            {status === "loading" ? "UPDATING..." : status === "success" ? "✅ UPDATED!" : "UPDATE PASSWORD"}
+          </button>
+          <div style={{ textAlign: "center", paddingTop: 4 }}>
+            {resetSent ? (
+              <div style={{ fontSize: 12, color: "#22c55e" }}>✉️ Reset email sent! Check your inbox.</div>
+            ) : (
+              <button onClick={handleReset} style={{ background: "none", border: "none", color: "#64748b", fontSize: 12, cursor: "pointer", fontFamily: "inherit", textDecoration: "underline" }}>
+                Forgot current password? Send reset email →
+              </button>
+            )}
           </div>
         </div>
       </Panel>
@@ -1477,7 +982,386 @@ function SecurityPanel({ user, onBack, onClose, onLogout }: { user:any; onBack:(
   );
 }
 
+// ── Email Verification ────────────────────────────────────────────────────────
+function VerifyEmailPanel({ user, onBack, onClose }: { user: any; onBack: () => void; onClose: () => void }) {
+  const [sent, setSent] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [verified, setVerified] = useState(auth.currentUser?.emailVerified ?? user.emailVerified ?? false);
 
+  const handleSend = async () => {
+    setLoading(true); setError("");
+    try {
+      const u = auth.currentUser;
+      if (!u) throw new Error("Not authenticated");
+      await sendEmailVerification(u);
+      setSent(true);
+    } catch (e: any) {
+      if (e.code === "auth/too-many-requests") setError("Too many requests. Wait a few minutes.");
+      else setError(e.message || "Failed to send verification email.");
+    }
+    setLoading(false);
+  };
+
+  const checkVerified = async () => {
+    try {
+      await auth.currentUser?.reload();
+      const nowVerified = auth.currentUser?.emailVerified ?? false;
+      setVerified(nowVerified);
+      if (!nowVerified) setError("Not verified yet. Check your inbox and click the link.");
+    } catch {}
+  };
+
+  return (
+    <Overlay onClose={onClose}>
+      <Panel>
+        <div style={{ display: "flex", alignItems: "center", marginBottom: 24 }}>
+          <button onClick={onBack} style={{ background: "none", border: "none", color: "#64748b", fontSize: 22, cursor: "pointer", padding: 0, marginRight: 8 }}>←</button>
+          <span style={{ fontSize: 18, fontWeight: 800, color: "#e2e8f0", fontFamily: "'Bebas Neue',cursive", letterSpacing: 2 }}>EMAIL VERIFICATION</span>
+        </div>
+        <div style={{ padding: 24, borderRadius: 16, marginBottom: 20, textAlign: "center", background: verified ? "rgba(34,197,94,0.08)" : "rgba(255,215,0,0.06)", border: `1px solid ${verified ? "rgba(34,197,94,0.3)" : "rgba(255,215,0,0.25)"}` }}>
+          <div style={{ fontSize: 48, marginBottom: 12 }}>{verified ? "✅" : "📧"}</div>
+          <div style={{ fontSize: 16, fontWeight: 800, color: verified ? "#22c55e" : "#ffd700", fontFamily: "'Bebas Neue',cursive", letterSpacing: 2, marginBottom: 8 }}>{verified ? "EMAIL VERIFIED" : "EMAIL NOT VERIFIED"}</div>
+          <div style={{ fontSize: 13, color: "#94a3b8", marginBottom: 4 }}>{user.email}</div>
+          {!verified && <div style={{ fontSize: 12, color: "#64748b", marginTop: 8 }}>Verify to secure your account.</div>}
+        </div>
+        {!verified && (
+          <>
+            {sent && (
+              <div style={{ padding: "14px 16px", borderRadius: 12, background: "rgba(34,197,94,0.08)", border: "1px solid rgba(34,197,94,0.25)", marginBottom: 16 }}>
+                <div style={{ fontSize: 14, fontWeight: 700, color: "#22c55e", marginBottom: 4 }}>✉️ Verification email sent!</div>
+                <div style={{ fontSize: 12, color: "#64748b" }}>Check your inbox at <strong style={{ color: "#94a3b8" }}>{user.email}</strong> and click the link.</div>
+              </div>
+            )}
+            {error && <div style={{ padding: "12px 14px", borderRadius: 10, background: "rgba(255,34,84,0.08)", border: "1px solid rgba(255,34,84,0.25)", marginBottom: 16, fontSize: 12, color: "#ff2254" }}>{error}</div>}
+            <button onClick={handleSend} disabled={loading || sent} style={{ width: "100%", padding: "13px", borderRadius: 10, border: "none", background: (sent || loading) ? "rgba(255,255,255,0.05)" : "linear-gradient(135deg,#00d4ff,#7c3aed)", color: (sent || loading) ? "#475569" : "#fff", fontFamily: "inherit", fontSize: 14, fontWeight: 800, cursor: (sent || loading) ? "not-allowed" : "pointer", letterSpacing: 1, marginBottom: 10 }}>
+              {loading ? "SENDING..." : sent ? "EMAIL SENT ✓" : "SEND VERIFICATION EMAIL"}
+            </button>
+            <button onClick={checkVerified} style={{ width: "100%", padding: "11px", borderRadius: 10, border: "1px solid rgba(255,255,255,0.08)", background: "transparent", color: "#64748b", fontFamily: "inherit", fontSize: 13, cursor: "pointer" }}>
+              I've verified — Check status ↻
+            </button>
+          </>
+        )}
+      </Panel>
+    </Overlay>
+  );
+}
+
+// ── Sessions ──────────────────────────────────────────────────────────────────
+function SessionsPanel({ onBack, onClose, onLogout }: { onBack: () => void; onClose: () => void; onLogout: () => void }) {
+  const currentUser = auth.currentUser;
+  const formatDate = (str?: string) => str ? new Date(str).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" }) : "Unknown";
+
+  return (
+    <Overlay onClose={onClose}>
+      <Panel>
+        <div style={{ display: "flex", alignItems: "center", marginBottom: 24 }}>
+          <button onClick={onBack} style={{ background: "none", border: "none", color: "#64748b", fontSize: 22, cursor: "pointer", padding: 0, marginRight: 8 }}>←</button>
+          <span style={{ fontSize: 18, fontWeight: 800, color: "#e2e8f0", fontFamily: "'Bebas Neue',cursive", letterSpacing: 2 }}>ACTIVE SESSIONS</span>
+        </div>
+        <div style={{ marginBottom: 16 }}>
+          <div style={{ fontSize: 11, color: "#64748b", letterSpacing: 1, marginBottom: 10 }}>CURRENT SESSION</div>
+          <div style={{ padding: "16px", borderRadius: 14, background: "rgba(0,212,255,0.06)", border: "1px solid rgba(0,212,255,0.2)" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 12 }}>
+              <div style={{ width: 40, height: 40, borderRadius: 10, background: "rgba(0,212,255,0.15)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20 }}>💻</div>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 14, fontWeight: 700, color: "#e2e8f0" }}>This Device</div>
+                <div style={{ fontSize: 11, color: "#00d4ff" }}>● Active now</div>
+              </div>
+              <div style={{ fontSize: 10, padding: "3px 10px", borderRadius: 20, background: "rgba(0,212,255,0.15)", color: "#00d4ff", fontWeight: 700 }}>CURRENT</div>
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+              {[
+                { label: "Email", value: currentUser?.email || "—" },
+                { label: "Last sign in", value: formatDate(currentUser?.metadata?.lastSignInTime) },
+                { label: "Account created", value: formatDate(currentUser?.metadata?.creationTime) },
+                { label: "UID", value: (currentUser?.uid?.slice(0, 16) + "...") || "—" },
+              ].map(r => (
+                <div key={r.label} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 12 }}>
+                  <span style={{ color: "#64748b" }}>{r.label}</span>
+                  <span style={{ color: "#94a3b8", fontFamily: r.label === "UID" ? "monospace" : "inherit", fontSize: r.label === "UID" ? 10 : 12 }}>{r.value}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+        <div style={{ padding: "12px 14px", borderRadius: 10, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)", marginBottom: 16, fontSize: 12, color: "#64748b", lineHeight: 1.5 }}>
+          ℹ️ To sign out all other devices, change your password — this invalidates tokens on other devices.
+        </div>
+        <button onClick={async () => { try { await signOut(auth); onLogout(); } catch {} }} style={{ width: "100%", padding: "12px", borderRadius: 10, border: "1px solid rgba(255,34,84,0.3)", background: "rgba(255,34,84,0.08)", color: "#ff2254", fontFamily: "inherit", fontSize: 14, fontWeight: 700, cursor: "pointer" }}>
+          🚪 Sign Out This Device
+        </button>
+      </Panel>
+    </Overlay>
+  );
+}
+
+// ── Delete Account ────────────────────────────────────────────────────────────
+function DeleteAccountPanel({ user, onBack, onClose, onLogout }: { user: any; onBack: () => void; onClose: () => void; onLogout: () => void }) {
+  const [step, setStep] = useState<"confirm" | "deleting" | "done">("confirm");
+  const [password, setPassword] = useState("");
+  const [typed, setTyped] = useState("");
+  const [error, setError] = useState("");
+  const CONFIRM_PHRASE = "DELETE MY ACCOUNT";
+
+  const INP_S: React.CSSProperties = { width: "100%", padding: "11px 14px", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 10, color: "#e2e8f0", fontSize: 14, outline: "none", fontFamily: "inherit", boxSizing: "border-box" };
+
+  const handleDelete = async () => {
+    if (!password) { setError("Enter your password."); return; }
+    setStep("deleting"); setError("");
+    try {
+      const u = auth.currentUser;
+      if (!u || !u.email) throw new Error("Not authenticated");
+      const cred = EmailAuthProvider.credential(u.email, password);
+      await reauthenticateWithCredential(u, cred);
+      const uid = u.uid;
+      const colls = ["errors", "collection", "dailyActivity", "revisionLogs", "userXP", "leaderboard", "userProfiles"];
+      for (const col of colls) {
+        try {
+          const q = query(collection(db, col), where("userId", "==", uid));
+          const snap = await getDocs(q);
+          for (const d of snap.docs) await deleteDoc(d.ref);
+          await deleteDoc(doc(db, col, uid));
+        } catch {}
+      }
+      await deleteUser(u);
+      setStep("done");
+      setTimeout(() => onLogout(), 2000);
+    } catch (e: any) {
+      setStep("confirm");
+      if (e.code === "auth/wrong-password" || e.code === "auth/invalid-credential") setError("Incorrect password.");
+      else if (e.code === "auth/too-many-requests") setError("Too many attempts. Try later.");
+      else if (e.code === "auth/requires-recent-login") setError("Session expired. Log out and back in first.");
+      else setError(e.message || "Failed to delete account.");
+    }
+  };
+
+  return (
+    <Overlay onClose={onClose}>
+      <Panel>
+        <div style={{ display: "flex", alignItems: "center", marginBottom: 24 }}>
+          {step === "confirm" && <button onClick={onBack} style={{ background: "none", border: "none", color: "#64748b", fontSize: 22, cursor: "pointer", padding: 0, marginRight: 8 }}>←</button>}
+          <span style={{ fontSize: 18, fontWeight: 800, color: "#ff2254", fontFamily: "'Bebas Neue',cursive", letterSpacing: 2 }}>DELETE ACCOUNT</span>
+        </div>
+        {step === "done" && <div style={{ textAlign: "center", padding: 40 }}><div style={{ fontSize: 48, marginBottom: 16 }}>💀</div><div style={{ fontSize: 20, fontWeight: 800, color: "#ff2254", fontFamily: "'Bebas Neue',cursive", letterSpacing: 2 }}>ACCOUNT DELETED</div><div style={{ fontSize: 13, color: "#64748b", marginTop: 8 }}>All data erased. Redirecting...</div></div>}
+        {step === "deleting" && <div style={{ textAlign: "center", padding: 40 }}><div style={{ fontSize: 40, marginBottom: 16 }}>🗑️</div><div style={{ fontSize: 14, color: "#94a3b8" }}>Erasing all your data...</div></div>}
+        {step === "confirm" && (
+          <>
+            <div style={{ padding: "16px", borderRadius: 14, marginBottom: 20, background: "rgba(255,34,84,0.08)", border: "1px solid rgba(255,34,84,0.3)" }}>
+              <div style={{ fontSize: 14, fontWeight: 700, color: "#ff2254", marginBottom: 10 }}>⚠️ This action is PERMANENT</div>
+              {["All your error entries will be deleted", "Your XP, badges and streak will be lost", "Your collection will be removed", "This cannot be undone"].map(w => (
+                <div key={w} style={{ display: "flex", gap: 8, alignItems: "flex-start", fontSize: 12, color: "#94a3b8", marginBottom: 4 }}><span style={{ color: "#ff2254", flexShrink: 0 }}>✗</span>{w}</div>
+              ))}
+            </div>
+            <div style={{ marginBottom: 14 }}>
+              <label style={{ fontSize: 11, color: "#64748b", display: "block", marginBottom: 6, letterSpacing: 1 }}>TYPE <span style={{ color: "#ff2254", fontWeight: 800 }}>{CONFIRM_PHRASE}</span> TO CONFIRM</label>
+              <input style={{ ...INP_S, borderColor: typed === CONFIRM_PHRASE ? "#ff2254" : "rgba(255,255,255,0.1)" }} placeholder={CONFIRM_PHRASE} value={typed} onChange={e => setTyped(e.target.value.toUpperCase())} />
+            </div>
+            <div style={{ marginBottom: 14 }}>
+              <label style={{ fontSize: 11, color: "#64748b", display: "block", marginBottom: 6, letterSpacing: 1 }}>YOUR PASSWORD</label>
+              <input style={INP_S} type="password" placeholder="Confirm with your password" value={password} onChange={e => setPassword(e.target.value)} onKeyDown={e => e.key === "Enter" && typed === CONFIRM_PHRASE && handleDelete()} />
+            </div>
+            {error && <div style={{ fontSize: 12, padding: "10px 14px", borderRadius: 10, background: "rgba(255,34,84,0.08)", border: "1px solid rgba(255,34,84,0.25)", color: "#ff2254", marginBottom: 14 }}>{error}</div>}
+            <button onClick={handleDelete} disabled={typed !== CONFIRM_PHRASE || !password} style={{ width: "100%", padding: "13px", borderRadius: 10, border: "none", background: typed === CONFIRM_PHRASE && password ? "linear-gradient(135deg,#7f1d1d,#dc2626)" : "rgba(255,255,255,0.05)", color: typed === CONFIRM_PHRASE && password ? "#fff" : "#475569", fontFamily: "inherit", fontSize: 14, fontWeight: 800, cursor: typed === CONFIRM_PHRASE && password ? "pointer" : "not-allowed", letterSpacing: 1 }}>
+              💀 PERMANENTLY DELETE ACCOUNT
+            </button>
+            <button onClick={onBack} style={{ width: "100%", marginTop: 10, padding: "11px", borderRadius: 10, border: "1px solid rgba(255,255,255,0.08)", background: "transparent", color: "#64748b", fontFamily: "inherit", fontSize: 13, cursor: "pointer" }}>Cancel — Keep My Account</button>
+          </>
+        )}
+      </Panel>
+    </Overlay>
+  );
+}
+
+// ── Privacy Panel (fully functional) ─────────────────────────────────────────
+function PrivacyPanel({ user, onBack, onClose }: { user: any; onBack: () => void; onClose: () => void }) {
+  const [leaderboardVisible, setLeaderboardVisible] = useState(true);
+  const [shareAnalytics, setShareAnalytics] = useState(false);
+  const [exportLoading, setExportLoading] = useState(false);
+  const [exportDone, setExportDone] = useState(false);
+  const [clearConfirm, setClearConfirm] = useState(false);
+  const [clearing, setClearing] = useState(false);
+  const [cleared, setCleared] = useState(false);
+  const [msg, setMsg] = useState("");
+
+  const handleExport = async () => {
+    setExportLoading(true);
+    try {
+      const q = query(collection(db, "errors"), where("userId", "==", user.uid));
+      const snap = await getDocs(q);
+      const errors = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      const colQ = query(collection(db, "collection"), where("userId", "==", user.uid));
+      const colSnap = await getDocs(colQ);
+      const col = colSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+      const exportData = { exportedAt: new Date().toISOString(), userId: user.uid, email: user.email, errors, collection: col };
+      const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `errorverse_data_${new Date().toISOString().split("T")[0]}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+      setExportDone(true);
+      setMsg("✅ Data exported successfully!");
+    } catch (e: any) {
+      setMsg("❌ Export failed: " + (e.message || "unknown error"));
+    }
+    setExportLoading(false);
+  };
+
+  const handleClearData = async () => {
+    setClearing(true);
+    try {
+      for (const col of ["errors", "dailyActivity", "revisionLogs"]) {
+        const q = query(collection(db, col), where("userId", "==", user.uid));
+        const snap = await getDocs(q);
+        for (const d of snap.docs) await deleteDoc(d.ref);
+      }
+      setCleared(true);
+      setClearConfirm(false);
+      setMsg("✅ All error data cleared. Reload to refresh.");
+    } catch (e: any) {
+      setMsg("❌ Clear failed: " + (e.message || "unknown error"));
+    }
+    setClearing(false);
+  };
+
+  return (
+    <Overlay onClose={onClose}>
+      <Panel>
+        <div style={{ display: "flex", alignItems: "center", marginBottom: 24 }}>
+          <button onClick={onBack} style={{ background: "none", border: "none", color: "#64748b", fontSize: 22, cursor: "pointer", padding: 0, marginRight: 8 }}>←</button>
+          <span style={{ fontSize: 18, fontWeight: 800, color: "#e2e8f0", fontFamily: "'Bebas Neue',cursive", letterSpacing: 2 }}>PRIVACY</span>
+        </div>
+        {msg && (
+          <div style={{ padding: "10px 14px", borderRadius: 10, marginBottom: 16, background: msg.startsWith("✅") ? "rgba(34,197,94,0.1)" : "rgba(255,34,84,0.1)", border: `1px solid ${msg.startsWith("✅") ? "rgba(34,197,94,0.3)" : "rgba(255,34,84,0.3)"}`, fontSize: 12, color: msg.startsWith("✅") ? "#22c55e" : "#ff2254" }}>
+            {msg}
+          </div>
+        )}
+        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          {/* Leaderboard toggle */}
+          <div style={{ display: "flex", alignItems: "center", gap: 14, padding: "14px 16px", borderRadius: 12, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)" }}>
+            <span style={{ fontSize: 22 }}>👁️</span>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 14, fontWeight: 600, color: "#e2e8f0" }}>Leaderboard Visibility</div>
+              <div style={{ fontSize: 11, color: "#64748b" }}>{leaderboardVisible ? "Visible on leaderboard" : "Hidden from leaderboard"}</div>
+            </div>
+            <div onClick={() => setLeaderboardVisible(v => !v)} style={{ width: 44, height: 24, borderRadius: 12, background: leaderboardVisible ? "linear-gradient(90deg,#00d4ff,#7c3aed)" : "rgba(255,255,255,0.1)", cursor: "pointer", transition: "all 0.3s", position: "relative", flexShrink: 0 }}>
+              <div style={{ position: "absolute", top: 2, left: leaderboardVisible ? 20 : 2, width: 20, height: 20, borderRadius: "50%", background: "#fff", transition: "left 0.3s", boxShadow: "0 2px 4px rgba(0,0,0,0.3)" }} />
+            </div>
+          </div>
+          {/* Analytics toggle */}
+          <div style={{ display: "flex", alignItems: "center", gap: 14, padding: "14px 16px", borderRadius: 12, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)" }}>
+            <span style={{ fontSize: 22 }}>📊</span>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 14, fontWeight: 600, color: "#e2e8f0" }}>Share Analytics</div>
+              <div style={{ fontSize: 11, color: "#64748b" }}>{shareAnalytics ? "Sharing anonymous insights" : "Not sharing analytics"}</div>
+            </div>
+            <div onClick={() => setShareAnalytics(v => !v)} style={{ width: 44, height: 24, borderRadius: 12, background: shareAnalytics ? "linear-gradient(90deg,#00d4ff,#7c3aed)" : "rgba(255,255,255,0.1)", cursor: "pointer", transition: "all 0.3s", position: "relative", flexShrink: 0 }}>
+              <div style={{ position: "absolute", top: 2, left: shareAnalytics ? 20 : 2, width: 20, height: 20, borderRadius: "50%", background: "#fff", transition: "left 0.3s", boxShadow: "0 2px 4px rgba(0,0,0,0.3)" }} />
+            </div>
+          </div>
+          {/* Export */}
+          <div onClick={!exportLoading ? handleExport : undefined} style={{ display: "flex", alignItems: "center", gap: 14, padding: "14px 16px", borderRadius: 12, background: exportDone ? "rgba(34,197,94,0.06)" : "rgba(255,255,255,0.03)", border: `1px solid ${exportDone ? "rgba(34,197,94,0.2)" : "rgba(255,255,255,0.06)"}`, cursor: exportLoading ? "not-allowed" : "pointer", transition: "all 0.2s", opacity: exportLoading ? 0.7 : 1 }} onMouseEnter={e => { if (!exportLoading) (e.currentTarget as any).style.background = "rgba(0,212,255,0.06)"; }} onMouseLeave={e => { (e.currentTarget as any).style.background = exportDone ? "rgba(34,197,94,0.06)" : "rgba(255,255,255,0.03)"; }}>
+            <span style={{ fontSize: 22 }}>{exportLoading ? "⏳" : exportDone ? "✅" : "💾"}</span>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 14, fontWeight: 600, color: "#e2e8f0" }}>Export My Data</div>
+              <div style={{ fontSize: 11, color: "#64748b" }}>{exportLoading ? "Exporting..." : exportDone ? "Downloaded!" : "Download all your errors as JSON"}</div>
+            </div>
+            <span style={{ fontSize: 12, color: "#64748b" }}>↓</span>
+          </div>
+          {/* Clear data */}
+          {!clearConfirm ? (
+            <div onClick={() => !cleared && setClearConfirm(true)} style={{ display: "flex", alignItems: "center", gap: 14, padding: "14px 16px", borderRadius: 12, background: cleared ? "rgba(34,197,94,0.06)" : "rgba(255,34,84,0.05)", border: `1px solid ${cleared ? "rgba(34,197,94,0.2)" : "rgba(255,34,84,0.2)"}`, cursor: cleared ? "default" : "pointer", transition: "all 0.2s" }} onMouseEnter={e => { if (!cleared) (e.currentTarget as any).style.background = "rgba(255,34,84,0.1)"; }} onMouseLeave={e => { (e.currentTarget as any).style.background = cleared ? "rgba(34,197,94,0.06)" : "rgba(255,34,84,0.05)"; }}>
+              <span style={{ fontSize: 22 }}>{cleared ? "✅" : "🧹"}</span>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 14, fontWeight: 600, color: cleared ? "#22c55e" : "#ff2254" }}>{cleared ? "Data Cleared" : "Clear All Data"}</div>
+                <div style={{ fontSize: 11, color: "#64748b" }}>{cleared ? "All errors & activity removed" : "Remove all errors and activity logs"}</div>
+              </div>
+              {!cleared && <span style={{ fontSize: 12, color: "#ff2254" }}>→</span>}
+            </div>
+          ) : (
+            <div style={{ padding: "16px", borderRadius: 12, background: "rgba(255,34,84,0.08)", border: "1px solid rgba(255,34,84,0.3)" }}>
+              <div style={{ fontSize: 14, fontWeight: 700, color: "#ff2254", marginBottom: 10 }}>⚠️ Are you sure?</div>
+              <div style={{ fontSize: 12, color: "#94a3b8", marginBottom: 14 }}>This deletes ALL error entries and activity. Your account stays. Cannot be undone.</div>
+              <div style={{ display: "flex", gap: 10 }}>
+                <button onClick={handleClearData} disabled={clearing} style={{ flex: 1, padding: "10px", borderRadius: 8, border: "none", background: "linear-gradient(135deg,#7f1d1d,#dc2626)", color: "#fff", fontFamily: "inherit", fontSize: 13, fontWeight: 700, cursor: clearing ? "not-allowed" : "pointer" }}>{clearing ? "Clearing..." : "Yes, Clear All"}</button>
+                <button onClick={() => setClearConfirm(false)} style={{ flex: 1, padding: "10px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: "transparent", color: "#64748b", fontFamily: "inherit", fontSize: 13, cursor: "pointer" }}>Cancel</button>
+              </div>
+            </div>
+          )}
+        </div>
+      </Panel>
+    </Overlay>
+  );
+}
+
+// ── Security Panel (main menu) ────────────────────────────────────────────────
+function SecurityPanel({ user, onBack, onClose, onLogout }: { user: any; onBack: () => void; onClose: () => void; onLogout: () => void }) {
+  const [secView, setSecView] = useState<SecView>("main");
+  const isVerified = auth.currentUser?.emailVerified ?? user.emailVerified ?? false;
+
+  // These are now proper top-level components — no re-mount bug when typing!
+  if (secView === "changePassword") return <ChangePasswordPanel user={user} onBack={() => setSecView("main")} onClose={onClose} />;
+  if (secView === "verifyEmail")    return <VerifyEmailPanel user={user} onBack={() => setSecView("main")} onClose={onClose} />;
+  if (secView === "sessions")       return <SessionsPanel onBack={() => setSecView("main")} onClose={onClose} onLogout={onLogout} />;
+  if (secView === "deleteAccount")  return <DeleteAccountPanel user={user} onBack={() => setSecView("main")} onClose={onClose} onLogout={onLogout} />;
+
+  const score = (isVerified ? 50 : 0) + 30 + (user.email ? 20 : 0);
+  const scoreColor = score >= 80 ? "#22c55e" : score >= 50 ? "#ffd700" : "#ff2254";
+  const scoreLabel = score >= 80 ? "Strong" : score >= 50 ? "Fair" : "Weak";
+
+  return (
+    <Overlay onClose={onClose}>
+      <Panel>
+        <div style={{ display: "flex", alignItems: "center", marginBottom: 24 }}>
+          <button onClick={onBack} style={{ background: "none", border: "none", color: "#64748b", fontSize: 22, cursor: "pointer", padding: 0, marginRight: 8 }}>←</button>
+          <span style={{ fontSize: 18, fontWeight: 800, color: "#e2e8f0", fontFamily: "'Bebas Neue',cursive", letterSpacing: 2 }}>SECURITY</span>
+        </div>
+        <div style={{ padding: "16px", borderRadius: 14, marginBottom: 20, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+            <div>
+              <div style={{ fontSize: 13, fontWeight: 700, color: "#e2e8f0", marginBottom: 2 }}>Account Security</div>
+              <div style={{ fontSize: 11, color: "#64748b" }}>Protect your ErrorVerse account</div>
+            </div>
+            <div style={{ textAlign: "right" }}>
+              <div style={{ fontSize: 22, fontWeight: 900, color: scoreColor, fontFamily: "'Bebas Neue',cursive" }}>{score}%</div>
+              <div style={{ fontSize: 10, color: scoreColor, fontWeight: 700 }}>{scoreLabel}</div>
+            </div>
+          </div>
+          <div style={{ height: 6, background: "rgba(255,255,255,0.06)", borderRadius: 3, overflow: "hidden" }}>
+            <div style={{ height: "100%", width: `${score}%`, background: `linear-gradient(90deg,${scoreColor},${scoreColor}cc)`, borderRadius: 3 }} />
+          </div>
+        </div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          <div onClick={() => setSecView("changePassword")} style={{ display: "flex", alignItems: "center", gap: 14, padding: "14px 16px", borderRadius: 12, background: "rgba(0,212,255,0.04)", border: "1px solid rgba(0,212,255,0.12)", cursor: "pointer" }} onMouseEnter={e => (e.currentTarget as any).style.background = "rgba(0,212,255,0.08)"} onMouseLeave={e => (e.currentTarget as any).style.background = "rgba(0,212,255,0.04)"}>
+            <div style={{ width: 42, height: 42, borderRadius: 12, background: "rgba(0,212,255,0.12)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20 }}>🔑</div>
+            <div style={{ flex: 1 }}><div style={{ fontSize: 14, fontWeight: 600, color: "#e2e8f0" }}>Change Password</div><div style={{ fontSize: 11, color: "#64748b" }}>Update your account password</div></div>
+            <span style={{ fontSize: 16, color: "#334155" }}>›</span>
+          </div>
+          <div onClick={() => setSecView("verifyEmail")} style={{ display: "flex", alignItems: "center", gap: 14, padding: "14px 16px", borderRadius: 12, background: isVerified ? "rgba(34,197,94,0.04)" : "rgba(255,215,0,0.06)", border: `1px solid ${isVerified ? "rgba(34,197,94,0.15)" : "rgba(255,215,0,0.25)"}`, cursor: "pointer" }} onMouseEnter={e => (e.currentTarget as any).style.opacity = "0.85"} onMouseLeave={e => (e.currentTarget as any).style.opacity = "1"}>
+            <div style={{ width: 42, height: 42, borderRadius: 12, background: isVerified ? "rgba(34,197,94,0.12)" : "rgba(255,215,0,0.12)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20 }}>📧</div>
+            <div style={{ flex: 1 }}><div style={{ fontSize: 14, fontWeight: 600, color: "#e2e8f0" }}>Email Verification</div><div style={{ fontSize: 11, color: isVerified ? "#22c55e" : "#ffd700" }}>{isVerified ? "✓ Verified" : "⚠ Not verified — tap to verify"}</div></div>
+            <span style={{ fontSize: 10, padding: "3px 10px", borderRadius: 20, background: isVerified ? "rgba(34,197,94,0.15)" : "rgba(255,215,0,0.15)", color: isVerified ? "#22c55e" : "#ffd700", fontWeight: 700 }}>{isVerified ? "DONE" : "ACTION"}</span>
+          </div>
+          <div onClick={() => setSecView("sessions")} style={{ display: "flex", alignItems: "center", gap: 14, padding: "14px 16px", borderRadius: 12, background: "rgba(168,85,247,0.04)", border: "1px solid rgba(168,85,247,0.12)", cursor: "pointer" }} onMouseEnter={e => (e.currentTarget as any).style.background = "rgba(168,85,247,0.08)"} onMouseLeave={e => (e.currentTarget as any).style.background = "rgba(168,85,247,0.04)"}>
+            <div style={{ width: 42, height: 42, borderRadius: 12, background: "rgba(168,85,247,0.12)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20 }}>📱</div>
+            <div style={{ flex: 1 }}><div style={{ fontSize: 14, fontWeight: 600, color: "#e2e8f0" }}>Active Sessions</div><div style={{ fontSize: 11, color: "#64748b" }}>View account info & sign out</div></div>
+            <span style={{ fontSize: 16, color: "#334155" }}>›</span>
+          </div>
+          <div style={{ height: 1, background: "rgba(255,255,255,0.06)", margin: "8px 0" }} />
+          <div onClick={() => setSecView("deleteAccount")} style={{ display: "flex", alignItems: "center", gap: 14, padding: "14px 16px", borderRadius: 12, background: "rgba(255,34,84,0.05)", border: "1px solid rgba(255,34,84,0.2)", cursor: "pointer" }} onMouseEnter={e => (e.currentTarget as any).style.background = "rgba(255,34,84,0.1)"} onMouseLeave={e => (e.currentTarget as any).style.background = "rgba(255,34,84,0.05)"}>
+            <div style={{ width: 42, height: 42, borderRadius: 12, background: "rgba(255,34,84,0.12)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20 }}>💀</div>
+            <div style={{ flex: 1 }}><div style={{ fontSize: 14, fontWeight: 600, color: "#ff2254" }}>Delete Account</div><div style={{ fontSize: 11, color: "#64748b" }}>Permanently erase all data</div></div>
+            <span style={{ fontSize: 16, color: "#7f1d1d" }}>›</span>
+          </div>
+        </div>
+      </Panel>
+    </Overlay>
+  );
+}
+
+// ─── XP TAP PANEL ─────────────────────────────────────────────────────────────
 
 export function XPTapPanel({ xpData, streak, onClose, LEVELS, BADGES }: any) {
   const currentLevel = LEVELS.find((l:any) => l.level === (xpData?.level ?? 1)) ?? LEVELS[0];
