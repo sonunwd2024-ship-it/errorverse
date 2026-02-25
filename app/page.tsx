@@ -1056,14 +1056,16 @@ async function compressImage(file: File): Promise<{ blob: Blob; dataUrl: string 
 
 async function uploadImageToStorage(file: File, userId: string): Promise<string> {
   const { blob, dataUrl } = await compressImage(file);
+  // Try Firebase Storage first
   try {
     const path = `errors/${userId}/${Date.now()}_${Math.random().toString(36).slice(2)}.jpg`;
     const storageRef = ref(storage, path);
     await uploadBytes(storageRef, blob);
-    return await getDownloadURL(storageRef);
+    const url = await getDownloadURL(storageRef);
+    return url;
   } catch (err: any) {
-    // If storage fails (rules not set / no internet), fall back to compressed dataURL
-    console.warn("Storage upload failed, using local fallback:", err?.code || err?.message);
+    console.warn("Storage upload failed, using dataURL fallback:", err?.code || err?.message);
+    // Always works — stores compressed image as dataURL
     return dataUrl;
   }
 }
@@ -1071,42 +1073,80 @@ async function uploadImageToStorage(file: File, userId: string): Promise<string>
 function PhotoUploadBox({ label, value, onChange, userId }: { label: string; value: string|null; onChange: (v: string|null) => void; userId: string }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
+  const [error, setError] = useState("");
+
+  const handleFile = async (file: File) => {
+    if (!file) return;
+    // Validate file type
+    if (!file.type.startsWith("image/")) { setError("Only image files allowed"); return; }
+    // Validate file size (max 15MB raw)
+    if (file.size > 15 * 1024 * 1024) { setError("Image too large (max 15MB)"); return; }
+    setError("");
+    setUploading(true);
+    try {
+      const url = await uploadImageToStorage(file, userId || "anon");
+      onChange(url);
+    } catch(err) {
+      console.error("Upload failed:", err);
+      setError("Upload failed. Try again.");
+    } finally {
+      setUploading(false);
+      // Reset input so same file can be re-selected
+      if (inputRef.current) inputRef.current.value = "";
+    }
+  };
+
   return (
     <div>
       <label style={{ fontSize:11, color:"#64748b", display:"block", marginBottom:4 }}>{label}</label>
       <div
-        onClick={() => !uploading && inputRef.current?.click()}
+        onClick={() => { if (!uploading) { setError(""); inputRef.current?.click(); } }}
         style={{
-          width:"100%", minHeight:80, borderRadius:10,
-          border:`2px dashed ${value ? "#22c55e" : uploading ? "#f97316" : "rgba(255,255,255,0.12)"}`,
-          background: value ? "rgba(34,197,94,0.06)" : "rgba(255,255,255,0.02)",
+          width:"100%", minHeight:90, borderRadius:12,
+          border:`2px dashed ${error ? "#ff2254" : value ? "#22c55e" : uploading ? "#f97316" : "rgba(255,255,255,0.15)"}`,
+          background: error ? "rgba(255,34,84,0.05)" : value ? "rgba(34,197,94,0.06)" : "rgba(255,255,255,0.03)",
           display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center",
           cursor: uploading ? "wait" : "pointer", position:"relative", overflow:"hidden", transition:"all 0.2s",
         }}
       >
         {uploading ? (
-          <>
-            <span style={{ fontSize:22, marginBottom:4 }}>⏳</span>
-            <span style={{ fontSize:11, color:"#f97316" }}>Uploading...</span>
-          </>
+          <div style={{ textAlign:"center", padding:16 }}>
+            <div style={{ fontSize:28, marginBottom:6, animation:"pulse 1s infinite" }}>⏳</div>
+            <div style={{ fontSize:12, color:"#f97316", fontWeight:600 }}>Processing photo...</div>
+          </div>
+        ) : error ? (
+          <div style={{ textAlign:"center", padding:12 }}>
+            <div style={{ fontSize:24, marginBottom:4 }}>⚠️</div>
+            <div style={{ fontSize:11, color:"#ff2254" }}>{error}</div>
+            <div style={{ fontSize:10, color:"#475569", marginTop:4 }}>Tap to try again</div>
+          </div>
         ) : value ? (
           <>
-            <img src={value} alt="" style={{ maxHeight:120, maxWidth:"100%", objectFit:"contain", borderRadius:8 }} />
-            <button onClick={e => { e.stopPropagation(); onChange(null); }} style={{ position:"absolute", top:6, right:6, background:"rgba(255,34,84,0.85)", border:"none", borderRadius:"50%", width:22, height:22, color:"#fff", fontSize:12, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}>✕</button>
+            <img src={value} alt="" style={{ maxHeight:130, maxWidth:"100%", objectFit:"contain", borderRadius:8 }} />
+            <button
+              onClick={e => { e.stopPropagation(); onChange(null); setError(""); }}
+              style={{ position:"absolute", top:6, right:6, background:"rgba(255,34,84,0.9)", border:"none", borderRadius:"50%", width:24, height:24, color:"#fff", fontSize:14, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", fontWeight:700 }}>
+              ✕
+            </button>
+            <div style={{ position:"absolute", bottom:4, left:"50%", transform:"translateX(-50%)", fontSize:10, color:"rgba(255,255,255,0.5)", background:"rgba(0,0,0,0.5)", padding:"2px 8px", borderRadius:10, whiteSpace:"nowrap" as const }}>
+              ✅ Photo added · tap ✕ to remove
+            </div>
           </>
         ) : (
-          <>
-            <span style={{ fontSize:24, marginBottom:4 }}>📷</span>
-            <span style={{ fontSize:11, color:"#475569" }}>Tap to upload photo</span>
-          </>
+          <div style={{ textAlign:"center", padding:16 }}>
+            <div style={{ fontSize:32, marginBottom:6 }}>📷</div>
+            <div style={{ fontSize:12, color:"#64748b", fontWeight:600 }}>Tap to add photo</div>
+            <div style={{ fontSize:10, color:"#334155", marginTop:3 }}>JPG, PNG up to 15MB</div>
+          </div>
         )}
-        <input ref={inputRef} type="file" accept="image/*" style={{ display:"none" }} onChange={async e => {
-          const f = e.target.files?.[0]; if (!f) return;
-          setUploading(true);
-          try { const url = await uploadImageToStorage(f, userId); onChange(url); }
-          catch(err) { console.error("Upload failed:", err); alert("Photo failed to load. Please try a smaller image."); }
-          finally { setUploading(false); }
-        }} />
+        <input
+          ref={inputRef}
+          type="file"
+          accept="image/*"
+          capture="environment"
+          style={{ display:"none" }}
+          onChange={e => { const f = e.target.files?.[0]; if (f) handleFile(f); }}
+        />
       </div>
     </div>
   );
