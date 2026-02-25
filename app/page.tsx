@@ -11,6 +11,7 @@
 */
 import { useState, useEffect, useRef, useCallback, useMemo, memo } from "react";
 import { signUp, signIn, logOut, onAuth } from "../lib/auth";
+import { updateProfile } from "firebase/auth";
 import {
   addError, getErrors, deleteError,
   addCollectionEntry, getCollection, deleteCollectionEntry,
@@ -2541,11 +2542,15 @@ export default function App() {
   }, [allErrors]);
 
   const handleUpdateProfile = useCallback(async (data: any) => {
+    // Update local state immediately — no waiting, no blink
     if (data.displayName) setDisplayName(data.displayName);
     if (data.avatar) setUserAvatar(data.avatar);
     if (data.photoURL !== undefined) setUserPhoto(data.photoURL ?? null);
     if (user) {
-      await syncLeaderboard(user.uid, data.displayName || displayName, streak);
+      const newName = data.displayName || displayName;
+      // Also update Firebase Auth profile so it persists on next login
+      try { await updateProfile(user, { displayName: newName }); } catch(e) {}
+      await syncLeaderboard(user.uid, newName, streak);
     }
   }, [user, displayName, streak, syncLeaderboard]);
 
@@ -2566,7 +2571,9 @@ export default function App() {
       setProfileLoaded(true);
       await syncLeaderboard(uid, finalName, s);
     } else {
-      setProfileLoaded(true); // no profile — auth name is final
+      // No Firestore profile yet — use auth name as final
+      setDisplayName(name);
+      setProfileLoaded(true);
       await syncLeaderboard(uid, name, s);
     }
     if (isNew || (!xp && !profile)) {
@@ -2595,10 +2602,9 @@ export default function App() {
     const unsub = onAuth(async u => {
       setUser(u); setAuthLoading(false);
       if (u) {
-        // Set auth name as initial fallback — loadStats will overwrite with profile name
         const authName = u.displayName || u.email?.split("@")[0] || "Warrior";
-        setDisplayName(authName);
         const isNew = u.metadata?.creationTime === u.metadata?.lastSignInTime;
+        // Don't set displayName here — loadStats sets it ONCE from Firestore
         loadStats(u.uid, authName, isNew);
         // Load errors once — shared across all tabs
         getErrors(u.uid).then(e => { setAllErrors(e); setErrorsLoaded(true); });
