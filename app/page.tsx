@@ -2549,19 +2549,25 @@ export default function App() {
   }, [user, displayName, streak, syncLeaderboard]);
 
   const loadStats = useCallback(async (uid: string, name: string, isNew?: boolean) => {
-    const [s, t, xp] = await Promise.all([getStreak(uid), getTodayEntryCount(uid), getUserXP(uid)]);
+    // Load profile FIRST so name is set before anything else renders
+    const [profile, s, t, xp] = await Promise.all([
+      loadUserProfile(uid),
+      getStreak(uid),
+      getTodayEntryCount(uid),
+      getUserXP(uid),
+    ]);
     setStreak(s); setTodayCount(t); setXpData(xp);
-    const profile = await loadUserProfile(uid);
     if (profile) {
-      const resolvedName = profile.displayName || name;
-      if (profile.displayName) setDisplayName(profile.displayName);
+      // Profile name is the final truth — set it once, no more changes
+      const finalName = profile.displayName || name;
+      setDisplayName(finalName);
       if (profile.avatar) setUserAvatar(profile.avatar);
       if (profile.photoURL !== undefined) setUserPhoto(profile.photoURL ?? null);
-      await syncLeaderboard(uid, resolvedName, s);
+      await syncLeaderboard(uid, finalName, s);
     } else {
+      // No profile yet — keep the auth name already set
       await syncLeaderboard(uid, name, s);
     }
-    // Show welcome for brand new users (no XP data yet)
     if (isNew || (!xp && !profile)) {
       setShowWelcome(true);
     }
@@ -2588,10 +2594,11 @@ export default function App() {
     const unsub = onAuth(async u => {
       setUser(u); setAuthLoading(false);
       if (u) {
-        const name = u.displayName || u.email?.split("@")[0] || "Warrior";
-        setDisplayName(name);
+        // Set auth name as initial fallback — loadStats will overwrite with profile name
+        const authName = u.displayName || u.email?.split("@")[0] || "Warrior";
+        setDisplayName(authName);
         const isNew = u.metadata?.creationTime === u.metadata?.lastSignInTime;
-        loadStats(u.uid, name, isNew);
+        loadStats(u.uid, authName, isNew);
         // Load errors once — shared across all tabs
         getErrors(u.uid).then(e => { setAllErrors(e); setErrorsLoaded(true); });
       } else {
@@ -2645,7 +2652,7 @@ export default function App() {
       `}</style>
       <Particles/>
       <div style={{ position:"relative", zIndex:10 }}>
-        <AuthScreen onLogin={u => { setUser(u); const name = u.displayName||u.email?.split("@")[0]||"Warrior"; setDisplayName(name); loadStats(u.uid, name, true); }} />
+        <AuthScreen onLogin={u => { setUser(u); }} />
       </div>
     </div>
   );
