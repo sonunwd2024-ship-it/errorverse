@@ -122,9 +122,11 @@ export function getNenLeague(xp: number) {
 // ─── SHARED STYLES ────────────────────────────────────────────────────────────
 
 const INP_STYLE: React.CSSProperties = {
-  width:"100%", padding:"10px 14px", background:"rgba(255,255,255,0.05)",
-  border:"1px solid rgba(255,255,255,0.1)", borderRadius:8, color:"#e2e8f0",
-  fontSize:13, outline:"none", fontFamily:"inherit", boxSizing:"border-box",
+  width:"100%", padding:"11px 14px", background:"rgba(255,255,255,0.06)",
+  border:"1px solid rgba(255,255,255,0.12)", borderRadius:10, color:"#e2e8f0",
+  fontSize:14, outline:"none", fontFamily:"inherit", boxSizing:"border-box",
+  WebkitTextFillColor:"#e2e8f0", caretColor:"#00d4ff",
+  transition:"border-color 0.2s, background 0.2s",
 };
 
 const CHIP = (active: boolean, color: string): React.CSSProperties => ({
@@ -918,8 +920,8 @@ function AuthScreen({ onLogin }: { onLogin:(u:any)=>void }) {
           </div>
           <div style={{ display:"flex",flexDirection:"column",gap:14 }}>
             {mode==="signup"&&<input style={INP_STYLE} placeholder="Full Name" value={name} onChange={e=>setName(e.target.value)} />}
-            <input style={INP_STYLE} placeholder="Email" type="email" value={email} onChange={e=>setEmail(e.target.value)} />
-            <input style={INP_STYLE} placeholder="Password" type="password" value={password} onChange={e=>setPassword(e.target.value)} onKeyDown={e=>e.key==="Enter"&&handle()} />
+            <input style={INP_STYLE} placeholder="Email" type="email" value={email} onChange={e=>setEmail(e.target.value)} autoComplete="email" spellCheck={false} />
+            <input style={INP_STYLE} placeholder="Password" type="password" value={password} onChange={e=>setPassword(e.target.value)} onKeyDown={e=>e.key==="Enter"&&handle()} autoComplete="current-password" />
             {error&&<div style={{ fontSize:12,color:"#ff2254",padding:"8px 12px",background:"rgba(255,34,84,0.1)",borderRadius:8 }}>{error}</div>}
             <button onClick={handle} disabled={loading} style={{ width:"100%",padding:"13px",borderRadius:10,border:"none",background:loading?"rgba(0,212,255,0.3)":"linear-gradient(135deg,#00d4ff,#0066ff)",color:"#fff",fontFamily:"inherit",fontSize:15,fontWeight:700,cursor:loading?"not-allowed":"pointer",letterSpacing:1 }}>
               {loading?"...":(mode==="login"?"ENTER THE VERSE":"BEGIN JOURNEY")}
@@ -2543,7 +2545,13 @@ export default function App() {
         @keyframes popIn{from{transform:translateX(-50%) scale(0.5);opacity:0}to{transform:translateX(-50%) scale(1);opacity:1}}
         @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.5}}
         button{-webkit-tap-highlight-color:transparent;touch-action:manipulation}
-        input,select,textarea{-webkit-appearance:none}
+        input:focus,select:focus,textarea:focus{outline:none}
+        input:-webkit-autofill,input:-webkit-autofill:hover,input:-webkit-autofill:focus{
+          -webkit-text-fill-color:#e2e8f0 !important;
+          -webkit-box-shadow:0 0 0px 1000px rgba(255,255,255,0.05) inset !important;
+          transition:background-color 5000s ease-in-out 0s;
+          caret-color:#e2e8f0;
+        }
         img{content-visibility:auto}
         .tab-content{contain:layout style}
 
