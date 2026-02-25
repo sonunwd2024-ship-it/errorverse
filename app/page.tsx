@@ -17,7 +17,6 @@ import { db } from "../lib/firebase";
 import { doc, getDoc } from "firebase/firestore";
 import { ProfilePanel, XPTapPanel, AvatarDisplay, loadUserProfile, getAvatar } from "./ProfilePanel";
 import { AIHub } from "./AIFeatures";
-import { HeatCalendar } from "./HeatCalendar";
 
 // ─── CONSTANTS ────────────────────────────────────────────────────────────────
 
@@ -1788,6 +1787,116 @@ function AITabLoader({ userId }: { userId: string }) {
   return <AIHub userId={userId} errors={errors} collection={collection} />;
 }
 
+// ─── INLINE HEAT MAP (clickable, self-contained) ──────────────────────────────
+
+function InlineHeatMap({ errors, onDayClick }: { errors: ErrorEntry[]; onDayClick: (date: string) => void }) {
+  const today = new Date();
+  const countByDay: Record<string, number> = {};
+  errors.forEach(e => { if (e.date) countByDay[e.date] = (countByDay[e.date] || 0) + 1; });
+
+  const todayStr = today.toISOString().split("T")[0];
+  const startDate = new Date(today);
+  startDate.setDate(startDate.getDate() - startDate.getDay());
+  startDate.setDate(startDate.getDate() - 25 * 7);
+
+  const weeks: { date: string; count: number }[][] = [];
+  for (let w = 0; w < 26; w++) {
+    const week: { date: string; count: number }[] = [];
+    for (let d = 0; d < 7; d++) {
+      const cur = new Date(startDate);
+      cur.setDate(startDate.getDate() + w * 7 + d);
+      if (cur > today) { week.push({ date: "", count: 0 }); continue; }
+      const iso = cur.toISOString().split("T")[0];
+      week.push({ date: iso, count: countByDay[iso] || 0 });
+    }
+    weeks.push(week);
+  }
+
+  const maxCount = Math.max(1, ...Object.values(countByDay));
+  const getColor = (count: number) => {
+    if (count === 0) return "rgba(255,255,255,0.05)";
+    const i = count / maxCount;
+    if (i < 0.25) return "rgba(255,34,84,0.25)";
+    if (i < 0.5) return "rgba(255,34,84,0.5)";
+    if (i < 0.75) return "rgba(255,34,84,0.75)";
+    return "#ff2254";
+  };
+
+  const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  const days = ["S","M","T","W","T","F","S"];
+  const monthLabels: { label: string; col: number }[] = [];
+  let lastMonth = -1;
+  weeks.forEach((week, wi) => {
+    const first = week.find(d => d.date);
+    if (first) {
+      const m = new Date(first.date + "T00:00:00").getMonth();
+      if (m !== lastMonth) { monthLabels.push({ label: months[m], col: wi }); lastMonth = m; }
+    }
+  });
+
+  const totalAllTime = errors.length;
+  const totalThisYear = errors.filter(e => e.date?.startsWith(String(today.getFullYear()))).length;
+  const activeDays = Object.keys(countByDay).length;
+
+  return (
+    <div>
+      <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:12, marginBottom:20 }}>
+        {[
+          { label:"Total Errors", value:totalAllTime, icon:"📝", color:"#00d4ff" },
+          { label:"This Year", value:totalThisYear, icon:"📅", color:"#ff2254" },
+          { label:"Active Days", value:activeDays, icon:"🔥", color:"#f97316" },
+        ].map(s => (
+          <div key={s.label} style={{ padding:"14px 16px", borderRadius:14, background:"rgba(255,255,255,0.04)", border:"1px solid rgba(255,255,255,0.08)", textAlign:"center" }}>
+            <div style={{ fontSize:22 }}>{s.icon}</div>
+            <div style={{ fontSize:26, fontWeight:800, color:s.color, fontFamily:"'Bebas Neue',cursive", letterSpacing:2 }}>{s.value}</div>
+            <div style={{ fontSize:10, color:"#64748b", marginTop:2 }}>{s.label}</div>
+          </div>
+        ))}
+      </div>
+      <div style={{ padding:16, borderRadius:16, background:"rgba(255,255,255,0.03)", border:"1px solid rgba(255,255,255,0.07)", overflowX:"auto" }}>
+        <div style={{ fontSize:11, color:"#475569", fontWeight:700, letterSpacing:1, marginBottom:12 }}>MISTAKE HEAT MAP — Tap any day to see errors</div>
+        <div style={{ display:"flex", marginLeft:24, marginBottom:4 }}>
+          {weeks.map((_, wi) => {
+            const ml = monthLabels.find(m => m.col === wi);
+            return <div key={wi} style={{ width:14, flexShrink:0, fontSize:9, color:"#475569", textAlign:"center" }}>{ml ? ml.label : ""}</div>;
+          })}
+        </div>
+        <div style={{ display:"flex", gap:2 }}>
+          <div style={{ display:"flex", flexDirection:"column", gap:2, marginRight:4 }}>
+            {days.map((d, i) => <div key={i} style={{ width:14, height:14, fontSize:9, color:"#334155", display:"flex", alignItems:"center", justifyContent:"center" }}>{i % 2 === 1 ? d : ""}</div>)}
+          </div>
+          {weeks.map((week, wi) => (
+            <div key={wi} style={{ display:"flex", flexDirection:"column", gap:2 }}>
+              {week.map((cell, di) => (
+                <div
+                  key={di}
+                  onClick={() => { if (cell.date && cell.count > 0) onDayClick(cell.date); }}
+                  title={cell.date ? `${cell.date}: ${cell.count} error${cell.count !== 1 ? "s" : ""}` : ""}
+                  style={{
+                    width:14, height:14, borderRadius:3,
+                    background: cell.date ? getColor(cell.count) : "transparent",
+                    cursor: cell.date && cell.count > 0 ? "pointer" : "default",
+                    transition:"transform 0.1s",
+                    border: cell.date === todayStr ? "1px solid #00d4ff" : "none",
+                    boxSizing:"border-box" as const,
+                  }}
+                />
+              ))}
+            </div>
+          ))}
+        </div>
+        <div style={{ display:"flex", alignItems:"center", gap:6, marginTop:10, justifyContent:"flex-end" }}>
+          <span style={{ fontSize:10, color:"#475569" }}>Less</span>
+          {[0, 0.3, 0.6, 0.9, 1].map((i,idx) => (
+            <div key={idx} style={{ width:12, height:12, borderRadius:2, background:getColor(Math.round(i * maxCount)) }} />
+          ))}
+          <span style={{ fontSize:10, color:"#475569" }}>More</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── HEAT CALENDAR TAB LOADER ─────────────────────────────────────────────────
 
 function DayErrorsModal({ date, errors, onClose, onSelectError }: { date:string; errors:ErrorEntry[]; onClose:()=>void; onSelectError:(e:ErrorEntry)=>void }) {
@@ -1864,7 +1973,7 @@ function HeatCalendarLoader({ userId }: { userId: string }) {
           onClose={() => setSelectedError(null)}
         />
       )}
-      <HeatCalendar errors={errors} onDayClick={(date: string) => setSelectedDate(date)} />
+      <InlineHeatMap errors={errors} onDayClick={(date: string) => setSelectedDate(date)} />
     </>
   );
 }
