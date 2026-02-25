@@ -890,44 +890,121 @@ function StreakBanner({ todayCount, streak }: { todayCount:number; streak:number
 // ─── AUTH SCREEN ──────────────────────────────────────────────────────────────
 
 function AuthScreen({ onLogin }: { onLogin:(u:any)=>void }) {
-  const [mode,setMode]=useState("login"),[email,setEmail]=useState(""),[password,setPassword]=useState(""),[name,setName]=useState(""),[error,setError]=useState(""),[loading,setLoading]=useState(false);
+  const [mode,setMode]=useState("login");
+  const [email,setEmail]=useState("");
+  const [password,setPassword]=useState("");
+  const [name,setName]=useState("");
+  const [error,setError]=useState("");
+  const [loading,setLoading]=useState(false);
+
   const handle = async () => {
+    if (!email.trim() || !password.trim()) { setError("Please fill in all fields."); return; }
     setError(""); setLoading(true);
     try {
-      if (mode==="signup"&&!name.trim()){setError("Enter your name.");setLoading(false);return;}
-      const u=mode==="signup"?await signUp(email,password,name):await signIn(email,password);
-      if(u) onLogin(u);
+      if (mode==="signup" && !name.trim()) { setError("Enter your name."); setLoading(false); return; }
+      const u = mode==="signup" ? await signUp(email,password,name) : await signIn(email,password);
+      if (u) onLogin(u);
     } catch(e:any) {
-      setError(e.code==="auth/user-not-found"?"No account found.":e.code==="auth/wrong-password"?"Incorrect password.":e.code==="auth/email-already-in-use"?"Email already in use.":e.code==="auth/weak-password"?"Password must be 6+ chars.":"Something went wrong.");
+      const code = e.code || "";
+      setError(
+        code==="auth/user-not-found" ? "No account found. Please create one." :
+        code==="auth/invalid-credential" ? "Wrong email or password." :
+        code==="auth/wrong-password" ? "Incorrect password." :
+        code==="auth/email-already-in-use" ? "Email already in use." :
+        code==="auth/weak-password" ? "Password must be 6+ characters." :
+        code==="auth/invalid-email" ? "Please enter a valid email." :
+        "Something went wrong. Try again."
+      );
     }
     setLoading(false);
   };
+
+  const inputStyle: React.CSSProperties = {
+    width:"100%", padding:"13px 16px",
+    background:"#111827",
+    border:"1.5px solid #1e293b",
+    borderRadius:12, color:"#f1f5f9",
+    fontSize:15, fontFamily:"'DM Sans',sans-serif",
+    outline:"none", boxSizing:"border-box",
+    display:"block", WebkitTextFillColor:"#f1f5f9",
+  };
+
   return (
-    <div style={{ minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",padding:20 }}>
-      <div style={{ width:"100%",maxWidth:420 }}>
-        <div style={{ textAlign:"center",marginBottom:32 }}>
-          <div style={{ fontSize:48,marginBottom:8 }}>⚡</div>
-          <h1 style={{ fontSize:36,fontFamily:"'Bebas Neue',cursive",letterSpacing:4,background:"linear-gradient(135deg,#00d4ff,#ff2254)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",margin:0 }}>ERRORVERSE</h1>
-          <p style={{ color:"#64748b",fontSize:13,marginTop:6 }}>Master your mistakes. Own your story.</p>
+    <div style={{ minHeight:"100vh", display:"flex", alignItems:"center", justifyContent:"center", padding:20, position:"relative", zIndex:10 }}>
+      <div style={{ width:"100%", maxWidth:420, position:"relative", zIndex:10 }}>
+
+        {/* Logo */}
+        <div style={{ textAlign:"center", marginBottom:36 }}>
+          <div style={{ fontSize:52, marginBottom:10 }}>⚡</div>
+          <h1 style={{ fontSize:38, fontFamily:"'Bebas Neue',cursive", letterSpacing:4, background:"linear-gradient(135deg,#00d4ff,#ff2254)", WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent", margin:0 }}>ERRORVERSE</h1>
+          <p style={{ color:"#64748b", fontSize:13, marginTop:8 }}>Master your mistakes. Own your story.</p>
         </div>
-        <GlassCard hover={false} style={{ padding:32 }}>
-          <div style={{ display:"flex",gap:8,marginBottom:24 }}>
-            {["login","signup"].map(m=>(
-              <button key={m} onClick={()=>{setMode(m);setError("");}} style={{ flex:1,padding:"10px",borderRadius:8,border:"none",cursor:"pointer",background:mode===m?"rgba(255,255,255,0.08)":"transparent",color:mode===m?"#00d4ff":"#64748b",fontFamily:"inherit",fontSize:13,fontWeight:600,borderBottom:mode===m?"2px solid #00d4ff":"2px solid transparent",transition:"all 0.2s" }}>
-                {m==="login"?"Sign In":"Create Account"}
+
+        {/* Card */}
+        <div style={{ background:"rgba(15,20,40,0.95)", border:"1px solid rgba(255,255,255,0.1)", borderRadius:20, padding:32, backdropFilter:"blur(20px)" }}>
+
+          {/* Tabs */}
+          <div style={{ display:"flex", gap:0, marginBottom:28, background:"rgba(255,255,255,0.04)", borderRadius:12, padding:4 }}>
+            {[["login","Sign In"],["signup","Create Account"]].map(([m,label])=>(
+              <button key={m} onClick={()=>{setMode(m);setError("");}}
+                style={{ flex:1, padding:"10px", borderRadius:10, border:"none", cursor:"pointer",
+                  background:mode===m?"rgba(255,255,255,0.1)":"transparent",
+                  color:mode===m?"#00d4ff":"#64748b",
+                  fontFamily:"'DM Sans',sans-serif", fontSize:13, fontWeight:700,
+                  transition:"all 0.2s" }}>
+                {label}
               </button>
             ))}
           </div>
-          <div style={{ display:"flex",flexDirection:"column",gap:14 }}>
-            {mode==="signup"&&<input className="auth-input" placeholder="Full Name" value={name} onChange={e=>setName(e.target.value)} autoComplete="name" />}
-            <input className="auth-input" placeholder="Email" type="email" value={email} onChange={e=>setEmail(e.target.value)} autoComplete="email" />
-            <input className="auth-input" placeholder="Password" type="password" value={password} onChange={e=>setPassword(e.target.value)} onKeyDown={e=>e.key==="Enter"&&handle()} autoComplete="current-password" />
-            {error&&<div style={{ fontSize:12,color:"#ff2254",padding:"8px 12px",background:"rgba(255,34,84,0.1)",borderRadius:8 }}>{error}</div>}
-            <button onClick={handle} disabled={loading} style={{ width:"100%",padding:"13px",borderRadius:10,border:"none",background:loading?"rgba(0,212,255,0.3)":"linear-gradient(135deg,#00d4ff,#0066ff)",color:"#fff",fontFamily:"inherit",fontSize:15,fontWeight:700,cursor:loading?"not-allowed":"pointer",letterSpacing:1 }}>
-              {loading?"...":(mode==="login"?"ENTER THE VERSE":"BEGIN JOURNEY")}
+
+          {/* Fields */}
+          <div style={{ display:"flex", flexDirection:"column", gap:14 }}>
+            {mode==="signup" && (
+              <input
+                style={inputStyle}
+                placeholder="Full Name"
+                value={name}
+                onChange={e=>setName(e.target.value)}
+                autoComplete="name"
+              />
+            )}
+            <input
+              style={inputStyle}
+              placeholder="Email address"
+              type="email"
+              value={email}
+              onChange={e=>setEmail(e.target.value)}
+              autoComplete="email"
+            />
+            <input
+              style={inputStyle}
+              placeholder="Password"
+              type="password"
+              value={password}
+              onChange={e=>setPassword(e.target.value)}
+              onKeyDown={e=>e.key==="Enter"&&handle()}
+              autoComplete="current-password"
+            />
+
+            {error && (
+              <div style={{ fontSize:13, color:"#ff2254", padding:"10px 14px", background:"rgba(255,34,84,0.08)", border:"1px solid rgba(255,34,84,0.2)", borderRadius:10 }}>
+                ⚠️ {error}
+              </div>
+            )}
+
+            <button
+              onClick={handle}
+              disabled={loading}
+              style={{ width:"100%", padding:"14px", borderRadius:12, border:"none",
+                background:loading?"rgba(0,212,255,0.3)":"linear-gradient(135deg,#00d4ff,#0066ff)",
+                color:"#fff", fontFamily:"'DM Sans',sans-serif", fontSize:15, fontWeight:800,
+                cursor:loading?"not-allowed":"pointer", letterSpacing:1,
+                boxShadow:loading?"none":"0 4px 20px rgba(0,212,255,0.3)",
+                marginTop:4 }}>
+              {loading ? "⏳ Signing in..." : (mode==="login" ? "ENTER THE VERSE ⚡" : "BEGIN JOURNEY 🚀")}
             </button>
           </div>
-        </GlassCard>
+        </div>
       </div>
     </div>
   );
