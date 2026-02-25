@@ -1,5 +1,14 @@
 "use client";
 /* eslint-disable @typescript-eslint/no-explicit-any */
+/*
+  ⚠️  IMPORTANT: Add `storage` to your lib/firebase.ts:
+  import { getStorage } from "firebase/storage";
+  export const storage = getStorage(app);
+  Also enable Firebase Storage in your Firebase Console and set rules:
+  rules_version = '2'; service firebase.storage { match /b/{bucket}/o {
+    match /errors/{userId}/{file} { allow read, write: if request.auth.uid == userId; }
+  }}
+*/
 import { useState, useEffect, useRef, useCallback } from "react";
 import { signUp, signIn, logOut, onAuth } from "../lib/auth";
 import {
@@ -13,8 +22,9 @@ import {
   XP_REWARDS, LEVELS, BADGES,
   type ErrorEntry, type UserXP,
 } from "../lib/db";
-import { db } from "../lib/firebase";
+import { db, storage } from "../lib/firebase";
 import { doc, getDoc } from "firebase/firestore";
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { ProfilePanel, XPTapPanel, AvatarDisplay, loadUserProfile, getAvatar } from "./ProfilePanel";
 import { AIHub } from "./AIFeatures";
 
@@ -922,31 +932,51 @@ function AuthScreen({ onLogin }: { onLogin:(u:any)=>void }) {
 // ─── ERROR FORM ───────────────────────────────────────────────────────────────
 
 // ─── IMAGE UPLOAD HELPER ──────────────────────────────────────────────────────
-function imageToBase64(file: File): Promise<string> {
-  return new Promise((res, rej) => {
-    const r = new FileReader();
-    r.onload = () => res(r.result as string);
-    r.onerror = rej;
-    r.readAsDataURL(file);
+async function uploadImageToStorage(file: File, userId: string): Promise<string> {
+  // Compress image before upload — max 800px wide, 70% quality
+  const compressed = await new Promise<Blob>((resolve) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      const MAX = 800;
+      const scale = Math.min(1, MAX / Math.max(img.width, img.height));
+      const canvas = document.createElement("canvas");
+      canvas.width = img.width * scale;
+      canvas.height = img.height * scale;
+      canvas.getContext("2d")!.drawImage(img, 0, 0, canvas.width, canvas.height);
+      canvas.toBlob(b => resolve(b!), "image/jpeg", 0.70);
+      URL.revokeObjectURL(url);
+    };
+    img.src = url;
   });
+  const path = `errors/${userId}/${Date.now()}_${Math.random().toString(36).slice(2)}.jpg`;
+  const storageRef = ref(storage, path);
+  await uploadBytes(storageRef, compressed);
+  return getDownloadURL(storageRef);
 }
 
-function PhotoUploadBox({ label, value, onChange }: { label: string; value: string|null; onChange: (v: string|null) => void }) {
+function PhotoUploadBox({ label, value, onChange, userId }: { label: string; value: string|null; onChange: (v: string|null) => void; userId: string }) {
   const inputRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
   return (
     <div>
       <label style={{ fontSize:11, color:"#64748b", display:"block", marginBottom:4 }}>{label}</label>
       <div
-        onClick={() => inputRef.current?.click()}
+        onClick={() => !uploading && inputRef.current?.click()}
         style={{
           width:"100%", minHeight:80, borderRadius:10,
-          border:`2px dashed ${value ? "#22c55e" : "rgba(255,255,255,0.12)"}`,
+          border:`2px dashed ${value ? "#22c55e" : uploading ? "#f97316" : "rgba(255,255,255,0.12)"}`,
           background: value ? "rgba(34,197,94,0.06)" : "rgba(255,255,255,0.02)",
           display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center",
-          cursor:"pointer", position:"relative", overflow:"hidden", transition:"all 0.2s",
+          cursor: uploading ? "wait" : "pointer", position:"relative", overflow:"hidden", transition:"all 0.2s",
         }}
       >
-        {value ? (
+        {uploading ? (
+          <>
+            <span style={{ fontSize:22, marginBottom:4 }}>⏳</span>
+            <span style={{ fontSize:11, color:"#f97316" }}>Uploading...</span>
+          </>
+        ) : value ? (
           <>
             <img src={value} alt="" style={{ maxHeight:120, maxWidth:"100%", objectFit:"contain", borderRadius:8 }} />
             <button onClick={e => { e.stopPropagation(); onChange(null); }} style={{ position:"absolute", top:6, right:6, background:"rgba(255,34,84,0.85)", border:"none", borderRadius:"50%", width:22, height:22, color:"#fff", fontSize:12, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}>✕</button>
@@ -959,14 +989,17 @@ function PhotoUploadBox({ label, value, onChange }: { label: string; value: stri
         )}
         <input ref={inputRef} type="file" accept="image/*" style={{ display:"none" }} onChange={async e => {
           const f = e.target.files?.[0]; if (!f) return;
-          const b64 = await imageToBase64(f); onChange(b64);
+          setUploading(true);
+          try { const url = await uploadImageToStorage(f, userId); onChange(url); }
+          catch(err) { console.error("Upload failed:", err); alert("Image upload failed. Check Firebase Storage rules."); }
+          finally { setUploading(false); }
         }} />
       </div>
     </div>
   );
 }
 
-function ErrorForm({ onSubmit, onClose }: any) {
+function ErrorForm({ onSubmit, onClose, userId }: any) {
   const [form, setForm] = useState({
     subject: "Physics" as ErrorEntry["subject"],
     chapter: "",
@@ -1027,8 +1060,8 @@ function ErrorForm({ onSubmit, onClose }: any) {
             </div>
             {/* Photo uploads */}
             <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:12 }}>
-              <PhotoUploadBox label="📷 QUESTION PHOTO (optional)" value={form.questionImageUrl} onChange={v => setForm(p => ({ ...p, questionImageUrl: v }))} />
-              <PhotoUploadBox label="📷 ANSWER PHOTO (optional)" value={form.answerImageUrl} onChange={v => setForm(p => ({ ...p, answerImageUrl: v }))} />
+              <PhotoUploadBox label="📷 QUESTION PHOTO (optional)" value={form.questionImageUrl} onChange={v => setForm(p => ({ ...p, questionImageUrl: v }))} userId={userId||"anon"} />
+              <PhotoUploadBox label="📷 ANSWER PHOTO (optional)" value={form.answerImageUrl} onChange={v => setForm(p => ({ ...p, answerImageUrl: v }))} userId={userId||"anon"} />
             </div>
             {/* Why + Solution */}
             <div><label style={{ fontSize:11,color:"#64748b",display:"block",marginBottom:4 }}>❓ WHY DID I MAKE THIS MISTAKE?</label>
@@ -1102,7 +1135,7 @@ function CollectionForm({ onSubmit, onClose }: any) {
 
 // ─── SPACED REVISION (with Stats tab inside) ──────────────────────────────────
 
-function SpacedRevision({ userId, onXP }: { userId:string; onXP:(xp:number)=>void }) {
+function SpacedRevision({ userId, onXP, allErrors }: { userId:string; onXP:(xp:number)=>void; allErrors?:ErrorEntry[] }) {
   const [dueErrors, setDueErrors] = useState<ErrorEntry[]>([]);
   const [schedule, setSchedule] = useState<{date:string;count:number}[]>([]);
   const [loading, setLoading] = useState(true);
@@ -1111,7 +1144,8 @@ function SpacedRevision({ userId, onXP }: { userId:string; onXP:(xp:number)=>voi
   const { toasts, add: addToast } = useToast();
 
   // Stats state
-  const [statsErrors, setStatsErrors] = useState<ErrorEntry[]>([]);
+  const [_statsErrors, setStatsErrors] = useState<ErrorEntry[]>([]);
+  const statsErrors = allErrors ?? _statsErrors;
   const [weeklyData, setWeeklyData] = useState<{week:string;count:number}[]>([]);
   const [heatmap, setHeatmap] = useState<{chapter:string;subject:string;count:number}[]>([]);
   const [statsLoading, setStatsLoading] = useState(true);
@@ -1128,8 +1162,9 @@ function SpacedRevision({ userId, onXP }: { userId:string; onXP:(xp:number)=>voi
 
   useEffect(() => {
     if (innerTab === "stats" && statsLoading) {
-      Promise.all([getErrors(userId), getWeeklyStats(userId), getChapterHeatmap(userId)])
-        .then(([e, w, h]) => { setStatsErrors(e); setWeeklyData(w); setHeatmap(h); setStatsLoading(false); });
+      // Only fetch stats and heatmap — errors come from parent cache via prop
+      Promise.all([getWeeklyStats(userId), getChapterHeatmap(userId)])
+        .then(([w, h]) => { setWeeklyData(w); setHeatmap(h); setStatsLoading(false); });
     }
   }, [innerTab, userId, statsLoading]);
 
@@ -1469,31 +1504,33 @@ function ErrorDetailModal({ err, onClose, onDelete }: { err: ErrorEntry; onClose
 
 // ─── ERROR BOOK ───────────────────────────────────────────────────────────────
 
-function ErrorBook({ userId, onEntryAdded, onXP, xpData, streak, todayCount }: { userId:string; onEntryAdded:(n:number)=>void; onXP?:(xp:number)=>void; xpData?:any; streak?:number; todayCount?:number }) {
-  const [errors,setErrors]=useState<ErrorEntry[]>([]),[showForm,setShowForm]=useState(false);
+function ErrorBook({ userId, onEntryAdded, onXP, xpData, streak, todayCount, allErrors, setAllErrors, errorsLoaded }: { userId:string; onEntryAdded:(n:number)=>void; onXP?:(xp:number)=>void; xpData?:any; streak?:number; todayCount?:number; allErrors:ErrorEntry[]; setAllErrors:(fn:(p:ErrorEntry[])=>ErrorEntry[])=>void; errorsLoaded:boolean }) {
+  const [errors, setErrors] = [allErrors, setAllErrors];
+  const [showForm,setShowForm]=useState(false);
   const [fs,setFs]=useState("All"),[fm,setFm]=useState("All"),[search,setSearch]=useState("");
-  const [loading,setLoading]=useState(true);
+  const loading = !errorsLoaded;
+  const [visibleCount, setVisibleCount] = useState(20);
   const [viewMode,setViewMode]=useState<"today"|"all">("today");
   const [selectedError,setSelectedError]=useState<ErrorEntry|null>(null);
   const { toasts, add: addToast } = useToast();
   const todayStr = new Date().toISOString().split("T")[0];
-
-  useEffect(()=>{getErrors(userId).then(d=>{setErrors(d);setLoading(false);});},[userId]);
+  // Reset visible count when switching view modes
+  useEffect(() => setVisibleCount(20), [viewMode, fs, fm, search]);
 
   const handleAdd=async(form:any)=>{
     const {ref,newCount}=await addError(userId,form);
     const newErr:ErrorEntry={id:ref.id,...form,masteryLevel:0,masteryStage:"red",nextReviewDate:new Date(Date.now()+86400000).toISOString().split("T")[0],reviewHistory:[],revisionInterval:1,isArchived:false};
-    setErrors(p=>[newErr,...p]);
+    setAllErrors((p:ErrorEntry[])=>[newErr,...p]);
     onEntryAdded(newCount);
     await awardXP(userId, XP_REWARDS.addError);
     if (onXP) onXP(XP_REWARDS.addError);
     addToast(`Error logged! +${XP_REWARDS.addError} XP ⚡`,"xp");
-    const allErrors=[newErr,...errors];
-    const newBadges=await checkAndAwardBadges(userId,allErrors);
+    const latestErrors=[newErr,...allErrors];
+    const newBadges=await checkAndAwardBadges(userId,latestErrors);
     if(newBadges.length>0) addToast(`🏅 New badge: ${BADGES.find(b=>b.id===newBadges[0])?.name}!`,"xp");
   };
 
-  const handleDel=async(id:string)=>{ await deleteError(id); setErrors(p=>p.filter(e=>e.id!==id)); };
+  const handleDel=async(id:string)=>{ await deleteError(id); setAllErrors((p:ErrorEntry[])=>p.filter((e:ErrorEntry)=>e.id!==id)); };
 
   // Today's errors vs all
   const todayErrors = errors.filter(e => e.date === todayStr);
@@ -1524,7 +1561,7 @@ function ErrorBook({ userId, onEntryAdded, onXP, xpData, streak, todayCount }: {
   return (
     <div style={{ paddingBottom:40 }}>
       <ToastContainer toasts={toasts}/>
-      {showForm&&<ErrorForm onSubmit={handleAdd} onClose={()=>setShowForm(false)}/>}
+      {showForm&&<ErrorForm onSubmit={handleAdd} onClose={()=>setShowForm(false)} userId={userId}/>}
       {selectedError && <ErrorDetailModal err={selectedError} onClose={()=>setSelectedError(null)} onDelete={selectedError.id ? ()=>handleDel(selectedError.id!) : undefined} />}
 
       {/* ─── BEAUTIFUL HOME DASHBOARD ─── */}
@@ -1639,7 +1676,7 @@ function ErrorBook({ userId, onEntryAdded, onXP, xpData, streak, todayCount }: {
               {viewMode==="today"?"No errors logged today. Start by tapping + Add Error! 🎯":"No errors found. Clean slate! 🎯"}
             </div>
           )}
-          {filtered.map((err:ErrorEntry)=>(
+          {filtered.slice(0, visibleCount).map((err:ErrorEntry)=>(
             <div
               key={err.id}
               onClick={()=>setSelectedError(err)}
@@ -1677,6 +1714,15 @@ function ErrorBook({ userId, onEntryAdded, onXP, xpData, streak, todayCount }: {
               </div>
             </div>
           ))}
+          {/* Load More button */}
+          {viewMode === "all" && filtered.length > visibleCount && (
+            <button
+              onClick={() => setVisibleCount(v => v + 20)}
+              style={{ width:"100%", padding:"14px", marginTop:8, borderRadius:14, border:"1px solid rgba(255,255,255,0.1)", background:"rgba(255,255,255,0.04)", color:"#94a3b8", fontSize:13, fontWeight:700, cursor:"pointer", fontFamily:"inherit", letterSpacing:0.5 }}
+            >
+              Load More ({filtered.length - visibleCount} remaining) ↓
+            </button>
+          )}
         </div>
       )}
     </div>
@@ -1918,14 +1964,15 @@ function Leaderboard({ currentUserId }: { currentUserId: string }) {
 
 // ─── AI TAB LOADER ─────────────────────────────────────────────────────────────
 
-function AITabLoader({ userId }: { userId: string }) {
-  const [errors, setErrors] = useState<ErrorEntry[]>([]);
+function AITabLoader({ userId, allErrors }: { userId: string; allErrors?: ErrorEntry[] }) {
+  const [errors] = useState<ErrorEntry[]>(allErrors ?? []);
   const [collection, setCollection] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    Promise.all([getErrors(userId), getCollection(userId)]).then(([e, c]) => {
-      setErrors(e); setCollection(c); setLoading(false);
+    // Only fetch collection — errors come from shared cache
+    getCollection(userId).then(c => {
+      setCollection(c); setLoading(false);
     });
   }, [userId]);
 
@@ -2148,17 +2195,11 @@ function DayErrorsModal({ date, errors, onClose, onSelectError }: { date:string;
   );
 }
 
-function HeatCalendarLoader({ userId }: { userId: string }) {
-  const [errors, setErrors] = useState<ErrorEntry[]>([]);
-  const [loading, setLoading] = useState(true);
+function HeatCalendarLoader({ userId, allErrors, errorsLoaded }: { userId: string; allErrors: ErrorEntry[]; errorsLoaded: boolean }) {
   const [selectedDate, setSelectedDate] = useState<string|null>(null);
   const [selectedError, setSelectedError] = useState<ErrorEntry|null>(null);
 
-  useEffect(() => {
-    getErrors(userId).then(e => { setErrors(e); setLoading(false); });
-  }, [userId]);
-
-  if (loading) return (
+  if (!errorsLoaded) return (
     <div style={{ textAlign:"center", padding:80, color:"#475569" }}>
       <div style={{ fontSize:40, marginBottom:12 }}>🔥</div>
       <div style={{ fontSize:14 }}>Loading heat map...</div>
@@ -2170,7 +2211,7 @@ function HeatCalendarLoader({ userId }: { userId: string }) {
       {selectedDate && !selectedError && (
         <DayErrorsModal
           date={selectedDate}
-          errors={errors}
+          errors={allErrors}
           onClose={() => setSelectedDate(null)}
           onSelectError={err => { setSelectedError(err); }}
         />
@@ -2181,7 +2222,7 @@ function HeatCalendarLoader({ userId }: { userId: string }) {
           onClose={() => setSelectedError(null)}
         />
       )}
-      <InlineHeatMap errors={errors} onDayClick={(date: string) => setSelectedDate(date)} />
+      <InlineHeatMap errors={allErrors} onDayClick={(date: string) => setSelectedDate(date)} />
     </>
   );
 }
@@ -2332,6 +2373,9 @@ export default function App() {
   const [xpData,setXpData]=useState<UserXP|null>(null);
   const [xpPopup,setXpPopup]=useState<number|null>(null);
   const { toasts, add: addToast } = useToast();
+  // ── Central errors cache — loaded ONCE, shared across all tabs ──
+  const [allErrors, setAllErrors] = useState<ErrorEntry[]>([]);
+  const [errorsLoaded, setErrorsLoaded] = useState(false);
 
   const [showProfile, setShowProfile] = useState(false);
   const [showXPPanel, setShowXPPanel] = useState(false);
@@ -2343,15 +2387,16 @@ export default function App() {
   const [displayName, setDisplayName] = useState("");
   const [isNewUser, setIsNewUser] = useState(false);
 
-  const syncLeaderboard = useCallback(async (uid: string, name: string, stk: number) => {
+  const syncLeaderboard = useCallback(async (uid: string, name: string, stk: number, cachedErrors?: ErrorEntry[]) => {
     try {
-      const errors = await getErrors(uid);
+      // Use cached errors to avoid extra Firestore reads
+      const errors = cachedErrors ?? allErrors;
       const mc: Record<string,number> = {};
       errors.forEach((e:any) => { mc[e.mistakeType]=(mc[e.mistakeType]||0)+1; });
       const repeated = Object.values(mc).filter(v=>v>1).reduce((a,b)=>a+b,0);
       await updateLeaderboard(uid, name, errors.length, repeated, stk);
     } catch(e) { console.error("syncLeaderboard:", e); }
-  }, []);
+  }, [allErrors]);
 
   const handleUpdateProfile = useCallback(async (data: any) => {
     if (data.displayName) setDisplayName(data.displayName);
@@ -2404,9 +2449,12 @@ export default function App() {
       if (u) {
         const name = u.displayName || u.email?.split("@")[0] || "Warrior";
         setDisplayName(name);
-        // Detect new users: check if metadata shows account was just created
         const isNew = u.metadata?.creationTime === u.metadata?.lastSignInTime;
         loadStats(u.uid, name, isNew);
+        // Load errors once — shared across all tabs
+        getErrors(u.uid).then(e => { setAllErrors(e); setErrorsLoaded(true); });
+      } else {
+        setAllErrors([]); setErrorsLoaded(false);
       }
     });
     return () => unsub();
@@ -2586,13 +2634,13 @@ export default function App() {
         </div>
 
         {/* Tab content */}
-        {activeTab==="errors"       && <ErrorBook userId={user.uid} onEntryAdded={handleEntryAdded} onXP={handleXPGained} xpData={xpData} streak={streak} todayCount={todayCount}/>}
-        {activeTab==="revision"     && <SpacedRevision userId={user.uid} onXP={handleXPGained}/>}
+        {activeTab==="errors"       && <ErrorBook userId={user.uid} onEntryAdded={handleEntryAdded} onXP={handleXPGained} xpData={xpData} streak={streak} todayCount={todayCount} allErrors={allErrors} setAllErrors={setAllErrors} errorsLoaded={errorsLoaded}/>}
+        {activeTab==="revision"     && <SpacedRevision userId={user.uid} onXP={handleXPGained} allErrors={allErrors}/>}
         {activeTab==="achievements" && <BadgesPanel earned={xpData?.badges??[]}/>}
         {activeTab==="collection"   && <AnimeCollection userId={user.uid} onEntryAdded={handleEntryAdded}/>}
         {activeTab==="leaderboard"  && <Leaderboard currentUserId={user.uid}/>}
-        {activeTab==="ai"           && <AITabLoader userId={user.uid}/>}
-        {activeTab==="heatmap"      && <HeatCalendarLoader userId={user.uid}/>}
+        {activeTab==="ai"           && <AITabLoader userId={user.uid} allErrors={allErrors}/>}
+        {activeTab==="heatmap"      && <HeatCalendarLoader userId={user.uid} allErrors={allErrors} errorsLoaded={errorsLoaded}/>}
       </div>
 
       {/* Bottom nav */}
