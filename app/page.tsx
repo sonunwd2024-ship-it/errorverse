@@ -2526,6 +2526,7 @@ export default function App() {
   const [userAvatar, setUserAvatar] = useState("av_luffy");
   const [userPhoto, setUserPhoto] = useState<string|null>(null);
   const [displayName, setDisplayName] = useState("");
+  const [profileLoaded, setProfileLoaded] = useState(false);
   const [isNewUser, setIsNewUser] = useState(false);
 
   const syncLeaderboard = useCallback(async (uid: string, name: string, stk: number, cachedErrors?: ErrorEntry[]) => {
@@ -2558,14 +2559,14 @@ export default function App() {
     ]);
     setStreak(s); setTodayCount(t); setXpData(xp);
     if (profile) {
-      // Profile name is the final truth — set it once, no more changes
       const finalName = profile.displayName || name;
       setDisplayName(finalName);
       if (profile.avatar) setUserAvatar(profile.avatar);
       if (profile.photoURL !== undefined) setUserPhoto(profile.photoURL ?? null);
+      setProfileLoaded(true);
       await syncLeaderboard(uid, finalName, s);
     } else {
-      // No profile yet — keep the auth name already set
+      setProfileLoaded(true); // no profile — auth name is final
       await syncLeaderboard(uid, name, s);
     }
     if (isNew || (!xp && !profile)) {
@@ -2603,6 +2604,7 @@ export default function App() {
         getErrors(u.uid).then(e => { setAllErrors(e); setErrorsLoaded(true); });
       } else {
         setAllErrors([]); setErrorsLoaded(false);
+        setProfileLoaded(false); setDisplayName("");
       }
     });
     return () => unsub();
@@ -2836,9 +2838,11 @@ export default function App() {
             {/* Avatar / profile button */}
             <button onClick={() => setShowProfile(true)} style={{ display:"flex", alignItems:"center", gap:6, background:"rgba(255,255,255,0.04)", border:"1px solid rgba(255,255,255,0.1)", borderRadius:24, padding:"3px 10px 3px 3px", cursor:"pointer" }}>
               <AvatarDisplay avatar={userAvatar} photoURL={userPhoto} displayName={displayName} size={28} />
-              <span style={{ fontSize:12, color:"#94a3b8", fontWeight:600, maxWidth:70, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" as const }}>
-                {displayName.split(" ")[0] || "You"}
-              </span>
+              {profileLoaded && (
+                <span style={{ fontSize:12, color:"#94a3b8", fontWeight:600, maxWidth:70, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" as const }}>
+                  {displayName.split(" ")[0] || "You"}
+                </span>
+              )}
             </button>
           </div>
         </header>
