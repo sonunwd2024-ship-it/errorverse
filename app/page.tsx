@@ -314,25 +314,69 @@ function LevelBanner({ xpData }: { xpData: UserXP }) {
 
 // ─── BADGES PANEL ─────────────────────────────────────────────────────────────
 
+function BadgeDetailModal({ badge, earned, onClose }: { badge: any; earned: boolean; onClose: () => void }) {
+  return (
+    <div style={{ position:"fixed",inset:0,background:"rgba(0,0,0,0.88)",backdropFilter:"blur(12px)",zIndex:400,display:"flex",alignItems:"center",justifyContent:"center",padding:20 }} onClick={onClose}>
+      <div style={{ maxWidth:380,width:"100%",background:"rgba(10,14,26,0.97)",border:`2px solid ${earned?"rgba(255,215,0,0.4)":"rgba(255,255,255,0.1)"}`,borderRadius:24,padding:32,textAlign:"center",backdropFilter:"blur(24px)" }} onClick={e=>e.stopPropagation()}>
+        <div style={{ fontSize:80,marginBottom:16,filter:earned?"drop-shadow(0 0 30px rgba(255,215,0,0.6))":"grayscale(1) opacity(0.4)" }}>{badge.icon}</div>
+        <div style={{ fontSize:22,fontWeight:900,color:earned?"#ffd700":"#64748b",marginBottom:8,fontFamily:"'Bebas Neue',cursive",letterSpacing:2 }}>{badge.name}</div>
+        <div style={{ fontSize:14,color:"#94a3b8",lineHeight:1.6,marginBottom:16 }}>{badge.desc}</div>
+        {earned ? (
+          <div style={{ padding:"10px 20px",borderRadius:12,background:"rgba(255,215,0,0.12)",border:"1px solid rgba(255,215,0,0.3)",color:"#ffd700",fontWeight:700,fontSize:14 }}>✅ BADGE EARNED!</div>
+        ) : (
+          <div style={{ padding:"10px 20px",borderRadius:12,background:"rgba(255,255,255,0.05)",border:"1px solid rgba(255,255,255,0.1)",color:"#475569",fontSize:13 }}>🔒 Keep grinding to unlock this badge</div>
+        )}
+        <button onClick={onClose} style={{ marginTop:16,background:"none",border:"none",color:"#475569",fontSize:13,cursor:"pointer",fontFamily:"inherit" }}>Close</button>
+      </div>
+    </div>
+  );
+}
+
 function BadgesPanel({ earned }: { earned: string[] }) {
   const earnedSet = new Set(earned);
+  const [selected, setSelected] = useState<any>(null);
+  const earnedBadges = BADGES.filter(b => earnedSet.has(b.id));
+  const lockedBadges = BADGES.filter(b => !earnedSet.has(b.id));
   return (
-    <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(140px,1fr))", gap:12 }}>
-      {BADGES.map(b => {
-        const unlocked = earnedSet.has(b.id);
-        return (
-          <GlassCard key={b.id} style={{
-            padding:16, textAlign:"center", opacity:unlocked?1:0.45,
-            filter:unlocked?"none":"grayscale(1)",
-            border:unlocked?"1px solid rgba(255,215,0,0.2)":undefined,
-          }}>
-            <div style={{ fontSize:32, marginBottom:8 }}>{b.icon}</div>
-            <div style={{ fontSize:13, fontWeight:700, color:"#e2e8f0", marginBottom:4 }}>{b.name}</div>
-            <div style={{ fontSize:11, color:"#64748b", lineHeight:1.4 }}>{b.desc}</div>
-            {unlocked && <div style={{ fontSize:10, color:"#ffd700", marginTop:6, fontWeight:600 }}>✓ EARNED</div>}
-          </GlassCard>
-        );
-      })}
+    <div>
+      {selected && <BadgeDetailModal badge={selected} earned={earnedSet.has(selected.id)} onClose={() => setSelected(null)} />}
+      {earnedBadges.length > 0 && (
+        <div style={{ marginBottom:20 }}>
+          <div style={{ fontSize:11,color:"#ffd700",fontWeight:700,letterSpacing:1,marginBottom:12 }}>🏅 EARNED ({earnedBadges.length})</div>
+          <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(130px,1fr))", gap:10 }}>
+            {earnedBadges.map(b => (
+              <div key={b.id} onClick={() => setSelected(b)} style={{ padding:16,borderRadius:16,textAlign:"center",background:"rgba(255,215,0,0.08)",border:"1px solid rgba(255,215,0,0.25)",cursor:"pointer",transition:"all 0.2s" }}
+                onMouseEnter={e=>(e.currentTarget.style.transform="scale(1.05)")}
+                onMouseLeave={e=>(e.currentTarget.style.transform="scale(1)")}>
+                <div style={{ fontSize:36,marginBottom:8,filter:"drop-shadow(0 0 12px rgba(255,215,0,0.5))" }}>{b.icon}</div>
+                <div style={{ fontSize:12,fontWeight:700,color:"#ffd700",marginBottom:3 }}>{b.name}</div>
+                <div style={{ fontSize:10,color:"rgba(255,215,0,0.6)" }}>✓ EARNED</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+      <div>
+        <div style={{ fontSize:11,color:"#475569",fontWeight:700,letterSpacing:1,marginBottom:12 }}>🔒 LOCKED ({lockedBadges.length})</div>
+        <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(130px,1fr))", gap:10 }}>
+          {lockedBadges.map(b => (
+            <div key={b.id} onClick={() => setSelected(b)} style={{ padding:16,borderRadius:16,textAlign:"center",background:"rgba(255,255,255,0.03)",border:"1px solid rgba(255,255,255,0.07)",cursor:"pointer",transition:"all 0.2s",opacity:0.6 }}
+              onMouseEnter={e=>(e.currentTarget.style.opacity="1")}
+              onMouseLeave={e=>(e.currentTarget.style.opacity="0.6")}>
+              <div style={{ fontSize:36,marginBottom:8,filter:"grayscale(1)" }}>{b.icon}</div>
+              <div style={{ fontSize:12,fontWeight:700,color:"#64748b",marginBottom:3 }}>{b.name}</div>
+              <div style={{ fontSize:10,color:"#334155" }}>Tap to see how</div>
+            </div>
+          ))}
+        </div>
+      </div>
+      {earned.length === 0 && (
+        <div style={{ textAlign:"center",padding:"60px 20px",color:"#475569" }}>
+          <div style={{ fontSize:48,marginBottom:12 }}>🏅</div>
+          <div style={{ fontSize:16,fontWeight:700,color:"#64748b",marginBottom:8 }}>No badges yet!</div>
+          <div style={{ fontSize:13 }}>Log errors, review mistakes, and build streaks to earn badges.</div>
+        </div>
+      )}
     </div>
   );
 }
@@ -1003,7 +1047,7 @@ function ErrorForm({ onSubmit, onClose }: any) {
               </div>
             </div>
             <button
-              onClick={() => { if (!form.chapter.trim()) { return; } onSubmit({ ...form, date: new Date().toISOString().split("T")[0] }); onClose(); }}
+              onClick={() => { onSubmit({ ...form, subject: form.subject||"Physics", chapter: form.chapter.trim()||"Untitled", date: new Date().toISOString().split("T")[0] }); onClose(); }}
               style={{ padding:"13px",borderRadius:10,border:"none",background:"linear-gradient(135deg,#ff2254,#ff6b35)",color:"#fff",fontFamily:"inherit",fontSize:14,fontWeight:700,cursor:"pointer",letterSpacing:1 }}>
               RECORD MISTAKE (+{XP_REWARDS.addError} XP) ⚡
             </button>
@@ -1269,8 +1313,47 @@ function SpacedRevision({ userId, onXP }: { userId:string; onXP:(xp:number)=>voi
 
 // ─── ERROR DETAIL MODAL ───────────────────────────────────────────────────────
 
-function ErrorDetailModal({ err, onClose, onDelete }: { err: ErrorEntry; onClose: () => void; onDelete?: () => void }) {
+function ImageGallery({ images, startIndex, onClose }: { images: string[]; startIndex: number; onClose: () => void }) {
+  const [idx, setIdx] = useState(startIndex);
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === "ArrowRight") setIdx(i => Math.min(i+1, images.length-1));
+      if (e.key === "ArrowLeft") setIdx(i => Math.max(i-1, 0));
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [images.length, onClose]);
   return (
+    <div style={{ position:"fixed",inset:0,background:"rgba(0,0,0,0.96)",zIndex:500,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center" }} onClick={onClose}>
+      {/* Close */}
+      <button onClick={onClose} style={{ position:"absolute",top:20,right:20,background:"rgba(255,255,255,0.1)",border:"none",color:"#fff",fontSize:24,cursor:"pointer",borderRadius:50,width:44,height:44,display:"flex",alignItems:"center",justifyContent:"center",zIndex:501 }}>✕</button>
+      {/* Counter */}
+      <div style={{ position:"absolute",top:24,left:"50%",transform:"translateX(-50%)",color:"rgba(255,255,255,0.5)",fontSize:13 }}>{idx+1} / {images.length}</div>
+      {/* Image */}
+      <img src={images[idx]} alt="" onClick={e=>e.stopPropagation()} style={{ maxWidth:"92vw",maxHeight:"80vh",objectFit:"contain",borderRadius:12,boxShadow:"0 20px 80px rgba(0,0,0,0.8)" }} />
+      {/* Navigation */}
+      {images.length > 1 && (
+        <div style={{ display:"flex",gap:16,marginTop:24 }} onClick={e=>e.stopPropagation()}>
+          <button onClick={() => setIdx(i=>Math.max(i-1,0))} disabled={idx===0} style={{ padding:"10px 24px",borderRadius:12,border:"1px solid rgba(255,255,255,0.15)",background:idx===0?"rgba(255,255,255,0.03)":"rgba(255,255,255,0.1)",color:idx===0?"#334155":"#fff",cursor:idx===0?"not-allowed":"pointer",fontSize:14,fontWeight:700 }}>← Prev</button>
+          <button onClick={() => setIdx(i=>Math.min(i+1,images.length-1))} disabled={idx===images.length-1} style={{ padding:"10px 24px",borderRadius:12,border:"1px solid rgba(255,255,255,0.15)",background:idx===images.length-1?"rgba(255,255,255,0.03)":"rgba(255,255,255,0.1)",color:idx===images.length-1?"#334155":"#fff",cursor:idx===images.length-1?"not-allowed":"pointer",fontSize:14,fontWeight:700 }}>Next →</button>
+        </div>
+      )}
+      {/* Dots */}
+      {images.length > 1 && (
+        <div style={{ display:"flex",gap:8,marginTop:16 }} onClick={e=>e.stopPropagation()}>
+          {images.map((_,i)=><div key={i} onClick={()=>setIdx(i)} style={{ width:i===idx?24:8,height:8,borderRadius:4,background:i===idx?"#00d4ff":"rgba(255,255,255,0.2)",cursor:"pointer",transition:"all 0.2s" }} />)}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ErrorDetailModal({ err, onClose, onDelete }: { err: ErrorEntry; onClose: () => void; onDelete?: () => void }) {
+  const [gallery, setGallery] = useState<{images:string[];start:number}|null>(null);
+  return (
+    <>
+    {gallery && <ImageGallery images={gallery.images} startIndex={gallery.start} onClose={() => setGallery(null)} />}
     <div style={{ position:"fixed",inset:0,background:"rgba(0,0,0,0.88)",backdropFilter:"blur(10px)",zIndex:300,display:"flex",alignItems:"center",justifyContent:"center",padding:16 }} onClick={onClose}>
       <div style={{ width:"100%",maxWidth:560,maxHeight:"92vh",overflowY:"auto",scrollbarWidth:"none" as any }} onClick={e=>e.stopPropagation()}>
         <GlassCard hover={false} style={{ padding:24, borderLeft:`4px solid ${MASTERY_COLORS[err.masteryStage??"red"]}` }}>
@@ -1303,23 +1386,33 @@ function ErrorDetailModal({ err, onClose, onDelete }: { err: ErrorEntry; onClose
             </div>
           )}
 
-          {/* Question + Answer photos */}
-          {((err as any).questionImageUrl || (err as any).answerImageUrl) && (
-            <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:14 }}>
-              {(err as any).questionImageUrl && (
-                <div>
-                  <div style={{ fontSize:10,color:"#64748b",fontWeight:700,marginBottom:6 }}>📷 QUESTION PHOTO</div>
-                  <img src={(err as any).questionImageUrl} alt="Question" style={{ width:"100%",borderRadius:10,objectFit:"contain",maxHeight:200,background:"rgba(0,0,0,0.3)" }} />
+          {/* Question + Answer photos — tap to open gallery */}
+          {((err as any).questionImageUrl || (err as any).answerImageUrl) && (() => {
+            const imgs = [(err as any).questionImageUrl,(err as any).answerImageUrl].filter(Boolean) as string[];
+            return (
+              <div style={{ marginBottom:14 }}>
+                <div style={{ fontSize:10,color:"#a855f7",fontWeight:700,letterSpacing:1,marginBottom:8 }}>📷 PHOTOS — Tap to open full view</div>
+                <div style={{ display:"grid",gridTemplateColumns:imgs.length>1?"1fr 1fr":"1fr",gap:10 }}>
+                  {(err as any).questionImageUrl && (
+                    <div onClick={() => setGallery({ images:imgs, start:0 })} style={{ cursor:"pointer",borderRadius:12,overflow:"hidden",border:"1px solid rgba(168,85,247,0.25)",background:"rgba(0,0,0,0.3)",transition:"all 0.2s" }}
+                      onMouseEnter={e=>(e.currentTarget.style.borderColor="rgba(168,85,247,0.6)")}
+                      onMouseLeave={e=>(e.currentTarget.style.borderColor="rgba(168,85,247,0.25)")}>
+                      <img src={(err as any).questionImageUrl} alt="Question" style={{ width:"100%",height:140,objectFit:"cover" }} />
+                      <div style={{ padding:"6px 10px",fontSize:10,color:"#a855f7",fontWeight:700 }}>📋 QUESTION · tap to zoom</div>
+                    </div>
+                  )}
+                  {(err as any).answerImageUrl && (
+                    <div onClick={() => setGallery({ images:imgs, start:(err as any).questionImageUrl?1:0 })} style={{ cursor:"pointer",borderRadius:12,overflow:"hidden",border:"1px solid rgba(168,85,247,0.25)",background:"rgba(0,0,0,0.3)",transition:"all 0.2s" }}
+                      onMouseEnter={e=>(e.currentTarget.style.borderColor="rgba(168,85,247,0.6)")}
+                      onMouseLeave={e=>(e.currentTarget.style.borderColor="rgba(168,85,247,0.25)")}>
+                      <img src={(err as any).answerImageUrl} alt="Answer" style={{ width:"100%",height:140,objectFit:"cover" }} />
+                      <div style={{ padding:"6px 10px",fontSize:10,color:"#a855f7",fontWeight:700 }}>✅ ANSWER · tap to zoom</div>
+                    </div>
+                  )}
                 </div>
-              )}
-              {(err as any).answerImageUrl && (
-                <div>
-                  <div style={{ fontSize:10,color:"#64748b",fontWeight:700,marginBottom:6 }}>📷 ANSWER PHOTO</div>
-                  <img src={(err as any).answerImageUrl} alt="Answer" style={{ width:"100%",borderRadius:10,objectFit:"contain",maxHeight:200,background:"rgba(0,0,0,0.3)" }} />
-                </div>
-              )}
-            </div>
-          )}
+              </div>
+            );
+          })()}
 
           {/* Why mistake */}
           {err.whyMistake && (
@@ -1370,12 +1463,13 @@ function ErrorDetailModal({ err, onClose, onDelete }: { err: ErrorEntry; onClose
         </GlassCard>
       </div>
     </div>
+    </>
   );
 }
 
 // ─── ERROR BOOK ───────────────────────────────────────────────────────────────
 
-function ErrorBook({ userId, onEntryAdded }: { userId:string; onEntryAdded:(n:number)=>void }) {
+function ErrorBook({ userId, onEntryAdded, onXP, xpData, streak, todayCount }: { userId:string; onEntryAdded:(n:number)=>void; onXP?:(xp:number)=>void; xpData?:any; streak?:number; todayCount?:number }) {
   const [errors,setErrors]=useState<ErrorEntry[]>([]),[showForm,setShowForm]=useState(false);
   const [fs,setFs]=useState("All"),[fm,setFm]=useState("All"),[search,setSearch]=useState("");
   const [loading,setLoading]=useState(true);
@@ -1391,6 +1485,8 @@ function ErrorBook({ userId, onEntryAdded }: { userId:string; onEntryAdded:(n:nu
     const newErr:ErrorEntry={id:ref.id,...form,masteryLevel:0,masteryStage:"red",nextReviewDate:new Date(Date.now()+86400000).toISOString().split("T")[0],reviewHistory:[],revisionInterval:1,isArchived:false};
     setErrors(p=>[newErr,...p]);
     onEntryAdded(newCount);
+    await awardXP(userId, XP_REWARDS.addError);
+    if (onXP) onXP(XP_REWARDS.addError);
     addToast(`Error logged! +${XP_REWARDS.addError} XP ⚡`,"xp");
     const allErrors=[newErr,...errors];
     const newBadges=await checkAndAwardBadges(userId,allErrors);
@@ -1418,11 +1514,67 @@ function ErrorBook({ userId, onEntryAdded }: { userId:string; onEntryAdded:(n:nu
   const tw=errors.filter(e=>(new Date().getTime()-new Date(e.date).getTime())/86400000<=7).length;
   const masteredCount=errors.filter(e=>e.masteryStage==="green").length;
 
+  const hour = new Date().getHours();
+  const greeting = hour < 12 ? "Good Morning" : hour < 17 ? "Good Afternoon" : "Good Evening";
+  const greetEmoji = hour < 12 ? "🌅" : hour < 17 ? "⚡" : "🌙";
+  const pct = todayCount ? Math.min((todayCount / 3) * 100, 100) : 0;
+  const todayErrs = errors.filter(e => e.date === todayStr);
+  const weekErrs = errors.filter(e => (new Date().getTime()-new Date(e.date).getTime())/86400000 <= 7).length;
+
   return (
     <div style={{ paddingBottom:40 }}>
       <ToastContainer toasts={toasts}/>
       {showForm&&<ErrorForm onSubmit={handleAdd} onClose={()=>setShowForm(false)}/>}
       {selectedError && <ErrorDetailModal err={selectedError} onClose={()=>setSelectedError(null)} onDelete={selectedError.id ? ()=>handleDel(selectedError.id!) : undefined} />}
+
+      {/* ─── BEAUTIFUL HOME DASHBOARD ─── */}
+      <div style={{ marginBottom:24, borderRadius:20, overflow:"hidden", background:"linear-gradient(135deg,rgba(255,34,84,0.12),rgba(0,212,255,0.08))", border:"1px solid rgba(255,255,255,0.08)", padding:20 }}>
+        {/* Greeting */}
+        <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:16 }}>
+          <div>
+            <div style={{ fontSize:11,color:"#475569",fontWeight:700,letterSpacing:1 }}>{greetEmoji} {greeting.toUpperCase()}</div>
+            <div style={{ fontSize:20,fontWeight:900,color:"#e2e8f0",marginTop:2 }}>Ready to grind? 💪</div>
+          </div>
+          {xpData && (
+            <div style={{ textAlign:"right" }}>
+              <div style={{ fontSize:11,color:"#a78bfa",fontWeight:700 }}>⚡ Level {xpData.level}</div>
+              <div style={{ fontSize:20,fontWeight:900,color:"#a78bfa",fontFamily:"'Bebas Neue',cursive",letterSpacing:2 }}>{xpData.totalXP} XP</div>
+            </div>
+          )}
+        </div>
+
+        {/* Daily goal progress */}
+        <div style={{ marginBottom:14 }}>
+          <div style={{ display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6 }}>
+            <span style={{ fontSize:12,color:"#94a3b8",fontWeight:600 }}>Daily Goal: {todayCount || 0}/3 errors logged</span>
+            <span style={{ fontSize:12,color: pct >= 100 ? "#22c55e" : "#ff2254",fontWeight:700 }}>{pct >= 100 ? "✅ DONE!" : `${Math.round(pct)}%`}</span>
+          </div>
+          <div style={{ height:8,borderRadius:4,background:"rgba(255,255,255,0.06)" }}>
+            <div style={{ height:"100%",borderRadius:4,width:`${pct}%`,background:pct>=100?"linear-gradient(90deg,#22c55e,#16a34a)":"linear-gradient(90deg,#ff2254,#ff6b35)",transition:"width 0.5s ease",boxShadow:pct>=100?"0 0 12px rgba(34,197,94,0.5)":"0 0 12px rgba(255,34,84,0.4)" }} />
+          </div>
+        </div>
+
+        {/* Quick stats mini row */}
+        <div style={{ display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:8 }}>
+          {[
+            { icon:"📝", val:todayErrs.length, label:"Today" },
+            { icon:"📅", val:weekErrs, label:"This Week" },
+            { icon:"🔥", val:streak||0, label:"Streak" },
+            { icon:"🟢", val:errors.filter(e=>e.masteryStage==="green").length, label:"Mastered" },
+          ].map(s => (
+            <div key={s.label} style={{ padding:"10px 8px",borderRadius:12,background:"rgba(255,255,255,0.05)",textAlign:"center" }}>
+              <div style={{ fontSize:18 }}>{s.icon}</div>
+              <div style={{ fontSize:18,fontWeight:900,color:"#e2e8f0",fontFamily:"'Bebas Neue',cursive",lineHeight:1.2 }}>{s.val}</div>
+              <div style={{ fontSize:9,color:"#475569",marginTop:2 }}>{s.label}</div>
+            </div>
+          ))}
+        </div>
+
+        {/* CTA Button */}
+        <button onClick={()=>setShowForm(true)} style={{ width:"100%",marginTop:14,padding:"14px",borderRadius:14,border:"none",background:"linear-gradient(135deg,#ff2254,#ff6b35)",color:"#fff",fontFamily:"inherit",fontSize:15,fontWeight:900,cursor:"pointer",letterSpacing:1,boxShadow:"0 4px 20px rgba(255,34,84,0.4)",display:"flex",alignItems:"center",justifyContent:"center",gap:8 }}>
+          <span style={{ fontSize:20 }}>+</span> LOG A MISTAKE NOW
+        </button>
+      </div>
 
       {/* Stats row */}
       <div style={{ display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(130px,1fr))",gap:12,marginBottom:20 }}>
@@ -1787,112 +1939,168 @@ function AITabLoader({ userId }: { userId: string }) {
   return <AIHub userId={userId} errors={errors} collection={collection} />;
 }
 
-// ─── INLINE HEAT MAP (clickable, self-contained) ──────────────────────────────
+// ─── BEAUTIFUL MONTH HEAT CALENDAR ───────────────────────────────────────────
 
 function InlineHeatMap({ errors, onDayClick }: { errors: ErrorEntry[]; onDayClick: (date: string) => void }) {
   const today = new Date();
+  const [viewYear, setViewYear] = useState(today.getFullYear());
+  const [viewMonth, setViewMonth] = useState(today.getMonth());
+
   const countByDay: Record<string, number> = {};
   errors.forEach(e => { if (e.date) countByDay[e.date] = (countByDay[e.date] || 0) + 1; });
 
   const todayStr = today.toISOString().split("T")[0];
-  const startDate = new Date(today);
-  startDate.setDate(startDate.getDate() - startDate.getDay());
-  startDate.setDate(startDate.getDate() - 25 * 7);
+  const MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+  const DAYS = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
 
-  const weeks: { date: string; count: number }[][] = [];
-  for (let w = 0; w < 26; w++) {
-    const week: { date: string; count: number }[] = [];
-    for (let d = 0; d < 7; d++) {
-      const cur = new Date(startDate);
-      cur.setDate(startDate.getDate() + w * 7 + d);
-      if (cur > today) { week.push({ date: "", count: 0 }); continue; }
-      const iso = cur.toISOString().split("T")[0];
-      week.push({ date: iso, count: countByDay[iso] || 0 });
-    }
-    weeks.push(week);
-  }
-
-  const maxCount = Math.max(1, ...Object.values(countByDay));
-  const getColor = (count: number) => {
-    if (count === 0) return "rgba(255,255,255,0.05)";
-    const i = count / maxCount;
-    if (i < 0.25) return "rgba(255,34,84,0.25)";
-    if (i < 0.5) return "rgba(255,34,84,0.5)";
-    if (i < 0.75) return "rgba(255,34,84,0.75)";
-    return "#ff2254";
-  };
-
-  const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
-  const days = ["S","M","T","W","T","F","S"];
-  const monthLabels: { label: string; col: number }[] = [];
-  let lastMonth = -1;
-  weeks.forEach((week, wi) => {
-    const first = week.find(d => d.date);
-    if (first) {
-      const m = new Date(first.date + "T00:00:00").getMonth();
-      if (m !== lastMonth) { monthLabels.push({ label: months[m], col: wi }); lastMonth = m; }
-    }
-  });
+  const firstDay = new Date(viewYear, viewMonth, 1).getDay();
+  const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
+  const daysInPrev = new Date(viewYear, viewMonth, 0).getDate();
 
   const totalAllTime = errors.length;
-  const totalThisYear = errors.filter(e => e.date?.startsWith(String(today.getFullYear()))).length;
+  const totalThisMonth = errors.filter(e => e.date?.startsWith(`${viewYear}-${String(viewMonth+1).padStart(2,"0")}`)).length;
+  const totalThisYear = errors.filter(e => e.date?.startsWith(String(viewYear))).length;
   const activeDays = Object.keys(countByDay).length;
+
+  const maxCount = Math.max(1, ...Object.values(countByDay));
+
+  const getColor = (count: number, isToday: boolean) => {
+    if (isToday && count === 0) return { bg:"rgba(0,212,255,0.12)", border:"2px solid #00d4ff", text:"#00d4ff" };
+    if (count === 0) return { bg:"rgba(255,255,255,0.03)", border:"1px solid rgba(255,255,255,0.05)", text:"#475569" };
+    const i = count / maxCount;
+    if (i < 0.25) return { bg:"rgba(255,34,84,0.15)", border:"1px solid rgba(255,34,84,0.3)", text:"#ff6b8a" };
+    if (i < 0.5)  return { bg:"rgba(255,34,84,0.3)",  border:"1px solid rgba(255,34,84,0.5)", text:"#ff2254" };
+    if (i < 0.75) return { bg:"rgba(255,34,84,0.5)",  border:"1px solid rgba(255,34,84,0.7)", text:"#fff" };
+    return { bg:"#ff2254", border:"1px solid #ff4070", text:"#fff" };
+  };
+
+  const prevMonth = () => { if (viewMonth === 0) { setViewMonth(11); setViewYear(y=>y-1); } else setViewMonth(m=>m-1); };
+  const nextMonth = () => { if (viewMonth === 11) { setViewMonth(0); setViewYear(y=>y+1); } else setViewMonth(m=>m+1); };
+
+  // Build calendar grid
+  const cells: { day: number; iso: string; count: number; isCurrentMonth: boolean }[] = [];
+  for (let i = 0; i < firstDay; i++) {
+    const d = daysInPrev - firstDay + i + 1;
+    const pm = viewMonth === 0 ? 11 : viewMonth - 1;
+    const py = viewMonth === 0 ? viewYear - 1 : viewYear;
+    const iso = `${py}-${String(pm+1).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
+    cells.push({ day:d, iso, count:countByDay[iso]||0, isCurrentMonth:false });
+  }
+  for (let d = 1; d <= daysInMonth; d++) {
+    const iso = `${viewYear}-${String(viewMonth+1).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
+    cells.push({ day:d, iso, count:countByDay[iso]||0, isCurrentMonth:true });
+  }
+  const remaining = 42 - cells.length;
+  for (let d = 1; d <= remaining; d++) {
+    const nm = viewMonth === 11 ? 0 : viewMonth + 1;
+    const ny = viewMonth === 11 ? viewYear + 1 : viewYear;
+    const iso = `${ny}-${String(nm+1).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
+    cells.push({ day:d, iso, count:countByDay[iso]||0, isCurrentMonth:false });
+  }
 
   return (
     <div>
-      <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:12, marginBottom:20 }}>
+      {/* Stats row */}
+      <div style={{ display:"grid", gridTemplateColumns:"repeat(2,1fr)", gap:12, marginBottom:20 }}>
         {[
-          { label:"Total Errors", value:totalAllTime, icon:"📝", color:"#00d4ff" },
-          { label:"This Year", value:totalThisYear, icon:"📅", color:"#ff2254" },
-          { label:"Active Days", value:activeDays, icon:"🔥", color:"#f97316" },
+          { label:"All Time", value:totalAllTime, icon:"📚", color:"#00d4ff", sub:"total errors" },
+          { label:"This Year", value:totalThisYear, icon:"📆", color:"#a78bfa", sub:`in ${viewYear}` },
+          { label:"This Month", value:totalThisMonth, icon:"🗓", color:"#ff2254", sub:MONTHS[viewMonth].toLowerCase() },
+          { label:"Active Days", value:activeDays, icon:"🔥", color:"#f97316", sub:"days studied" },
         ].map(s => (
-          <div key={s.label} style={{ padding:"14px 16px", borderRadius:14, background:"rgba(255,255,255,0.04)", border:"1px solid rgba(255,255,255,0.08)", textAlign:"center" }}>
-            <div style={{ fontSize:22 }}>{s.icon}</div>
-            <div style={{ fontSize:26, fontWeight:800, color:s.color, fontFamily:"'Bebas Neue',cursive", letterSpacing:2 }}>{s.value}</div>
-            <div style={{ fontSize:10, color:"#64748b", marginTop:2 }}>{s.label}</div>
+          <div key={s.label} style={{ padding:"16px", borderRadius:16, background:"rgba(255,255,255,0.04)", border:"1px solid rgba(255,255,255,0.08)", display:"flex", alignItems:"center", gap:12 }}>
+            <div style={{ fontSize:28 }}>{s.icon}</div>
+            <div>
+              <div style={{ fontSize:26, fontWeight:900, color:s.color, fontFamily:"'Bebas Neue',cursive", letterSpacing:2, lineHeight:1 }}>{s.value}</div>
+              <div style={{ fontSize:10, color:"#64748b", marginTop:2 }}>{s.label} · {s.sub}</div>
+            </div>
           </div>
         ))}
       </div>
-      <div style={{ padding:16, borderRadius:16, background:"rgba(255,255,255,0.03)", border:"1px solid rgba(255,255,255,0.07)", overflowX:"auto" }}>
-        <div style={{ fontSize:11, color:"#475569", fontWeight:700, letterSpacing:1, marginBottom:12 }}>MISTAKE HEAT MAP — Tap any day to see errors</div>
-        <div style={{ display:"flex", marginLeft:24, marginBottom:4 }}>
-          {weeks.map((_, wi) => {
-            const ml = monthLabels.find(m => m.col === wi);
-            return <div key={wi} style={{ width:14, flexShrink:0, fontSize:9, color:"#475569", textAlign:"center" }}>{ml ? ml.label : ""}</div>;
+
+      {/* Calendar card */}
+      <div style={{ borderRadius:20, background:"rgba(255,255,255,0.03)", border:"1px solid rgba(255,255,255,0.08)", overflow:"hidden" }}>
+        {/* Month navigation header */}
+        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"18px 20px", borderBottom:"1px solid rgba(255,255,255,0.06)", background:"rgba(255,255,255,0.02)" }}>
+          <button onClick={prevMonth} style={{ width:38,height:38,borderRadius:12,border:"1px solid rgba(255,255,255,0.1)",background:"rgba(255,255,255,0.05)",color:"#94a3b8",fontSize:18,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center" }}>‹</button>
+          <div style={{ textAlign:"center" }}>
+            <div style={{ fontSize:24, fontWeight:900, color:"#e2e8f0", fontFamily:"'Bebas Neue',cursive", letterSpacing:3 }}>{MONTHS[viewMonth]}</div>
+            <div style={{ fontSize:12, color:"#475569", marginTop:2 }}>{viewYear} · {totalThisMonth} error{totalThisMonth!==1?"s":""} this month</div>
+          </div>
+          <button onClick={nextMonth} style={{ width:38,height:38,borderRadius:12,border:"1px solid rgba(255,255,255,0.1)",background:"rgba(255,255,255,0.05)",color:"#94a3b8",fontSize:18,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center" }}>›</button>
+        </div>
+
+        {/* Day labels */}
+        <div style={{ display:"grid", gridTemplateColumns:"repeat(7,1fr)", padding:"12px 16px 6px" }}>
+          {DAYS.map(d => (
+            <div key={d} style={{ textAlign:"center", fontSize:11, fontWeight:700, color:"#334155", letterSpacing:0.5 }}>{d}</div>
+          ))}
+        </div>
+
+        {/* Calendar grid */}
+        <div style={{ display:"grid", gridTemplateColumns:"repeat(7,1fr)", gap:4, padding:"4px 16px 16px" }}>
+          {cells.map((cell, i) => {
+            const isToday = cell.iso === todayStr;
+            const style = getColor(cell.count, isToday);
+            const clickable = cell.isCurrentMonth && cell.count > 0;
+            return (
+              <div
+                key={i}
+                onClick={() => clickable && onDayClick(cell.iso)}
+                title={cell.count > 0 ? `${cell.iso}: ${cell.count} error${cell.count!==1?"s":""}` : ""}
+                style={{
+                  aspectRatio:"1",
+                  borderRadius:12,
+                  background: cell.isCurrentMonth ? style.bg : "transparent",
+                  border: cell.isCurrentMonth ? style.border : "none",
+                  display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center",
+                  cursor: clickable ? "pointer" : "default",
+                  transition:"all 0.15s",
+                  opacity: cell.isCurrentMonth ? 1 : 0.2,
+                  position:"relative",
+                }}
+                onMouseEnter={e => { if (clickable) { (e.currentTarget as HTMLElement).style.transform = "scale(1.08)"; (e.currentTarget as HTMLElement).style.zIndex = "2"; } }}
+                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.transform = "scale(1)"; (e.currentTarget as HTMLElement).style.zIndex = "1"; }}
+              >
+                <span style={{ fontSize:13, fontWeight: isToday ? 900 : cell.count > 0 ? 700 : 400, color: cell.isCurrentMonth ? style.text : "#334155", lineHeight:1 }}>{cell.day}</span>
+                {cell.isCurrentMonth && cell.count > 0 && (
+                  <span style={{ fontSize:9, color:style.text, opacity:0.8, marginTop:2, fontWeight:700 }}>{cell.count}✗</span>
+                )}
+                {isToday && <div style={{ position:"absolute",bottom:3,left:"50%",transform:"translateX(-50%)",width:4,height:4,borderRadius:"50%",background:"#00d4ff" }} />}
+              </div>
+            );
           })}
         </div>
-        <div style={{ display:"flex", gap:2 }}>
-          <div style={{ display:"flex", flexDirection:"column", gap:2, marginRight:4 }}>
-            {days.map((d, i) => <div key={i} style={{ width:14, height:14, fontSize:9, color:"#334155", display:"flex", alignItems:"center", justifyContent:"center" }}>{i % 2 === 1 ? d : ""}</div>)}
-          </div>
-          {weeks.map((week, wi) => (
-            <div key={wi} style={{ display:"flex", flexDirection:"column", gap:2 }}>
-              {week.map((cell, di) => (
-                <div
-                  key={di}
-                  onClick={() => { if (cell.date && cell.count > 0) onDayClick(cell.date); }}
-                  title={cell.date ? `${cell.date}: ${cell.count} error${cell.count !== 1 ? "s" : ""}` : ""}
-                  style={{
-                    width:14, height:14, borderRadius:3,
-                    background: cell.date ? getColor(cell.count) : "transparent",
-                    cursor: cell.date && cell.count > 0 ? "pointer" : "default",
-                    transition:"transform 0.1s",
-                    border: cell.date === todayStr ? "1px solid #00d4ff" : "none",
-                    boxSizing:"border-box" as const,
-                  }}
-                />
-              ))}
+
+        {/* Legend */}
+        <div style={{ display:"flex", alignItems:"center", justifyContent:"center", gap:8, padding:"12px 20px", borderTop:"1px solid rgba(255,255,255,0.05)", flexWrap:"wrap" as const }}>
+          <span style={{ fontSize:11, color:"#334155" }}>Intensity:</span>
+          {[
+            { label:"None", bg:"rgba(255,255,255,0.03)", border:"1px solid rgba(255,255,255,0.05)", color:"#334155" },
+            { label:"Low", bg:"rgba(255,34,84,0.15)", border:"1px solid rgba(255,34,84,0.3)", color:"#ff6b8a" },
+            { label:"Med", bg:"rgba(255,34,84,0.35)", border:"1px solid rgba(255,34,84,0.5)", color:"#ff2254" },
+            { label:"High", bg:"#ff2254", border:"1px solid #ff4070", color:"#fff" },
+          ].map(l => (
+            <div key={l.label} style={{ display:"flex",alignItems:"center",gap:5 }}>
+              <div style={{ width:16,height:16,borderRadius:5,background:l.bg,border:l.border }} />
+              <span style={{ fontSize:10,color:"#475569" }}>{l.label}</span>
             </div>
           ))}
-        </div>
-        <div style={{ display:"flex", alignItems:"center", gap:6, marginTop:10, justifyContent:"flex-end" }}>
-          <span style={{ fontSize:10, color:"#475569" }}>Less</span>
-          {[0, 0.3, 0.6, 0.9, 1].map((i,idx) => (
-            <div key={idx} style={{ width:12, height:12, borderRadius:2, background:getColor(Math.round(i * maxCount)) }} />
-          ))}
-          <span style={{ fontSize:10, color:"#475569" }}>More</span>
+          <span style={{ fontSize:11, color:"#475569", marginLeft:4 }}>· Tap a day to see errors</span>
         </div>
       </div>
+
+      {/* Today's highlight */}
+      {countByDay[todayStr] > 0 && (
+        <div onClick={() => onDayClick(todayStr)} style={{ marginTop:16,padding:"14px 18px",borderRadius:16,background:"rgba(0,212,255,0.08)",border:"1px solid rgba(0,212,255,0.2)",cursor:"pointer",display:"flex",alignItems:"center",gap:12,transition:"all 0.2s" }}>
+          <span style={{ fontSize:24 }}>📅</span>
+          <div style={{ flex:1 }}>
+            <div style={{ fontSize:13,fontWeight:700,color:"#00d4ff" }}>Today's Errors</div>
+            <div style={{ fontSize:11,color:"#475569" }}>{countByDay[todayStr]} mistake{countByDay[todayStr]!==1?"s":""} logged today · tap to review</div>
+          </div>
+          <span style={{ fontSize:18,color:"#00d4ff" }}>→</span>
+        </div>
+      )}
     </div>
   );
 }
@@ -1982,14 +2190,14 @@ function HeatCalendarLoader({ userId }: { userId: string }) {
 // Changes: Heat moved to PRIMARY_TABS icon collection, Watch moved to SECONDARY_TABS
 
 const PRIMARY_TABS = [
-  { id:"errors",      label:"Learn",      icon:"📝", color:"#ff2254", glow:"rgba(255,34,84,0.5)" },
-  { id:"revision",    label:"Review",     icon:"🔁", color:"#00d4ff", glow:"rgba(0,212,255,0.5)" },
-  { id:"leaderboard", label:"Rank",       icon:"🏆", color:"#ffd700", glow:"rgba(255,215,0,0.5)" },
-  { id:"heatmap",     label:"Heat",       icon:"🔥", color:"#f97316", glow:"rgba(249,115,22,0.5)" },
-  { id:"achievements",label:"Badges",     icon:"🏅", color:"#22c55e", glow:"rgba(34,197,94,0.5)" },
+  { id:"errors",      label:"Learn",  icon:"📝", color:"#ff2254", glow:"rgba(255,34,84,0.5)" },
+  { id:"revision",    label:"Review", icon:"🔁", color:"#00d4ff", glow:"rgba(0,212,255,0.5)" },
+  { id:"leaderboard", label:"Rank",   icon:"🏆", color:"#ffd700", glow:"rgba(255,215,0,0.5)" },
+  { id:"heatmap",     label:"Heat",   icon:"🔥", color:"#f97316", glow:"rgba(249,115,22,0.5)" },
 ];
 
 const SECONDARY_TABS = [
+  { id:"achievements",label:"Badges", icon:"🏅", color:"#22c55e", glow:"rgba(34,197,94,0.5)" },
   { id:"collection",  label:"Watch",  icon:"🎌", color:"#a855f7", glow:"rgba(168,85,247,0.5)" },
   { id:"ai",          label:"AI Hub", icon:"🤖", color:"#a855f7", glow:"rgba(168,85,247,0.5)" },
 ];
@@ -2365,7 +2573,7 @@ export default function App() {
         </div>
 
         {/* Tab content */}
-        {activeTab==="errors"       && <ErrorBook userId={user.uid} onEntryAdded={handleEntryAdded}/>}
+        {activeTab==="errors"       && <ErrorBook userId={user.uid} onEntryAdded={handleEntryAdded} onXP={handleXPGained} xpData={xpData} streak={streak} todayCount={todayCount}/>}
         {activeTab==="revision"     && <SpacedRevision userId={user.uid} onXP={handleXPGained}/>}
         {activeTab==="achievements" && <BadgesPanel earned={xpData?.badges??[]}/>}
         {activeTab==="collection"   && <AnimeCollection userId={user.uid} onEntryAdded={handleEntryAdded}/>}
