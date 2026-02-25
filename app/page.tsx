@@ -2543,7 +2543,7 @@ export default function App() {
         @keyframes popIn{from{transform:translateX(-50%) scale(0.5);opacity:0}to{transform:translateX(-50%) scale(1);opacity:1}}
         @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.5}}
         button{-webkit-tap-highlight-color:transparent;touch-action:manipulation}
-        input,select,textarea{-webkit-appearance:none;border-radius:0}
+        input,select,textarea{-webkit-appearance:none}
         img{content-visibility:auto}
         .tab-content{contain:layout style}
 
