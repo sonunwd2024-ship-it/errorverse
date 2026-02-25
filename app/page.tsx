@@ -9,7 +9,7 @@
     match /errors/{userId}/{file} { allow read, write: if request.auth.uid == userId; }
   }}
 */
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo, memo } from "react";
 import { signUp, signIn, logOut, onAuth } from "../lib/auth";
 import {
   addError, getErrors, deleteError,
@@ -140,6 +140,8 @@ const CHIP = (active: boolean, color: string): React.CSSProperties => ({
 function Particles() {
   const ref = useRef<HTMLCanvasElement>(null);
   useEffect(() => {
+    // Skip particles on mobile — saves ~30% CPU on low-end phones
+    if (window.innerWidth < 768) return;
     const c = ref.current; if (!c) return;
     const ctx = c.getContext("2d"); if (!ctx) return;
     let W = c.width = window.innerWidth, H = c.height = window.innerHeight;
@@ -932,9 +934,8 @@ function AuthScreen({ onLogin }: { onLogin:(u:any)=>void }) {
 // ─── ERROR FORM ───────────────────────────────────────────────────────────────
 
 // ─── IMAGE UPLOAD HELPER ──────────────────────────────────────────────────────
-async function uploadImageToStorage(file: File, userId: string): Promise<string> {
-  // Compress image before upload — max 800px wide, 70% quality
-  const compressed = await new Promise<Blob>((resolve) => {
+async function compressImage(file: File): Promise<{ blob: Blob; dataUrl: string }> {
+  return new Promise((resolve) => {
     const img = new Image();
     const url = URL.createObjectURL(file);
     img.onload = () => {
@@ -944,15 +945,35 @@ async function uploadImageToStorage(file: File, userId: string): Promise<string>
       canvas.width = img.width * scale;
       canvas.height = img.height * scale;
       canvas.getContext("2d")!.drawImage(img, 0, 0, canvas.width, canvas.height);
-      canvas.toBlob(b => resolve(b!), "image/jpeg", 0.70);
+      const dataUrl = canvas.toDataURL("image/jpeg", 0.70);
+      canvas.toBlob(b => {
+        URL.revokeObjectURL(url);
+        resolve({ blob: b!, dataUrl });
+      }, "image/jpeg", 0.70);
+    };
+    img.onerror = () => {
       URL.revokeObjectURL(url);
+      // fallback: read as dataURL directly
+      const reader = new FileReader();
+      reader.onload = () => resolve({ blob: file, dataUrl: reader.result as string });
+      reader.readAsDataURL(file);
     };
     img.src = url;
   });
-  const path = `errors/${userId}/${Date.now()}_${Math.random().toString(36).slice(2)}.jpg`;
-  const storageRef = ref(storage, path);
-  await uploadBytes(storageRef, compressed);
-  return getDownloadURL(storageRef);
+}
+
+async function uploadImageToStorage(file: File, userId: string): Promise<string> {
+  const { blob, dataUrl } = await compressImage(file);
+  try {
+    const path = `errors/${userId}/${Date.now()}_${Math.random().toString(36).slice(2)}.jpg`;
+    const storageRef = ref(storage, path);
+    await uploadBytes(storageRef, blob);
+    return await getDownloadURL(storageRef);
+  } catch (err: any) {
+    // If storage fails (rules not set / no internet), fall back to compressed dataURL
+    console.warn("Storage upload failed, using local fallback:", err?.code || err?.message);
+    return dataUrl;
+  }
 }
 
 function PhotoUploadBox({ label, value, onChange, userId }: { label: string; value: string|null; onChange: (v: string|null) => void; userId: string }) {
@@ -991,7 +1012,7 @@ function PhotoUploadBox({ label, value, onChange, userId }: { label: string; val
           const f = e.target.files?.[0]; if (!f) return;
           setUploading(true);
           try { const url = await uploadImageToStorage(f, userId); onChange(url); }
-          catch(err) { console.error("Upload failed:", err); alert("Image upload failed. Check Firebase Storage rules."); }
+          catch(err) { console.error("Upload failed:", err); alert("Photo failed to load. Please try a smaller image."); }
           finally { setUploading(false); }
         }} />
       </div>
@@ -1059,7 +1080,7 @@ function ErrorForm({ onSubmit, onClose, userId }: any) {
               <textarea style={{ ...INP_STYLE,height:72,resize:"vertical" } as any} placeholder="Write the question here so you can remember what it was..." value={form.questionText} onChange={set("questionText")} />
             </div>
             {/* Photo uploads */}
-            <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:12 }}>
+            <div className="photo-grid" style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:12 }}>
               <PhotoUploadBox label="📷 QUESTION PHOTO (optional)" value={form.questionImageUrl} onChange={v => setForm(p => ({ ...p, questionImageUrl: v }))} userId={userId||"anon"} />
               <PhotoUploadBox label="📷 ANSWER PHOTO (optional)" value={form.answerImageUrl} onChange={v => setForm(p => ({ ...p, answerImageUrl: v }))} userId={userId||"anon"} />
             </div>
@@ -1508,6 +1529,9 @@ function ErrorBook({ userId, onEntryAdded, onXP, xpData, streak, todayCount, all
   const [errors, setErrors] = [allErrors, setAllErrors];
   const [showForm,setShowForm]=useState(false);
   const [fs,setFs]=useState("All"),[fm,setFm]=useState("All"),[search,setSearch]=useState("");
+  const [searchInput, setSearchInput] = useState("");
+  // Debounce search — only filter after 300ms of no typing
+  useEffect(() => { const t = setTimeout(() => setSearch(searchInput), 300); return () => clearTimeout(t); }, [searchInput]);
   const loading = !errorsLoaded;
   const [visibleCount, setVisibleCount] = useState(20);
   const [viewMode,setViewMode]=useState<"today"|"all">("today");
@@ -1536,15 +1560,15 @@ function ErrorBook({ userId, onEntryAdded, onXP, xpData, streak, todayCount, all
   const todayErrors = errors.filter(e => e.date === todayStr);
   const sourceErrors = viewMode === "today" ? todayErrors : errors;
 
-  const filtered=sourceErrors.filter((e:ErrorEntry)=>{
+  const filtered=useMemo(()=>sourceErrors.filter((e:ErrorEntry)=>{
     if(fs!=="All"&&e.subject!==fs) return false;
     if(fm!=="All"&&e.mistakeType!==fm) return false;
     if(search&&!e.chapter?.toLowerCase().includes(search.toLowerCase())&&!e.subject?.toLowerCase().includes(search.toLowerCase())) return false;
     return true;
-  });
+  }), [sourceErrors, fs, fm, search]);
 
-  const mc=errors.reduce((a:any,e)=>{a[e.mistakeType]=(a[e.mistakeType]||0)+1;return a;},{});
-  const sc=errors.reduce((a:any,e)=>{a[e.subject]=(a[e.subject]||0)+1;return a;},{});
+  const mc=useMemo(()=>errors.reduce((a:any,e)=>{a[e.mistakeType]=(a[e.mistakeType]||0)+1;return a;},{}), [errors]);
+  const sc=useMemo(()=>errors.reduce((a:any,e)=>{a[e.subject]=(a[e.subject]||0)+1;return a;},{}), [errors]);
   const mr=Object.entries(mc).sort((a:any,b:any)=>b[1]-a[1])[0] as [string,number]|undefined;
   const pieData=Object.entries(mc).map(([k,v])=>({label:k,value:v as number,color:MISTAKE_COLORS[k]||"#888"}));
   const barData=Object.entries(sc).map(([k,v])=>({label:k,value:v as number,color:SUBJECT_COLORS[k]||"#888"}));
@@ -1592,7 +1616,7 @@ function ErrorBook({ userId, onEntryAdded, onXP, xpData, streak, todayCount, all
         </div>
 
         {/* Quick stats mini row */}
-        <div style={{ display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:8 }}>
+        <div className="stats-mini" style={{ display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:8 }}>
           {[
             { icon:"📝", val:todayErrs.length, label:"Today" },
             { icon:"📅", val:weekErrs, label:"This Week" },
@@ -1651,7 +1675,7 @@ function ErrorBook({ userId, onEntryAdded, onXP, xpData, streak, todayCount, all
 
       {/* Controls */}
       <div style={{ display:"flex",gap:10,marginBottom:12,flexWrap:"wrap" as const,alignItems:"center" }}>
-        <input style={{ flex:1,minWidth:140,...INP_STYLE }} placeholder="🔍 Search errors..." value={search} onChange={e=>setSearch(e.target.value)} />
+        <input style={{ flex:1,minWidth:140,...INP_STYLE }} placeholder="🔍 Search errors..." value={searchInput} onChange={e=>setSearchInput(e.target.value)} />
         <button onClick={()=>setShowForm(true)} style={{ padding:"9px 18px",borderRadius:8,border:"none",background:"linear-gradient(135deg,#00d4ff,#0066ff)",color:"#fff",fontFamily:"inherit",fontSize:13,fontWeight:700,cursor:"pointer",whiteSpace:"nowrap" as const }}>+ Add Error</button>
       </div>
 
@@ -1993,8 +2017,11 @@ function InlineHeatMap({ errors, onDayClick }: { errors: ErrorEntry[]; onDayClic
   const [viewYear, setViewYear] = useState(today.getFullYear());
   const [viewMonth, setViewMonth] = useState(today.getMonth());
 
-  const countByDay: Record<string, number> = {};
-  errors.forEach(e => { if (e.date) countByDay[e.date] = (countByDay[e.date] || 0) + 1; });
+  const countByDay = useMemo(() => {
+    const map: Record<string, number> = {};
+    errors.forEach(e => { if (e.date) map[e.date] = (map[e.date] || 0) + 1; });
+    return map;
+  }, [errors]);
 
   const todayStr = today.toISOString().split("T")[0];
   const MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
@@ -2048,7 +2075,7 @@ function InlineHeatMap({ errors, onDayClick }: { errors: ErrorEntry[]; onDayClic
   return (
     <div>
       {/* Stats row */}
-      <div style={{ display:"grid", gridTemplateColumns:"repeat(2,1fr)", gap:12, marginBottom:20 }}>
+      <div className="stats-row" style={{ display:"grid", gridTemplateColumns:"repeat(2,1fr)", gap:12, marginBottom:20 }}>
         {[
           { label:"All Time", value:totalAllTime, icon:"📚", color:"#00d4ff", sub:"total errors" },
           { label:"This Year", value:totalThisYear, icon:"📆", color:"#a78bfa", sub:`in ${viewYear}` },
@@ -2071,7 +2098,7 @@ function InlineHeatMap({ errors, onDayClick }: { errors: ErrorEntry[]; onDayClic
         <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"18px 20px", borderBottom:"1px solid rgba(255,255,255,0.06)", background:"rgba(255,255,255,0.02)" }}>
           <button onClick={prevMonth} style={{ width:38,height:38,borderRadius:12,border:"1px solid rgba(255,255,255,0.1)",background:"rgba(255,255,255,0.05)",color:"#94a3b8",fontSize:18,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center" }}>‹</button>
           <div style={{ textAlign:"center" }}>
-            <div style={{ fontSize:24, fontWeight:900, color:"#e2e8f0", fontFamily:"'Bebas Neue',cursive", letterSpacing:3 }}>{MONTHS[viewMonth]}</div>
+            <div style={{ fontSize:"clamp(18px,5vw,28px)", fontWeight:900, color:"#e2e8f0", fontFamily:"'Bebas Neue',cursive", letterSpacing:3 }}>{MONTHS[viewMonth]}</div>
             <div style={{ fontSize:12, color:"#475569", marginTop:2 }}>{viewYear} · {totalThisMonth} error{totalThisMonth!==1?"s":""} this month</div>
           </div>
           <button onClick={nextMonth} style={{ width:38,height:38,borderRadius:12,border:"1px solid rgba(255,255,255,0.1)",background:"rgba(255,255,255,0.05)",color:"#94a3b8",fontSize:18,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center" }}>›</button>
@@ -2097,7 +2124,7 @@ function InlineHeatMap({ errors, onDayClick }: { errors: ErrorEntry[]; onDayClic
                 title={cell.count > 0 ? `${cell.iso}: ${cell.count} error${cell.count!==1?"s":""}` : ""}
                 style={{
                   aspectRatio:"1",
-                  borderRadius:12,
+                  borderRadius:"clamp(6px,1.5vw,12px)",
                   background: cell.isCurrentMonth ? style.bg : "transparent",
                   border: cell.isCurrentMonth ? style.border : "none",
                   display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center",
@@ -2173,7 +2200,7 @@ function DayErrorsModal({ date, errors, onClose, onSelectError }: { date:string;
           ) : (
             <div style={{ display:"flex",flexDirection:"column",gap:10 }}>
               {dayErrors.map(err => (
-                <div key={err.id} onClick={() => { onSelectError(err); }} style={{ padding:"14px 16px",borderRadius:14,background:"rgba(255,255,255,0.04)",border:`1px solid rgba(255,255,255,0.08)`,borderLeft:`4px solid ${MASTERY_COLORS[err.masteryStage??"red"]}`,cursor:"pointer",transition:"all 0.2s" }}
+                <div key={err.id} onClick={() => { onSelectError(err); }} style={{ padding:"14px 16px",borderRadius:14,background:"rgba(255,255,255,0.04)",border:`1px solid rgba(255,255,255,0.08)`,borderLeft:`4px solid ${MASTERY_COLORS[err.masteryStage??"red"]}`,cursor:"pointer",transition:"all 0.2s",opacity:err.masteryStage==="green"?0.75:1 }}
                   onMouseEnter={e=>(e.currentTarget.style.background="rgba(255,255,255,0.08)")}
                   onMouseLeave={e=>(e.currentTarget.style.background="rgba(255,255,255,0.04)")}
                 >
@@ -2222,6 +2249,7 @@ function HeatCalendarLoader({ userId, allErrors, errorsLoaded }: { userId: strin
           onClose={() => setSelectedError(null)}
         />
       )}
+      {/* allErrors = every mistake ever logged, mastered or not — shows permanently */}
       <InlineHeatMap errors={allErrors} onDayClick={(date: string) => setSelectedDate(date)} />
     </>
   );
@@ -2367,7 +2395,11 @@ function BottomNav({ active, setActive }: { active:string; setActive:(t:string)=
 
 export default function App() {
   const [user,setUser]=useState<any>(null),[authLoading,setAuthLoading]=useState(true);
-  const [activeTab,setActiveTab]=useState("errors"),[quoteIdx,setQuoteIdx]=useState(0);
+  const [activeTab,_setActiveTab]=useState("errors"),[quoteIdx,setQuoteIdx]=useState(0);
+  const setActiveTab = useCallback((tab: string) => {
+    _setActiveTab(tab);
+    setMountedTabs(prev => { const next = new Set(prev); next.add(tab); return next; });
+  }, []);
   const [streak,setStreak]=useState(0),[todayCount,setTodayCount]=useState(0);
   const [showCal,setShowCal]=useState(false);
   const [xpData,setXpData]=useState<UserXP|null>(null);
@@ -2380,6 +2412,7 @@ export default function App() {
   const [showProfile, setShowProfile] = useState(false);
   const [showXPPanel, setShowXPPanel] = useState(false);
   const [showBadges, setShowBadges] = useState(false);
+  const [mountedTabs, setMountedTabs] = useState<Set<string>>(new Set(["errors"]));
   const [showInfo, setShowInfo] = useState(false);
   const [showWelcome, setShowWelcome] = useState(false);
   const [userAvatar, setUserAvatar] = useState("av_luffy");
@@ -2509,6 +2542,55 @@ export default function App() {
         @keyframes slideInToast{from{transform:translateX(100%);opacity:0}to{transform:translateX(0);opacity:1}}
         @keyframes popIn{from{transform:translateX(-50%) scale(0.5);opacity:0}to{transform:translateX(-50%) scale(1);opacity:1}}
         @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.5}}
+        button{-webkit-tap-highlight-color:transparent;touch-action:manipulation}
+        input,select,textarea{-webkit-appearance:none;border-radius:0}
+        img{content-visibility:auto}
+        .tab-content{contain:layout style}
+
+        /* ── RESPONSIVE BREAKPOINTS ── */
+        .main-content{padding:0 16px;padding-bottom:90px;max-width:100%}
+        .header-row{flex-wrap:wrap;gap:8px}
+
+        /* Tablet (768px+) */
+        @media(min-width:768px){
+          .main-content{padding:0 32px;padding-bottom:100px;max-width:860px;margin:0 auto}
+          .grid-2col{grid-template-columns:1fr 1fr!important}
+          .grid-3col{grid-template-columns:1fr 1fr 1fr!important}
+          .grid-4col{grid-template-columns:repeat(4,1fr)!important}
+          .stats-row{grid-template-columns:repeat(4,1fr)!important}
+          .error-form-grid{grid-template-columns:1fr 1fr!important}
+          .bottom-nav{max-width:500px;left:50%;transform:translateX(-50%);border-radius:24px;bottom:16px}
+        }
+
+        /* Desktop (1100px+) */
+        @media(min-width:1100px){
+          .main-content{max-width:1100px;padding:0 40px;padding-bottom:100px}
+          .grid-2col{grid-template-columns:1fr 1fr!important}
+          .grid-3col{grid-template-columns:repeat(3,1fr)!important}
+          .stats-row{grid-template-columns:repeat(4,1fr)!important}
+          .bottom-nav{max-width:600px}
+        }
+
+        /* Mobile-only fixes */
+        @media(max-width:480px){
+          .hide-mobile{display:none!important}
+          .modal-inner{padding:16px!important}
+          .error-form-grid{grid-template-columns:1fr!important}
+          .photo-grid{grid-template-columns:1fr!important}
+          .stats-mini{grid-template-columns:repeat(2,1fr)!important}
+          .cal-cell{border-radius:8px!important}
+        }
+
+        /* Fix select dropdowns on iOS */
+        select{background-image:none;color:#e2e8f0}
+        select:focus{outline:none}
+
+        /* Smooth scrolling */
+        html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
+        body{overscroll-behavior:none}
+
+        /* Bottom nav safe area for iPhone notch */
+        .bottom-nav-wrap{padding-bottom:env(safe-area-inset-bottom,0px)}
       `}</style>
 
       <Particles/>
@@ -2555,10 +2637,10 @@ export default function App() {
       )}
 
       {/* Main content */}
-      <div style={{ position:"relative", zIndex:1, maxWidth:1100, margin:"0 auto", padding:"0 16px", paddingBottom:80 }}>
+      <div className="main-content" style={{ position:"relative", zIndex:1 }}>
 
         {/* COMPACT TOP HEADER */}
-        <header style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"12px 0", borderBottom:"1px solid rgba(255,255,255,0.05)", marginBottom:16, gap:10 }}>
+        <header className="header-row" style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"12px 0", borderBottom:"1px solid rgba(255,255,255,0.05)", marginBottom:16, gap:10, flexWrap:"wrap" as const }}>
           <div style={{ display:"flex", alignItems:"center", gap:10 }}>
             <span style={{ fontFamily:"'Bebas Neue',cursive", fontSize:24, letterSpacing:4, background:"linear-gradient(135deg,#00d4ff,#ff2254)", WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent" }}>ERRORVERSE</span>
           </div>
@@ -2633,18 +2715,44 @@ export default function App() {
           </h1>
         </div>
 
-        {/* Tab content */}
-        {activeTab==="errors"       && <ErrorBook userId={user.uid} onEntryAdded={handleEntryAdded} onXP={handleXPGained} xpData={xpData} streak={streak} todayCount={todayCount} allErrors={allErrors} setAllErrors={setAllErrors} errorsLoaded={errorsLoaded}/>}
-        {activeTab==="revision"     && <SpacedRevision userId={user.uid} onXP={handleXPGained} allErrors={allErrors}/>}
+        {/* Tab content — mount once on first visit, keep alive with display:none */}
+        {(activeTab==="errors" || mountedTabs.has("errors")) && (
+          <div style={{ display: activeTab==="errors" ? "block" : "none" }}>
+            <ErrorBook userId={user.uid} onEntryAdded={handleEntryAdded} onXP={handleXPGained} xpData={xpData} streak={streak} todayCount={todayCount} allErrors={allErrors} setAllErrors={setAllErrors} errorsLoaded={errorsLoaded}/>
+          </div>
+        )}
+        {(activeTab==="revision" || mountedTabs.has("revision")) && (
+          <div style={{ display: activeTab==="revision" ? "block" : "none" }}>
+            <SpacedRevision userId={user.uid} onXP={handleXPGained} allErrors={allErrors}/>
+          </div>
+        )}
         {activeTab==="achievements" && <BadgesPanel earned={xpData?.badges??[]}/>}
-        {activeTab==="collection"   && <AnimeCollection userId={user.uid} onEntryAdded={handleEntryAdded}/>}
-        {activeTab==="leaderboard"  && <Leaderboard currentUserId={user.uid}/>}
-        {activeTab==="ai"           && <AITabLoader userId={user.uid} allErrors={allErrors}/>}
-        {activeTab==="heatmap"      && <HeatCalendarLoader userId={user.uid} allErrors={allErrors} errorsLoaded={errorsLoaded}/>}
+        {(activeTab==="collection" || mountedTabs.has("collection")) && (
+          <div style={{ display: activeTab==="collection" ? "block" : "none" }}>
+            <AnimeCollection userId={user.uid} onEntryAdded={handleEntryAdded}/>
+          </div>
+        )}
+        {(activeTab==="leaderboard" || mountedTabs.has("leaderboard")) && (
+          <div style={{ display: activeTab==="leaderboard" ? "block" : "none" }}>
+            <Leaderboard currentUserId={user.uid}/>
+          </div>
+        )}
+        {(activeTab==="ai" || mountedTabs.has("ai")) && (
+          <div style={{ display: activeTab==="ai" ? "block" : "none" }}>
+            <AITabLoader userId={user.uid} allErrors={allErrors}/>
+          </div>
+        )}
+        {(activeTab==="heatmap" || mountedTabs.has("heatmap")) && (
+          <div style={{ display: activeTab==="heatmap" ? "block" : "none" }}>
+            <HeatCalendarLoader userId={user.uid} allErrors={allErrors} errorsLoaded={errorsLoaded}/>
+          </div>
+        )}
       </div>
 
       {/* Bottom nav */}
-      <BottomNav active={activeTab} setActive={setActiveTab} />
+      <div className="bottom-nav-wrap" style={{ position:"fixed", bottom:0, left:0, right:0, zIndex:100 }}>
+        <BottomNav active={activeTab} setActive={setActiveTab} />
+      </div>
     </div>
   );
 }
