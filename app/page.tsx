@@ -1026,46 +1026,25 @@ function AuthScreen({ onLogin }: { onLogin:(u:any)=>void }) {
 // ─── ERROR FORM ───────────────────────────────────────────────────────────────
 
 // ─── IMAGE UPLOAD HELPER ──────────────────────────────────────────────────────
-async function compressImage(file: File): Promise<{ blob: Blob; dataUrl: string }> {
-  return new Promise((resolve) => {
-    const img = new Image();
-    const url = URL.createObjectURL(file);
-    img.onload = () => {
-      const MAX = 800;
-      const scale = Math.min(1, MAX / Math.max(img.width, img.height));
-      const canvas = document.createElement("canvas");
-      canvas.width = img.width * scale;
-      canvas.height = img.height * scale;
-      canvas.getContext("2d")!.drawImage(img, 0, 0, canvas.width, canvas.height);
-      const dataUrl = canvas.toDataURL("image/jpeg", 0.70);
-      canvas.toBlob(b => {
-        URL.revokeObjectURL(url);
-        resolve({ blob: b!, dataUrl });
-      }, "image/jpeg", 0.70);
-    };
-    img.onerror = () => {
-      URL.revokeObjectURL(url);
-      // fallback: read as dataURL directly
-      const reader = new FileReader();
-      reader.onload = () => resolve({ blob: file, dataUrl: reader.result as string });
-      reader.readAsDataURL(file);
-    };
-    img.src = url;
-  });
-}
-
 async function uploadImageToStorage(file: File, userId: string): Promise<string> {
-  const { blob, dataUrl } = await compressImage(file);
-  // Try Firebase Storage first
+  // Step 1: Read file as dataURL (always works, no canvas needed)
+  const dataUrl = await new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = () => reject(new Error("Failed to read file"));
+    reader.readAsDataURL(file);
+  });
+
+  // Step 2: Try Firebase Storage upload
   try {
     const path = `errors/${userId}/${Date.now()}_${Math.random().toString(36).slice(2)}.jpg`;
     const storageRef = ref(storage, path);
-    await uploadBytes(storageRef, blob);
+    await uploadBytes(storageRef, file);
     const url = await getDownloadURL(storageRef);
     return url;
   } catch (err: any) {
-    console.warn("Storage upload failed, using dataURL fallback:", err?.code || err?.message);
-    // Always works — stores compressed image as dataURL
+    console.warn("Storage failed, using dataURL:", err?.code || err?.message);
+    // Fallback: return the dataURL directly — photo still saves and shows
     return dataUrl;
   }
 }
