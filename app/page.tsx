@@ -2378,7 +2378,6 @@ function HeatCalendarLoader({ userId, allErrors, errorsLoaded }: { userId: strin
 }
 
 // ─── NAVIGATION CONFIG ────────────────────────────────────────────────────────
-// Changes: Heat moved to PRIMARY_TABS icon collection, Watch moved to SECONDARY_TABS
 
 const PRIMARY_TABS = [
   { id:"errors",      label:"Learn",  icon:"📝", color:"#ff2254", glow:"rgba(255,34,84,0.5)" },
@@ -2395,8 +2394,6 @@ const SECONDARY_TABS = [
 function BottomNav({ active, setActive }: { active:string; setActive:(t:string)=>void }) {
   const windowWidth = useWindowWidth();
   const isMobile = windowWidth < 768;
-  const isTablet = windowWidth >= 768 && windowWidth < 1100;
-  const isDesktop = windowWidth >= 1100;
   const [showMore, setShowMore] = useState(false);
   const allTabs = [...PRIMARY_TABS, ...SECONDARY_TABS];
   const activeTab = allTabs.find(t => t.id === active);
@@ -2445,7 +2442,6 @@ function BottomNav({ active, setActive }: { active:string; setActive:(t:string)=
         display:"flex", alignItems:"stretch",
         paddingBottom:"env(safe-area-inset-bottom,0px)",
       }}>
-        {/* Inner nav — pill on desktop, full-width on mobile */}
         <div style={{
           flex:1, display:"flex", alignItems:"stretch",
           background:"rgba(3,5,12,0.98)", backdropFilter:"blur(28px)",
@@ -2459,71 +2455,70 @@ function BottomNav({ active, setActive }: { active:string; setActive:(t:string)=
           overflow:"hidden",
           transition:"all 0.3s ease",
         }}>
-        {PRIMARY_TABS.map(t => {
-          const isActive = active === t.id;
-          return (
-            <button key={t.id} onClick={() => { setActive(t.id); setShowMore(false); }} style={{
-              flex:1, display:"flex", flexDirection:"column", alignItems:"center",
-              justifyContent:"center", gap:3,
-              border:"none", background:"transparent",
-              cursor:"pointer", fontFamily:"inherit",
-              position:"relative", padding:"6px 2px 8px",
-              transition:"all 0.15s",
-            }}>
-              <div style={{
-                position:"absolute", top:0, left:"50%", transform:"translateX(-50%)",
-                width: isActive ? 32 : 0,
-                height:2, borderRadius:"0 0 3px 3px",
-                background:t.color,
-                boxShadow: isActive ? `0 2px 12px ${t.glow}` : "none",
-                transition:"width 0.25s ease, box-shadow 0.25s ease",
-              }} />
-              <span style={{
-                fontSize: isActive ? 24 : 21, lineHeight:1,
-                filter: isActive ? `drop-shadow(0 0 10px ${t.glow})` : "none",
-                transition:"all 0.2s",
-                transform: isActive ? "translateY(-1px)" : "none",
-              }}>{t.icon}</span>
-              <span style={{
-                fontSize:9.5, fontWeight: isActive ? 800 : 400,
-                color: isActive ? t.color : "#3d4d63",
-                letterSpacing:0.2, transition:"all 0.15s",
-              }}>{t.label}</span>
-            </button>
-          );
-        })}
+          {PRIMARY_TABS.map(t => {
+            const isActive = active === t.id;
+            return (
+              <button key={t.id} onClick={() => { setActive(t.id); setShowMore(false); }} style={{
+                flex:1, display:"flex", flexDirection:"column", alignItems:"center",
+                justifyContent:"center", gap:3,
+                border:"none", background:"transparent",
+                cursor:"pointer", fontFamily:"inherit",
+                position:"relative", padding:"6px 2px 8px",
+                transition:"all 0.15s",
+              }}>
+                <div style={{
+                  position:"absolute", top:0, left:"50%", transform:"translateX(-50%)",
+                  width: isActive ? 32 : 0,
+                  height:2, borderRadius:"0 0 3px 3px",
+                  background:t.color,
+                  boxShadow: isActive ? `0 2px 12px ${t.glow}` : "none",
+                  transition:"width 0.25s ease, box-shadow 0.25s ease",
+                }} />
+                <span style={{
+                  fontSize: isActive ? 24 : 21, lineHeight:1,
+                  filter: isActive ? `drop-shadow(0 0 10px ${t.glow})` : "none",
+                  transition:"all 0.2s",
+                  transform: isActive ? "translateY(-1px)" : "none",
+                }}>{t.icon}</span>
+                <span style={{
+                  fontSize:9.5, fontWeight: isActive ? 800 : 400,
+                  color: isActive ? t.color : "#3d4d63",
+                  letterSpacing:0.2, transition:"all 0.15s",
+                }}>{t.label}</span>
+              </button>
+            );
+          })}
 
-        {/* More button */}
-        <button onClick={() => setShowMore(s => !s)} style={{
-          flex:1, display:"flex", flexDirection:"column", alignItems:"center",
-          justifyContent:"center", gap:3,
-          border:"none", background:"transparent",
-          cursor:"pointer", fontFamily:"inherit",
-          position:"relative", padding:"6px 2px 8px",
-          transition:"all 0.15s",
-        }}>
-          <div style={{
-            position:"absolute", top:0, left:"50%", transform:"translateX(-50%)",
-            width: isSecondaryActive ? 32 : 0,
-            height:2, borderRadius:"0 0 3px 3px",
-            background: activeTab?.color ?? "#64748b",
-            boxShadow: isSecondaryActive ? `0 2px 12px ${(activeTab as any)?.glow ?? "#64748b44"}` : "none",
-            transition:"width 0.25s ease",
-          }} />
+          {/* More button */}
+          <button onClick={() => setShowMore(s => !s)} style={{
+            flex:1, display:"flex", flexDirection:"column", alignItems:"center",
+            justifyContent:"center", gap:3,
+            border:"none", background:"transparent",
+            cursor:"pointer", fontFamily:"inherit",
+            position:"relative", padding:"6px 2px 8px",
+            transition:"all 0.15s",
+          }}>
+            <div style={{
+              position:"absolute", top:0, left:"50%", transform:"translateX(-50%)",
+              width: isSecondaryActive ? 32 : 0,
+              height:2, borderRadius:"0 0 3px 3px",
+              background: activeTab?.color ?? "#64748b",
+              boxShadow: isSecondaryActive ? `0 2px 12px ${(activeTab as any)?.glow ?? "#64748b44"}` : "none",
+              transition:"width 0.25s ease",
+            }} />
 
-          {isSecondaryActive ? (
-            <>
-              <span style={{ fontSize:24, lineHeight:1, filter: `drop-shadow(0 0 10px ${(activeTab as any)?.glow ?? "#64748b"})`, transform:"translateY(-1px)" }}>{activeTab?.icon}</span>
-              <span style={{ fontSize:9.5, fontWeight:800, color: activeTab?.color ?? "#64748b", letterSpacing:0.2 }}>{activeTab?.label}</span>
-            </>
-          ) : (
-            <>
-              <span style={{ fontSize:20, lineHeight:1, color: showMore ? "#94a3b8" : "#3d4d63", transform: showMore ? "rotate(45deg)" : "none", transition:"all 0.25s ease", display:"block" }}>⊕</span>
-              <span style={{ fontSize:9.5, fontWeight:400, color: showMore ? "#94a3b8" : "#3d4d63", letterSpacing:0.2, transition:"color 0.15s" }}>More</span>
-            </>
-          )}
-        </button>
-        </div>
+            {isSecondaryActive ? (
+              <>
+                <span style={{ fontSize:24, lineHeight:1, filter: `drop-shadow(0 0 10px ${(activeTab as any)?.glow ?? "#64748b"})`, transform:"translateY(-1px)" }}>{activeTab?.icon}</span>
+                <span style={{ fontSize:9.5, fontWeight:800, color: activeTab?.color ?? "#64748b", letterSpacing:0.2 }}>{activeTab?.label}</span>
+              </>
+            ) : (
+              <>
+                <span style={{ fontSize:20, lineHeight:1, color: showMore ? "#94a3b8" : "#3d4d63", transform: showMore ? "rotate(45deg)" : "none", transition:"all 0.25s ease", display:"block" }}>⊕</span>
+                <span style={{ fontSize:9.5, fontWeight:400, color: showMore ? "#94a3b8" : "#3d4d63", letterSpacing:0.2, transition:"color 0.15s" }}>More</span>
+              </>
+            )}
+          </button>
         </div>
       </nav>
     </>
@@ -2563,7 +2558,6 @@ export default function App() {
 
   const syncLeaderboard = useCallback(async (uid: string, name: string, stk: number, cachedErrors?: ErrorEntry[]) => {
     try {
-      // Use cached errors to avoid extra Firestore reads
       const errors = cachedErrors ?? allErrors;
       const mc: Record<string,number> = {};
       errors.forEach((e:any) => { mc[e.mistakeType]=(mc[e.mistakeType]||0)+1; });
@@ -2573,20 +2567,17 @@ export default function App() {
   }, [allErrors]);
 
   const handleUpdateProfile = useCallback(async (data: any) => {
-    // Update local state immediately — no waiting, no blink
     if (data.displayName) setDisplayName(data.displayName);
     if (data.avatar) setUserAvatar(data.avatar);
     if (data.photoURL !== undefined) setUserPhoto(data.photoURL ?? null);
     if (user) {
       const newName = data.displayName || displayName;
-      // Also update Firebase Auth profile so it persists on next login
       try { await updateProfile(user, { displayName: newName }); } catch(e) {}
       await syncLeaderboard(user.uid, newName, streak);
     }
   }, [user, displayName, streak, syncLeaderboard]);
 
   const loadStats = useCallback(async (uid: string, name: string, isNew?: boolean) => {
-    // Load profile FIRST so name is set before anything else renders
     const [profile, s, t, xp] = await Promise.all([
       loadUserProfile(uid),
       getStreak(uid),
@@ -2602,7 +2593,6 @@ export default function App() {
       setProfileLoaded(true);
       await syncLeaderboard(uid, finalName, s);
     } else {
-      // No Firestore profile yet — use auth name as final
       setDisplayName(name);
       setProfileLoaded(true);
       await syncLeaderboard(uid, name, s);
@@ -2635,9 +2625,7 @@ export default function App() {
       if (u) {
         const authName = u.displayName || u.email?.split("@")[0] || "Warrior";
         const isNew = u.metadata?.creationTime === u.metadata?.lastSignInTime;
-        // Don't set displayName here — loadStats sets it ONCE from Firestore
         loadStats(u.uid, authName, isNew);
-        // Load errors once — shared across all tabs
         getErrors(u.uid).then(e => { setAllErrors(e); setErrorsLoaded(true); });
       } else {
         setAllErrors([]); setErrorsLoaded(false); setProfileLoaded(false); setDisplayName("");
@@ -2846,7 +2834,7 @@ export default function App() {
               <span style={{ fontSize:12, color:streak>0?"#ffd700":"#475569", fontWeight:700 }}>{streak}d</span>
             </button>
 
-            {/* ℹ️ Info icon — WHERE 0/3 WAS */}
+            {/* ℹ️ Info icon */}
             <button
               onClick={() => setShowInfo(true)}
               title="How to use ErrorVerse"
@@ -2861,7 +2849,7 @@ export default function App() {
               }}
             >ℹ</button>
 
-            {/* XP pill — click XP part for XP panel, click 🏅 for badges */}
+            {/* XP pill */}
             {xpData && (
               <div style={{ display:"flex", alignItems:"center", borderRadius:12, background:"rgba(123,97,255,0.12)", border:"1px solid rgba(123,97,255,0.3)", overflow:"hidden" }}>
                 <button onClick={() => setShowXPPanel(true)} style={{ display:"flex", alignItems:"center", gap:4, padding:"5px 8px", border:"none", background:"transparent", fontSize:11, color:"#a78bfa", fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>
@@ -2884,7 +2872,7 @@ export default function App() {
           </div>
         </header>
 
-        {/* Scrolling quote — bold white, clearly readable */}
+        {/* Scrolling quote */}
         <div style={{ marginBottom:14, overflow:"hidden", minHeight:22 }}>
           <span style={{
             fontSize:13,
@@ -2911,7 +2899,7 @@ export default function App() {
           </h1>
         </div>
 
-        {/* Tab content — mount once on first visit, keep alive with display:none */}
+        {/* Tab content */}
         {(activeTab==="errors" || mountedTabs.has("errors")) && (
           <div style={{ display: activeTab==="errors" ? "block" : "none" }}>
             <ErrorBook userId={user.uid} onEntryAdded={handleEntryAdded} onXP={handleXPGained} xpData={xpData} streak={streak} todayCount={todayCount} allErrors={allErrors} setAllErrors={setAllErrors} errorsLoaded={errorsLoaded}/>
