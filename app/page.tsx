@@ -919,9 +919,9 @@ function AuthScreen({ onLogin }: { onLogin:(u:any)=>void }) {
             ))}
           </div>
           <div style={{ display:"flex",flexDirection:"column",gap:14 }}>
-            {mode==="signup"&&<input style={INP_STYLE} placeholder="Full Name" value={name} onChange={e=>setName(e.target.value)} />}
-            <input style={INP_STYLE} placeholder="Email" type="email" value={email} onChange={e=>setEmail(e.target.value)} autoComplete="email" spellCheck={false} />
-            <input style={INP_STYLE} placeholder="Password" type="password" value={password} onChange={e=>setPassword(e.target.value)} onKeyDown={e=>e.key==="Enter"&&handle()} autoComplete="current-password" />
+            {mode==="signup"&&<input className="auth-input" placeholder="Full Name" value={name} onChange={e=>setName(e.target.value)} autoComplete="name" />}
+            <input className="auth-input" placeholder="Email" type="email" value={email} onChange={e=>setEmail(e.target.value)} autoComplete="email" />
+            <input className="auth-input" placeholder="Password" type="password" value={password} onChange={e=>setPassword(e.target.value)} onKeyDown={e=>e.key==="Enter"&&handle()} autoComplete="current-password" />
             {error&&<div style={{ fontSize:12,color:"#ff2254",padding:"8px 12px",background:"rgba(255,34,84,0.1)",borderRadius:8 }}>{error}</div>}
             <button onClick={handle} disabled={loading} style={{ width:"100%",padding:"13px",borderRadius:10,border:"none",background:loading?"rgba(0,212,255,0.3)":"linear-gradient(135deg,#00d4ff,#0066ff)",color:"#fff",fontFamily:"inherit",fontSize:15,fontWeight:700,cursor:loading?"not-allowed":"pointer",letterSpacing:1 }}>
               {loading?"...":(mode==="login"?"ENTER THE VERSE":"BEGIN JOURNEY")}
@@ -2511,11 +2511,34 @@ export default function App() {
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600;700;800&display=swap');
         *{margin:0;padding:0;box-sizing:border-box}
-        input::placeholder,textarea::placeholder{color:#334155}
-        select option{background:#0d1117}
+        .auth-input{
+          display:block;
+          width:100%;
+          padding:12px 14px;
+          background:rgba(255,255,255,0.06) !important;
+          border:1px solid rgba(255,255,255,0.12) !important;
+          border-radius:10px;
+          color:#e2e8f0 !important;
+          font-size:14px;
+          font-family:'DM Sans',sans-serif;
+          box-sizing:border-box;
+          outline:none;
+          pointer-events:auto !important;
+          position:relative;
+          z-index:10;
+        }
+        .auth-input:focus{border-color:#00d4ff !important;}
+        .auth-input:-webkit-autofill,
+        .auth-input:-webkit-autofill:hover,
+        .auth-input:-webkit-autofill:focus{
+          -webkit-text-fill-color:#e2e8f0 !important;
+          -webkit-box-shadow:0 0 0 1000px #0d1117 inset !important;
+          caret-color:#00d4ff !important;
+        }
+        .auth-input::placeholder{color:#475569}
       `}</style>
       <Particles/>
-      <div style={{ position:"relative", zIndex:1 }}>
+      <div style={{ position:"relative", zIndex:10 }}>
         <AuthScreen onLogin={u => { setUser(u); const name = u.displayName||u.email?.split("@")[0]||"Warrior"; setDisplayName(name); loadStats(u.uid, name, true); }} />
       </div>
     </div>
@@ -2546,11 +2569,16 @@ export default function App() {
         @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.5}}
         button{-webkit-tap-highlight-color:transparent;touch-action:manipulation}
         input:focus,select:focus,textarea:focus{outline:none}
-        input:-webkit-autofill,input:-webkit-autofill:hover,input:-webkit-autofill:focus{
+        input:-webkit-autofill,
+        input:-webkit-autofill:hover,
+        input:-webkit-autofill:focus,
+        input:-webkit-autofill:active{
           -webkit-text-fill-color:#e2e8f0 !important;
-          -webkit-box-shadow:0 0 0px 1000px rgba(255,255,255,0.05) inset !important;
-          transition:background-color 5000s ease-in-out 0s;
-          caret-color:#e2e8f0;
+          -webkit-box-shadow:0 0 0 1000px #0d1117 inset !important;
+          box-shadow:0 0 0 1000px #0d1117 inset !important;
+          background-color:#0d1117 !important;
+          caret-color:#00d4ff !important;
+          transition:background-color 9999s ease-in-out 0s;
         }
         img{content-visibility:auto}
         .tab-content{contain:layout style}
