@@ -1,7 +1,17 @@
 "use client";
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { useState, useEffect, useRef, useCallback } from "react";
+/*
+  ⚠️  IMPORTANT: Add `storage` to your lib/firebase.ts:
+  import { getStorage } from "firebase/storage";
+  export const storage = getStorage(app);
+  Also enable Firebase Storage in your Firebase Console and set rules:
+  rules_version = '2'; service firebase.storage { match /b/{bucket}/o {
+    match /errors/{userId}/{file} { allow read, write: if request.auth.uid == userId; }
+  }}
+*/
+import { useState, useEffect, useRef, useCallback, useMemo, memo } from "react";
 import { signUp, signIn, logOut, onAuth } from "../lib/auth";
+import { updateProfile } from "firebase/auth";
 import {
   addError, getErrors, deleteError,
   addCollectionEntry, getCollection, deleteCollectionEntry,
@@ -13,8 +23,9 @@ import {
   XP_REWARDS, LEVELS, BADGES,
   type ErrorEntry, type UserXP,
 } from "../lib/db";
-import { db } from "../lib/firebase";
+import { db, storage } from "../lib/firebase";
 import { doc, getDoc } from "firebase/firestore";
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { ProfilePanel, XPTapPanel, AvatarDisplay, loadUserProfile, getAvatar } from "./ProfilePanel";
 import { AIHub } from "./AIFeatures";
 
@@ -111,10 +122,24 @@ export function getNenLeague(xp: number) {
 
 // ─── SHARED STYLES ────────────────────────────────────────────────────────────
 
+// ── Responsive hook — updates on resize, safe for SSR ──
+function useWindowWidth() {
+  const [width, setWidth] = useState(375); // default mobile
+  useEffect(() => {
+    const update = () => setWidth(window.innerWidth);
+    update();
+    window.addEventListener("resize", update);
+    return () => window.removeEventListener("resize", update);
+  }, []);
+  return width;
+}
+
 const INP_STYLE: React.CSSProperties = {
-  width:"100%", padding:"10px 14px", background:"rgba(255,255,255,0.05)",
-  border:"1px solid rgba(255,255,255,0.1)", borderRadius:8, color:"#e2e8f0",
-  fontSize:13, outline:"none", fontFamily:"inherit", boxSizing:"border-box",
+  width:"100%", padding:"11px 14px", background:"rgba(255,255,255,0.06)",
+  border:"1px solid rgba(255,255,255,0.12)", borderRadius:10, color:"#e2e8f0",
+  fontSize:14, outline:"none", fontFamily:"inherit", boxSizing:"border-box",
+  WebkitTextFillColor:"#e2e8f0", caretColor:"#00d4ff",
+  transition:"border-color 0.2s, background 0.2s",
 };
 
 const CHIP = (active: boolean, color: string): React.CSSProperties => ({
@@ -130,6 +155,8 @@ const CHIP = (active: boolean, color: string): React.CSSProperties => ({
 function Particles() {
   const ref = useRef<HTMLCanvasElement>(null);
   useEffect(() => {
+    // Skip particles on mobile — saves ~30% CPU on low-end phones
+    if (window.innerWidth < 768) return;
     const c = ref.current; if (!c) return;
     const ctx = c.getContext("2d"); if (!ctx) return;
     let W = c.width = window.innerWidth, H = c.height = window.innerHeight;
@@ -876,44 +903,121 @@ function StreakBanner({ todayCount, streak }: { todayCount:number; streak:number
 // ─── AUTH SCREEN ──────────────────────────────────────────────────────────────
 
 function AuthScreen({ onLogin }: { onLogin:(u:any)=>void }) {
-  const [mode,setMode]=useState("login"),[email,setEmail]=useState(""),[password,setPassword]=useState(""),[name,setName]=useState(""),[error,setError]=useState(""),[loading,setLoading]=useState(false);
+  const [mode,setMode]=useState("login");
+  const [email,setEmail]=useState("");
+  const [password,setPassword]=useState("");
+  const [name,setName]=useState("");
+  const [error,setError]=useState("");
+  const [loading,setLoading]=useState(false);
+
   const handle = async () => {
+    if (!email.trim() || !password.trim()) { setError("Please fill in all fields."); return; }
     setError(""); setLoading(true);
     try {
-      if (mode==="signup"&&!name.trim()){setError("Enter your name.");setLoading(false);return;}
-      const u=mode==="signup"?await signUp(email,password,name):await signIn(email,password);
-      if(u) onLogin(u);
+      if (mode==="signup" && !name.trim()) { setError("Enter your name."); setLoading(false); return; }
+      const u = mode==="signup" ? await signUp(email,password,name) : await signIn(email,password);
+      if (u) onLogin(u);
     } catch(e:any) {
-      setError(e.code==="auth/user-not-found"?"No account found.":e.code==="auth/wrong-password"?"Incorrect password.":e.code==="auth/email-already-in-use"?"Email already in use.":e.code==="auth/weak-password"?"Password must be 6+ chars.":"Something went wrong.");
+      const code = e.code || "";
+      setError(
+        code==="auth/user-not-found" ? "No account found. Please create one." :
+        code==="auth/invalid-credential" ? "Wrong email or password." :
+        code==="auth/wrong-password" ? "Incorrect password." :
+        code==="auth/email-already-in-use" ? "Email already in use." :
+        code==="auth/weak-password" ? "Password must be 6+ characters." :
+        code==="auth/invalid-email" ? "Please enter a valid email." :
+        "Something went wrong. Try again."
+      );
     }
     setLoading(false);
   };
+
+  const inputStyle: React.CSSProperties = {
+    width:"100%", padding:"13px 16px",
+    background:"#111827",
+    border:"1.5px solid #1e293b",
+    borderRadius:12, color:"#f1f5f9",
+    fontSize:15, fontFamily:"'DM Sans',sans-serif",
+    outline:"none", boxSizing:"border-box",
+    display:"block", WebkitTextFillColor:"#f1f5f9",
+  };
+
   return (
-    <div style={{ minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",padding:20 }}>
-      <div style={{ width:"100%",maxWidth:420 }}>
-        <div style={{ textAlign:"center",marginBottom:32 }}>
-          <div style={{ fontSize:48,marginBottom:8 }}>⚡</div>
-          <h1 style={{ fontSize:36,fontFamily:"'Bebas Neue',cursive",letterSpacing:4,background:"linear-gradient(135deg,#00d4ff,#ff2254)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",margin:0 }}>ERRORVERSE</h1>
-          <p style={{ color:"#64748b",fontSize:13,marginTop:6 }}>Master your mistakes. Own your story.</p>
+    <div style={{ minHeight:"100vh", display:"flex", alignItems:"center", justifyContent:"center", padding:20, position:"relative", zIndex:10 }}>
+      <div style={{ width:"100%", maxWidth:420, position:"relative", zIndex:10 }}>
+
+        {/* Logo */}
+        <div style={{ textAlign:"center", marginBottom:36 }}>
+          <div style={{ fontSize:52, marginBottom:10 }}>⚡</div>
+          <h1 style={{ fontSize:38, fontFamily:"'Bebas Neue',cursive", letterSpacing:4, background:"linear-gradient(135deg,#00d4ff,#ff2254)", WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent", margin:0 }}>ERRORVERSE</h1>
+          <p style={{ color:"#64748b", fontSize:13, marginTop:8 }}>Master your mistakes. Own your story.</p>
         </div>
-        <GlassCard hover={false} style={{ padding:32 }}>
-          <div style={{ display:"flex",gap:8,marginBottom:24 }}>
-            {["login","signup"].map(m=>(
-              <button key={m} onClick={()=>{setMode(m);setError("");}} style={{ flex:1,padding:"10px",borderRadius:8,border:"none",cursor:"pointer",background:mode===m?"rgba(255,255,255,0.08)":"transparent",color:mode===m?"#00d4ff":"#64748b",fontFamily:"inherit",fontSize:13,fontWeight:600,borderBottom:mode===m?"2px solid #00d4ff":"2px solid transparent",transition:"all 0.2s" }}>
-                {m==="login"?"Sign In":"Create Account"}
+
+        {/* Card */}
+        <div style={{ background:"rgba(15,20,40,0.95)", border:"1px solid rgba(255,255,255,0.1)", borderRadius:20, padding:32, backdropFilter:"blur(20px)" }}>
+
+          {/* Tabs */}
+          <div style={{ display:"flex", gap:0, marginBottom:28, background:"rgba(255,255,255,0.04)", borderRadius:12, padding:4 }}>
+            {[["login","Sign In"],["signup","Create Account"]].map(([m,label])=>(
+              <button key={m} onClick={()=>{setMode(m);setError("");}}
+                style={{ flex:1, padding:"10px", borderRadius:10, border:"none", cursor:"pointer",
+                  background:mode===m?"rgba(255,255,255,0.1)":"transparent",
+                  color:mode===m?"#00d4ff":"#64748b",
+                  fontFamily:"'DM Sans',sans-serif", fontSize:13, fontWeight:700,
+                  transition:"all 0.2s" }}>
+                {label}
               </button>
             ))}
           </div>
-          <div style={{ display:"flex",flexDirection:"column",gap:14 }}>
-            {mode==="signup"&&<input style={INP_STYLE} placeholder="Full Name" value={name} onChange={e=>setName(e.target.value)} />}
-            <input style={INP_STYLE} placeholder="Email" type="email" value={email} onChange={e=>setEmail(e.target.value)} />
-            <input style={INP_STYLE} placeholder="Password" type="password" value={password} onChange={e=>setPassword(e.target.value)} onKeyDown={e=>e.key==="Enter"&&handle()} />
-            {error&&<div style={{ fontSize:12,color:"#ff2254",padding:"8px 12px",background:"rgba(255,34,84,0.1)",borderRadius:8 }}>{error}</div>}
-            <button onClick={handle} disabled={loading} style={{ width:"100%",padding:"13px",borderRadius:10,border:"none",background:loading?"rgba(0,212,255,0.3)":"linear-gradient(135deg,#00d4ff,#0066ff)",color:"#fff",fontFamily:"inherit",fontSize:15,fontWeight:700,cursor:loading?"not-allowed":"pointer",letterSpacing:1 }}>
-              {loading?"...":(mode==="login"?"ENTER THE VERSE":"BEGIN JOURNEY")}
+
+          {/* Fields */}
+          <div style={{ display:"flex", flexDirection:"column", gap:14 }}>
+            {mode==="signup" && (
+              <input
+                style={inputStyle}
+                placeholder="Full Name"
+                value={name}
+                onChange={e=>setName(e.target.value)}
+                autoComplete="name"
+              />
+            )}
+            <input
+              style={inputStyle}
+              placeholder="Email address"
+              type="email"
+              value={email}
+              onChange={e=>setEmail(e.target.value)}
+              autoComplete="email"
+            />
+            <input
+              style={inputStyle}
+              placeholder="Password"
+              type="password"
+              value={password}
+              onChange={e=>setPassword(e.target.value)}
+              onKeyDown={e=>e.key==="Enter"&&handle()}
+              autoComplete="current-password"
+            />
+
+            {error && (
+              <div style={{ fontSize:13, color:"#ff2254", padding:"10px 14px", background:"rgba(255,34,84,0.08)", border:"1px solid rgba(255,34,84,0.2)", borderRadius:10 }}>
+                ⚠️ {error}
+              </div>
+            )}
+
+            <button
+              onClick={handle}
+              disabled={loading}
+              style={{ width:"100%", padding:"14px", borderRadius:12, border:"none",
+                background:loading?"rgba(0,212,255,0.3)":"linear-gradient(135deg,#00d4ff,#0066ff)",
+                color:"#fff", fontFamily:"'DM Sans',sans-serif", fontSize:15, fontWeight:800,
+                cursor:loading?"not-allowed":"pointer", letterSpacing:1,
+                boxShadow:loading?"none":"0 4px 20px rgba(0,212,255,0.3)",
+                marginTop:4 }}>
+              {loading ? "⏳ Signing in..." : (mode==="login" ? "ENTER THE VERSE ⚡" : "BEGIN JOURNEY 🚀")}
             </button>
           </div>
-        </GlassCard>
+        </div>
       </div>
     </div>
   );
@@ -922,51 +1026,123 @@ function AuthScreen({ onLogin }: { onLogin:(u:any)=>void }) {
 // ─── ERROR FORM ───────────────────────────────────────────────────────────────
 
 // ─── IMAGE UPLOAD HELPER ──────────────────────────────────────────────────────
-function imageToBase64(file: File): Promise<string> {
-  return new Promise((res, rej) => {
-    const r = new FileReader();
-    r.onload = () => res(r.result as string);
-    r.onerror = rej;
-    r.readAsDataURL(file);
+async function uploadImageToStorage(file: File, userId: string): Promise<string> {
+  // Step 1: Read file as dataURL (always works, no canvas needed)
+  const dataUrl = await new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = () => reject(new Error("Failed to read file"));
+    reader.readAsDataURL(file);
   });
+
+  // Step 2: Try Firebase Storage upload
+  try {
+    const path = `errors/${userId}/${Date.now()}_${Math.random().toString(36).slice(2)}.jpg`;
+    const storageRef = ref(storage, path);
+    await uploadBytes(storageRef, file);
+    const url = await getDownloadURL(storageRef);
+    return url;
+  } catch (err: any) {
+    console.warn("Storage failed, using dataURL:", err?.code || err?.message);
+    // Fallback: return the dataURL directly — photo still saves and shows
+    return dataUrl;
+  }
 }
 
-function PhotoUploadBox({ label, value, onChange }: { label: string; value: string|null; onChange: (v: string|null) => void }) {
+function PhotoUploadBox({ label, value, onChange, userId }: { label: string; value: string|null; onChange: (v: string|null) => void; userId: string }) {
   const inputRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
+  const [error, setError] = useState("");
+
+  const handleFile = async (file: File) => {
+    if (!file) return;
+    if (!file.type.startsWith("image/")) { setError("Only image files allowed"); return; }
+    setError("");
+    setUploading(true);
+    try {
+      // First read as dataURL — this ALWAYS works
+      const dataUrl = await new Promise<string>((res, rej) => {
+        const reader = new FileReader();
+        reader.onload = () => res(reader.result as string);
+        reader.onerror = rej;
+        reader.readAsDataURL(file);
+      });
+      // Then try Firebase Storage — if it fails, use dataUrl
+      let finalUrl = dataUrl;
+      try {
+        const path = `errors/${userId||"anon"}/${Date.now()}.jpg`;
+        const sRef = ref(storage, path);
+        await uploadBytes(sRef, file);
+        finalUrl = await getDownloadURL(sRef);
+      } catch(storageErr) {
+        console.warn("Storage failed, using dataURL fallback");
+      }
+      onChange(finalUrl);
+    } catch(e) {
+      setError("Could not read photo. Try again.");
+    } finally {
+      setUploading(false);
+      if (inputRef.current) inputRef.current.value = "";
+    }
+  };
+
   return (
     <div>
       <label style={{ fontSize:11, color:"#64748b", display:"block", marginBottom:4 }}>{label}</label>
       <div
-        onClick={() => inputRef.current?.click()}
+        onClick={() => { if (!uploading) { setError(""); inputRef.current?.click(); } }}
         style={{
-          width:"100%", minHeight:80, borderRadius:10,
-          border:`2px dashed ${value ? "#22c55e" : "rgba(255,255,255,0.12)"}`,
-          background: value ? "rgba(34,197,94,0.06)" : "rgba(255,255,255,0.02)",
+          width:"100%", minHeight:90, borderRadius:12,
+          border:`2px dashed ${error ? "#ff2254" : value ? "#22c55e" : uploading ? "#f97316" : "rgba(255,255,255,0.15)"}`,
+          background: error ? "rgba(255,34,84,0.05)" : value ? "rgba(34,197,94,0.06)" : "rgba(255,255,255,0.03)",
           display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center",
-          cursor:"pointer", position:"relative", overflow:"hidden", transition:"all 0.2s",
+          cursor: uploading ? "wait" : "pointer", position:"relative", overflow:"hidden", transition:"all 0.2s",
         }}
       >
-        {value ? (
+        {uploading ? (
+          <div style={{ textAlign:"center", padding:16 }}>
+            <div style={{ fontSize:28, marginBottom:6, animation:"pulse 1s infinite" }}>⏳</div>
+            <div style={{ fontSize:12, color:"#f97316", fontWeight:600 }}>Processing photo...</div>
+          </div>
+        ) : error ? (
+          <div style={{ textAlign:"center", padding:12 }}>
+            <div style={{ fontSize:24, marginBottom:4 }}>⚠️</div>
+            <div style={{ fontSize:11, color:"#ff2254" }}>{error}</div>
+            <div style={{ fontSize:10, color:"#475569", marginTop:4 }}>Tap to try again</div>
+          </div>
+        ) : value ? (
           <>
-            <img src={value} alt="" style={{ maxHeight:120, maxWidth:"100%", objectFit:"contain", borderRadius:8 }} />
-            <button onClick={e => { e.stopPropagation(); onChange(null); }} style={{ position:"absolute", top:6, right:6, background:"rgba(255,34,84,0.85)", border:"none", borderRadius:"50%", width:22, height:22, color:"#fff", fontSize:12, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}>✕</button>
+            <img src={value} alt="" style={{ maxHeight:130, maxWidth:"100%", objectFit:"contain", borderRadius:8 }} />
+            <button
+              onClick={e => { e.stopPropagation(); onChange(null); setError(""); }}
+              style={{ position:"absolute", top:6, right:6, background:"rgba(255,34,84,0.9)", border:"none", borderRadius:"50%", width:24, height:24, color:"#fff", fontSize:14, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", fontWeight:700 }}>
+              ✕
+            </button>
+            <div style={{ position:"absolute", bottom:4, left:"50%", transform:"translateX(-50%)", fontSize:10, color:"rgba(255,255,255,0.5)", background:"rgba(0,0,0,0.5)", padding:"2px 8px", borderRadius:10, whiteSpace:"nowrap" as const }}>
+              ✅ Photo added · tap ✕ to remove
+            </div>
           </>
         ) : (
-          <>
-            <span style={{ fontSize:24, marginBottom:4 }}>📷</span>
-            <span style={{ fontSize:11, color:"#475569" }}>Tap to upload photo</span>
-          </>
+          <div style={{ textAlign:"center", padding:16 }}>
+            <div style={{ fontSize:32, marginBottom:6 }}>📷</div>
+            <div style={{ fontSize:12, color:"#64748b", fontWeight:600 }}>Tap to add photo</div>
+            <div style={{ fontSize:10, color:"#334155", marginTop:3 }}>JPG, PNG up to 15MB</div>
+          </div>
         )}
-        <input ref={inputRef} type="file" accept="image/*" style={{ display:"none" }} onChange={async e => {
-          const f = e.target.files?.[0]; if (!f) return;
-          const b64 = await imageToBase64(f); onChange(b64);
-        }} />
+        <input
+          ref={inputRef}
+          type="file"
+          accept="image/*"
+          capture="environment"
+          style={{ display:"none" }}
+          onChange={e => { const f = e.target.files?.[0]; if (f) handleFile(f); }}
+        />
       </div>
     </div>
   );
 }
 
-function ErrorForm({ onSubmit, onClose }: any) {
+function ErrorForm({ onSubmit, onClose, userId }: any) {
   const [form, setForm] = useState({
     subject: "Physics" as ErrorEntry["subject"],
     chapter: "",
@@ -1026,9 +1202,9 @@ function ErrorForm({ onSubmit, onClose }: any) {
               <textarea style={{ ...INP_STYLE,height:72,resize:"vertical" } as any} placeholder="Write the question here so you can remember what it was..." value={form.questionText} onChange={set("questionText")} />
             </div>
             {/* Photo uploads */}
-            <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:12 }}>
-              <PhotoUploadBox label="📷 QUESTION PHOTO (optional)" value={form.questionImageUrl} onChange={v => setForm(p => ({ ...p, questionImageUrl: v }))} />
-              <PhotoUploadBox label="📷 ANSWER PHOTO (optional)" value={form.answerImageUrl} onChange={v => setForm(p => ({ ...p, answerImageUrl: v }))} />
+            <div className="photo-grid" style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:12 }}>
+              <PhotoUploadBox label="📷 QUESTION PHOTO (optional)" value={form.questionImageUrl} onChange={v => setForm(p => ({ ...p, questionImageUrl: v }))} userId={userId||"anon"} />
+              <PhotoUploadBox label="📷 ANSWER PHOTO (optional)" value={form.answerImageUrl} onChange={v => setForm(p => ({ ...p, answerImageUrl: v }))} userId={userId||"anon"} />
             </div>
             {/* Why + Solution */}
             <div><label style={{ fontSize:11,color:"#64748b",display:"block",marginBottom:4 }}>❓ WHY DID I MAKE THIS MISTAKE?</label>
@@ -1102,7 +1278,7 @@ function CollectionForm({ onSubmit, onClose }: any) {
 
 // ─── SPACED REVISION (with Stats tab inside) ──────────────────────────────────
 
-function SpacedRevision({ userId, onXP }: { userId:string; onXP:(xp:number)=>void }) {
+function SpacedRevision({ userId, onXP, allErrors }: { userId:string; onXP:(xp:number)=>void; allErrors?:ErrorEntry[] }) {
   const [dueErrors, setDueErrors] = useState<ErrorEntry[]>([]);
   const [schedule, setSchedule] = useState<{date:string;count:number}[]>([]);
   const [loading, setLoading] = useState(true);
@@ -1111,7 +1287,8 @@ function SpacedRevision({ userId, onXP }: { userId:string; onXP:(xp:number)=>voi
   const { toasts, add: addToast } = useToast();
 
   // Stats state
-  const [statsErrors, setStatsErrors] = useState<ErrorEntry[]>([]);
+  const [_statsErrors, setStatsErrors] = useState<ErrorEntry[]>([]);
+  const statsErrors = allErrors ?? _statsErrors;
   const [weeklyData, setWeeklyData] = useState<{week:string;count:number}[]>([]);
   const [heatmap, setHeatmap] = useState<{chapter:string;subject:string;count:number}[]>([]);
   const [statsLoading, setStatsLoading] = useState(true);
@@ -1128,8 +1305,9 @@ function SpacedRevision({ userId, onXP }: { userId:string; onXP:(xp:number)=>voi
 
   useEffect(() => {
     if (innerTab === "stats" && statsLoading) {
-      Promise.all([getErrors(userId), getWeeklyStats(userId), getChapterHeatmap(userId)])
-        .then(([e, w, h]) => { setStatsErrors(e); setWeeklyData(w); setHeatmap(h); setStatsLoading(false); });
+      // Only fetch stats and heatmap — errors come from parent cache via prop
+      Promise.all([getWeeklyStats(userId), getChapterHeatmap(userId)])
+        .then(([w, h]) => { setWeeklyData(w); setHeatmap(h); setStatsLoading(false); });
     }
   }, [innerTab, userId, statsLoading]);
 
@@ -1469,45 +1647,50 @@ function ErrorDetailModal({ err, onClose, onDelete }: { err: ErrorEntry; onClose
 
 // ─── ERROR BOOK ───────────────────────────────────────────────────────────────
 
-function ErrorBook({ userId, onEntryAdded, onXP, xpData, streak, todayCount }: { userId:string; onEntryAdded:(n:number)=>void; onXP?:(xp:number)=>void; xpData?:any; streak?:number; todayCount?:number }) {
-  const [errors,setErrors]=useState<ErrorEntry[]>([]),[showForm,setShowForm]=useState(false);
+function ErrorBook({ userId, onEntryAdded, onXP, xpData, streak, todayCount, allErrors, setAllErrors, errorsLoaded }: { userId:string; onEntryAdded:(n:number)=>void; onXP?:(xp:number)=>void; xpData?:any; streak?:number; todayCount?:number; allErrors:ErrorEntry[]; setAllErrors:(fn:(p:ErrorEntry[])=>ErrorEntry[])=>void; errorsLoaded:boolean }) {
+  const [errors, setErrors] = [allErrors, setAllErrors];
+  const [showForm,setShowForm]=useState(false);
   const [fs,setFs]=useState("All"),[fm,setFm]=useState("All"),[search,setSearch]=useState("");
-  const [loading,setLoading]=useState(true);
+  const [searchInput, setSearchInput] = useState("");
+  // Debounce search — only filter after 300ms of no typing
+  useEffect(() => { const t = setTimeout(() => setSearch(searchInput), 300); return () => clearTimeout(t); }, [searchInput]);
+  const loading = !errorsLoaded;
+  const [visibleCount, setVisibleCount] = useState(20);
   const [viewMode,setViewMode]=useState<"today"|"all">("today");
   const [selectedError,setSelectedError]=useState<ErrorEntry|null>(null);
   const { toasts, add: addToast } = useToast();
   const todayStr = new Date().toISOString().split("T")[0];
-
-  useEffect(()=>{getErrors(userId).then(d=>{setErrors(d);setLoading(false);});},[userId]);
+  // Reset visible count when switching view modes
+  useEffect(() => setVisibleCount(20), [viewMode, fs, fm, search]);
 
   const handleAdd=async(form:any)=>{
     const {ref,newCount}=await addError(userId,form);
     const newErr:ErrorEntry={id:ref.id,...form,masteryLevel:0,masteryStage:"red",nextReviewDate:new Date(Date.now()+86400000).toISOString().split("T")[0],reviewHistory:[],revisionInterval:1,isArchived:false};
-    setErrors(p=>[newErr,...p]);
+    setAllErrors((p:ErrorEntry[])=>[newErr,...p]);
     onEntryAdded(newCount);
     await awardXP(userId, XP_REWARDS.addError);
     if (onXP) onXP(XP_REWARDS.addError);
     addToast(`Error logged! +${XP_REWARDS.addError} XP ⚡`,"xp");
-    const allErrors=[newErr,...errors];
-    const newBadges=await checkAndAwardBadges(userId,allErrors);
+    const latestErrors=[newErr,...allErrors];
+    const newBadges=await checkAndAwardBadges(userId,latestErrors);
     if(newBadges.length>0) addToast(`🏅 New badge: ${BADGES.find(b=>b.id===newBadges[0])?.name}!`,"xp");
   };
 
-  const handleDel=async(id:string)=>{ await deleteError(id); setErrors(p=>p.filter(e=>e.id!==id)); };
+  const handleDel=async(id:string)=>{ await deleteError(id); setAllErrors((p:ErrorEntry[])=>p.filter((e:ErrorEntry)=>e.id!==id)); };
 
   // Today's errors vs all
   const todayErrors = errors.filter(e => e.date === todayStr);
   const sourceErrors = viewMode === "today" ? todayErrors : errors;
 
-  const filtered=sourceErrors.filter((e:ErrorEntry)=>{
+  const filtered=useMemo(()=>sourceErrors.filter((e:ErrorEntry)=>{
     if(fs!=="All"&&e.subject!==fs) return false;
     if(fm!=="All"&&e.mistakeType!==fm) return false;
     if(search&&!e.chapter?.toLowerCase().includes(search.toLowerCase())&&!e.subject?.toLowerCase().includes(search.toLowerCase())) return false;
     return true;
-  });
+  }), [sourceErrors, fs, fm, search]);
 
-  const mc=errors.reduce((a:any,e)=>{a[e.mistakeType]=(a[e.mistakeType]||0)+1;return a;},{});
-  const sc=errors.reduce((a:any,e)=>{a[e.subject]=(a[e.subject]||0)+1;return a;},{});
+  const mc=useMemo(()=>errors.reduce((a:any,e)=>{a[e.mistakeType]=(a[e.mistakeType]||0)+1;return a;},{}), [errors]);
+  const sc=useMemo(()=>errors.reduce((a:any,e)=>{a[e.subject]=(a[e.subject]||0)+1;return a;},{}), [errors]);
   const mr=Object.entries(mc).sort((a:any,b:any)=>b[1]-a[1])[0] as [string,number]|undefined;
   const pieData=Object.entries(mc).map(([k,v])=>({label:k,value:v as number,color:MISTAKE_COLORS[k]||"#888"}));
   const barData=Object.entries(sc).map(([k,v])=>({label:k,value:v as number,color:SUBJECT_COLORS[k]||"#888"}));
@@ -1524,7 +1707,7 @@ function ErrorBook({ userId, onEntryAdded, onXP, xpData, streak, todayCount }: {
   return (
     <div style={{ paddingBottom:40 }}>
       <ToastContainer toasts={toasts}/>
-      {showForm&&<ErrorForm onSubmit={handleAdd} onClose={()=>setShowForm(false)}/>}
+      {showForm&&<ErrorForm onSubmit={handleAdd} onClose={()=>setShowForm(false)} userId={userId}/>}
       {selectedError && <ErrorDetailModal err={selectedError} onClose={()=>setSelectedError(null)} onDelete={selectedError.id ? ()=>handleDel(selectedError.id!) : undefined} />}
 
       {/* ─── BEAUTIFUL HOME DASHBOARD ─── */}
@@ -1555,7 +1738,7 @@ function ErrorBook({ userId, onEntryAdded, onXP, xpData, streak, todayCount }: {
         </div>
 
         {/* Quick stats mini row */}
-        <div style={{ display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:8 }}>
+        <div className="stats-mini" style={{ display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:8 }}>
           {[
             { icon:"📝", val:todayErrs.length, label:"Today" },
             { icon:"📅", val:weekErrs, label:"This Week" },
@@ -1614,7 +1797,7 @@ function ErrorBook({ userId, onEntryAdded, onXP, xpData, streak, todayCount }: {
 
       {/* Controls */}
       <div style={{ display:"flex",gap:10,marginBottom:12,flexWrap:"wrap" as const,alignItems:"center" }}>
-        <input style={{ flex:1,minWidth:140,...INP_STYLE }} placeholder="🔍 Search errors..." value={search} onChange={e=>setSearch(e.target.value)} />
+        <input style={{ flex:1,minWidth:140,...INP_STYLE }} placeholder="🔍 Search errors..." value={searchInput} onChange={e=>setSearchInput(e.target.value)} />
         <button onClick={()=>setShowForm(true)} style={{ padding:"9px 18px",borderRadius:8,border:"none",background:"linear-gradient(135deg,#00d4ff,#0066ff)",color:"#fff",fontFamily:"inherit",fontSize:13,fontWeight:700,cursor:"pointer",whiteSpace:"nowrap" as const }}>+ Add Error</button>
       </div>
 
@@ -1639,7 +1822,7 @@ function ErrorBook({ userId, onEntryAdded, onXP, xpData, streak, todayCount }: {
               {viewMode==="today"?"No errors logged today. Start by tapping + Add Error! 🎯":"No errors found. Clean slate! 🎯"}
             </div>
           )}
-          {filtered.map((err:ErrorEntry)=>(
+          {filtered.slice(0, visibleCount).map((err:ErrorEntry)=>(
             <div
               key={err.id}
               onClick={()=>setSelectedError(err)}
@@ -1677,6 +1860,15 @@ function ErrorBook({ userId, onEntryAdded, onXP, xpData, streak, todayCount }: {
               </div>
             </div>
           ))}
+          {/* Load More button */}
+          {viewMode === "all" && filtered.length > visibleCount && (
+            <button
+              onClick={() => setVisibleCount(v => v + 20)}
+              style={{ width:"100%", padding:"14px", marginTop:8, borderRadius:14, border:"1px solid rgba(255,255,255,0.1)", background:"rgba(255,255,255,0.04)", color:"#94a3b8", fontSize:13, fontWeight:700, cursor:"pointer", fontFamily:"inherit", letterSpacing:0.5 }}
+            >
+              Load More ({filtered.length - visibleCount} remaining) ↓
+            </button>
+          )}
         </div>
       )}
     </div>
@@ -1918,14 +2110,15 @@ function Leaderboard({ currentUserId }: { currentUserId: string }) {
 
 // ─── AI TAB LOADER ─────────────────────────────────────────────────────────────
 
-function AITabLoader({ userId }: { userId: string }) {
-  const [errors, setErrors] = useState<ErrorEntry[]>([]);
+function AITabLoader({ userId, allErrors }: { userId: string; allErrors?: ErrorEntry[] }) {
+  const [errors] = useState<ErrorEntry[]>(allErrors ?? []);
   const [collection, setCollection] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    Promise.all([getErrors(userId), getCollection(userId)]).then(([e, c]) => {
-      setErrors(e); setCollection(c); setLoading(false);
+    // Only fetch collection — errors come from shared cache
+    getCollection(userId).then(c => {
+      setCollection(c); setLoading(false);
     });
   }, [userId]);
 
@@ -1946,8 +2139,11 @@ function InlineHeatMap({ errors, onDayClick }: { errors: ErrorEntry[]; onDayClic
   const [viewYear, setViewYear] = useState(today.getFullYear());
   const [viewMonth, setViewMonth] = useState(today.getMonth());
 
-  const countByDay: Record<string, number> = {};
-  errors.forEach(e => { if (e.date) countByDay[e.date] = (countByDay[e.date] || 0) + 1; });
+  const countByDay = useMemo(() => {
+    const map: Record<string, number> = {};
+    errors.forEach(e => { if (e.date) map[e.date] = (map[e.date] || 0) + 1; });
+    return map;
+  }, [errors]);
 
   const todayStr = today.toISOString().split("T")[0];
   const MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
@@ -2001,7 +2197,7 @@ function InlineHeatMap({ errors, onDayClick }: { errors: ErrorEntry[]; onDayClic
   return (
     <div>
       {/* Stats row */}
-      <div style={{ display:"grid", gridTemplateColumns:"repeat(2,1fr)", gap:12, marginBottom:20 }}>
+      <div className="stats-row" style={{ display:"grid", gridTemplateColumns:"repeat(2,1fr)", gap:12, marginBottom:20 }}>
         {[
           { label:"All Time", value:totalAllTime, icon:"📚", color:"#00d4ff", sub:"total errors" },
           { label:"This Year", value:totalThisYear, icon:"📆", color:"#a78bfa", sub:`in ${viewYear}` },
@@ -2024,7 +2220,7 @@ function InlineHeatMap({ errors, onDayClick }: { errors: ErrorEntry[]; onDayClic
         <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"18px 20px", borderBottom:"1px solid rgba(255,255,255,0.06)", background:"rgba(255,255,255,0.02)" }}>
           <button onClick={prevMonth} style={{ width:38,height:38,borderRadius:12,border:"1px solid rgba(255,255,255,0.1)",background:"rgba(255,255,255,0.05)",color:"#94a3b8",fontSize:18,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center" }}>‹</button>
           <div style={{ textAlign:"center" }}>
-            <div style={{ fontSize:24, fontWeight:900, color:"#e2e8f0", fontFamily:"'Bebas Neue',cursive", letterSpacing:3 }}>{MONTHS[viewMonth]}</div>
+            <div style={{ fontSize:"clamp(18px,5vw,28px)", fontWeight:900, color:"#e2e8f0", fontFamily:"'Bebas Neue',cursive", letterSpacing:3 }}>{MONTHS[viewMonth]}</div>
             <div style={{ fontSize:12, color:"#475569", marginTop:2 }}>{viewYear} · {totalThisMonth} error{totalThisMonth!==1?"s":""} this month</div>
           </div>
           <button onClick={nextMonth} style={{ width:38,height:38,borderRadius:12,border:"1px solid rgba(255,255,255,0.1)",background:"rgba(255,255,255,0.05)",color:"#94a3b8",fontSize:18,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center" }}>›</button>
@@ -2050,7 +2246,7 @@ function InlineHeatMap({ errors, onDayClick }: { errors: ErrorEntry[]; onDayClic
                 title={cell.count > 0 ? `${cell.iso}: ${cell.count} error${cell.count!==1?"s":""}` : ""}
                 style={{
                   aspectRatio:"1",
-                  borderRadius:12,
+                  borderRadius:"clamp(6px,1.5vw,12px)",
                   background: cell.isCurrentMonth ? style.bg : "transparent",
                   border: cell.isCurrentMonth ? style.border : "none",
                   display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center",
@@ -2126,7 +2322,7 @@ function DayErrorsModal({ date, errors, onClose, onSelectError }: { date:string;
           ) : (
             <div style={{ display:"flex",flexDirection:"column",gap:10 }}>
               {dayErrors.map(err => (
-                <div key={err.id} onClick={() => { onSelectError(err); }} style={{ padding:"14px 16px",borderRadius:14,background:"rgba(255,255,255,0.04)",border:`1px solid rgba(255,255,255,0.08)`,borderLeft:`4px solid ${MASTERY_COLORS[err.masteryStage??"red"]}`,cursor:"pointer",transition:"all 0.2s" }}
+                <div key={err.id} onClick={() => { onSelectError(err); }} style={{ padding:"14px 16px",borderRadius:14,background:"rgba(255,255,255,0.04)",border:`1px solid rgba(255,255,255,0.08)`,borderLeft:`4px solid ${MASTERY_COLORS[err.masteryStage??"red"]}`,cursor:"pointer",transition:"all 0.2s",opacity:err.masteryStage==="green"?0.75:1 }}
                   onMouseEnter={e=>(e.currentTarget.style.background="rgba(255,255,255,0.08)")}
                   onMouseLeave={e=>(e.currentTarget.style.background="rgba(255,255,255,0.04)")}
                 >
@@ -2148,17 +2344,11 @@ function DayErrorsModal({ date, errors, onClose, onSelectError }: { date:string;
   );
 }
 
-function HeatCalendarLoader({ userId }: { userId: string }) {
-  const [errors, setErrors] = useState<ErrorEntry[]>([]);
-  const [loading, setLoading] = useState(true);
+function HeatCalendarLoader({ userId, allErrors, errorsLoaded }: { userId: string; allErrors: ErrorEntry[]; errorsLoaded: boolean }) {
   const [selectedDate, setSelectedDate] = useState<string|null>(null);
   const [selectedError, setSelectedError] = useState<ErrorEntry|null>(null);
 
-  useEffect(() => {
-    getErrors(userId).then(e => { setErrors(e); setLoading(false); });
-  }, [userId]);
-
-  if (loading) return (
+  if (!errorsLoaded) return (
     <div style={{ textAlign:"center", padding:80, color:"#475569" }}>
       <div style={{ fontSize:40, marginBottom:12 }}>🔥</div>
       <div style={{ fontSize:14 }}>Loading heat map...</div>
@@ -2170,7 +2360,7 @@ function HeatCalendarLoader({ userId }: { userId: string }) {
       {selectedDate && !selectedError && (
         <DayErrorsModal
           date={selectedDate}
-          errors={errors}
+          errors={allErrors}
           onClose={() => setSelectedDate(null)}
           onSelectError={err => { setSelectedError(err); }}
         />
@@ -2181,7 +2371,8 @@ function HeatCalendarLoader({ userId }: { userId: string }) {
           onClose={() => setSelectedError(null)}
         />
       )}
-      <InlineHeatMap errors={errors} onDayClick={(date: string) => setSelectedDate(date)} />
+      {/* allErrors = every mistake ever logged, mastered or not — shows permanently */}
+      <InlineHeatMap errors={allErrors} onDayClick={(date: string) => setSelectedDate(date)} />
     </>
   );
 }
@@ -2202,6 +2393,10 @@ const SECONDARY_TABS = [
 ];
 
 function BottomNav({ active, setActive }: { active:string; setActive:(t:string)=>void }) {
+  const windowWidth = useWindowWidth();
+  const isMobile = windowWidth < 768;
+  const isTablet = windowWidth >= 768 && windowWidth < 1100;
+  const isDesktop = windowWidth >= 1100;
   const [showMore, setShowMore] = useState(false);
   const allTabs = [...PRIMARY_TABS, ...SECONDARY_TABS];
   const activeTab = allTabs.find(t => t.id === active);
@@ -2247,12 +2442,23 @@ function BottomNav({ active, setActive }: { active:string; setActive:(t:string)=
 
       <nav style={{
         position:"fixed", bottom:0, left:0, right:0, zIndex:101,
-        height:64,
-        background:"rgba(3,5,12,0.98)", backdropFilter:"blur(28px)",
-        borderTop:"1px solid rgba(255,255,255,0.07)",
         display:"flex", alignItems:"stretch",
         paddingBottom:"env(safe-area-inset-bottom,0px)",
       }}>
+        {/* Inner nav — pill on desktop, full-width on mobile */}
+        <div style={{
+          flex:1, display:"flex", alignItems:"stretch",
+          background:"rgba(3,5,12,0.98)", backdropFilter:"blur(28px)",
+          borderTop: isMobile ? "1px solid rgba(255,255,255,0.07)" : "none",
+          height: isMobile ? 64 : 60,
+          maxWidth: isMobile ? "100%" : 560,
+          margin: isMobile ? "0" : "0 auto 16px",
+          borderRadius: isMobile ? 0 : 28,
+          border: isMobile ? undefined : "1px solid rgba(255,255,255,0.12)",
+          boxShadow: isMobile ? undefined : "0 8px 32px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.05)",
+          overflow:"hidden",
+          transition:"all 0.3s ease",
+        }}>
         {PRIMARY_TABS.map(t => {
           const isActive = active === t.id;
           return (
@@ -2317,6 +2523,8 @@ function BottomNav({ active, setActive }: { active:string; setActive:(t:string)=
             </>
           )}
         </button>
+        </div>
+        </div>
       </nav>
     </>
   );
@@ -2325,57 +2533,80 @@ function BottomNav({ active, setActive }: { active:string; setActive:(t:string)=
 // ─── MAIN APP ─────────────────────────────────────────────────────────────────
 
 export default function App() {
+  const screenWidth = useWindowWidth();
   const [user,setUser]=useState<any>(null),[authLoading,setAuthLoading]=useState(true);
-  const [activeTab,setActiveTab]=useState("errors"),[quoteIdx,setQuoteIdx]=useState(0);
+  const [activeTab,_setActiveTab]=useState("errors"),[quoteIdx,setQuoteIdx]=useState(0);
+  const setActiveTab = useCallback((tab: string) => {
+    _setActiveTab(tab);
+    setMountedTabs(prev => { const next = new Set(prev); next.add(tab); return next; });
+  }, []);
   const [streak,setStreak]=useState(0),[todayCount,setTodayCount]=useState(0);
   const [showCal,setShowCal]=useState(false);
   const [xpData,setXpData]=useState<UserXP|null>(null);
   const [xpPopup,setXpPopup]=useState<number|null>(null);
   const { toasts, add: addToast } = useToast();
+  // ── Central errors cache — loaded ONCE, shared across all tabs ──
+  const [allErrors, setAllErrors] = useState<ErrorEntry[]>([]);
+  const [errorsLoaded, setErrorsLoaded] = useState(false);
 
   const [showProfile, setShowProfile] = useState(false);
   const [showXPPanel, setShowXPPanel] = useState(false);
   const [showBadges, setShowBadges] = useState(false);
+  const [mountedTabs, setMountedTabs] = useState<Set<string>>(new Set(["errors"]));
   const [showInfo, setShowInfo] = useState(false);
   const [showWelcome, setShowWelcome] = useState(false);
   const [userAvatar, setUserAvatar] = useState("av_luffy");
   const [userPhoto, setUserPhoto] = useState<string|null>(null);
   const [displayName, setDisplayName] = useState("");
+  const [profileLoaded, setProfileLoaded] = useState(false);
   const [isNewUser, setIsNewUser] = useState(false);
 
-  const syncLeaderboard = useCallback(async (uid: string, name: string, stk: number) => {
+  const syncLeaderboard = useCallback(async (uid: string, name: string, stk: number, cachedErrors?: ErrorEntry[]) => {
     try {
-      const errors = await getErrors(uid);
+      // Use cached errors to avoid extra Firestore reads
+      const errors = cachedErrors ?? allErrors;
       const mc: Record<string,number> = {};
       errors.forEach((e:any) => { mc[e.mistakeType]=(mc[e.mistakeType]||0)+1; });
       const repeated = Object.values(mc).filter(v=>v>1).reduce((a,b)=>a+b,0);
       await updateLeaderboard(uid, name, errors.length, repeated, stk);
     } catch(e) { console.error("syncLeaderboard:", e); }
-  }, []);
+  }, [allErrors]);
 
   const handleUpdateProfile = useCallback(async (data: any) => {
+    // Update local state immediately — no waiting, no blink
     if (data.displayName) setDisplayName(data.displayName);
     if (data.avatar) setUserAvatar(data.avatar);
     if (data.photoURL !== undefined) setUserPhoto(data.photoURL ?? null);
     if (user) {
-      await syncLeaderboard(user.uid, data.displayName || displayName, streak);
+      const newName = data.displayName || displayName;
+      // Also update Firebase Auth profile so it persists on next login
+      try { await updateProfile(user, { displayName: newName }); } catch(e) {}
+      await syncLeaderboard(user.uid, newName, streak);
     }
   }, [user, displayName, streak, syncLeaderboard]);
 
   const loadStats = useCallback(async (uid: string, name: string, isNew?: boolean) => {
-    const [s, t, xp] = await Promise.all([getStreak(uid), getTodayEntryCount(uid), getUserXP(uid)]);
+    // Load profile FIRST so name is set before anything else renders
+    const [profile, s, t, xp] = await Promise.all([
+      loadUserProfile(uid),
+      getStreak(uid),
+      getTodayEntryCount(uid),
+      getUserXP(uid),
+    ]);
     setStreak(s); setTodayCount(t); setXpData(xp);
-    const profile = await loadUserProfile(uid);
     if (profile) {
-      const resolvedName = profile.displayName || name;
-      if (profile.displayName) setDisplayName(profile.displayName);
+      const finalName = profile.displayName || name;
+      setDisplayName(finalName);
       if (profile.avatar) setUserAvatar(profile.avatar);
       if (profile.photoURL !== undefined) setUserPhoto(profile.photoURL ?? null);
-      await syncLeaderboard(uid, resolvedName, s);
+      setProfileLoaded(true);
+      await syncLeaderboard(uid, finalName, s);
     } else {
+      // No Firestore profile yet — use auth name as final
+      setDisplayName(name);
+      setProfileLoaded(true);
       await syncLeaderboard(uid, name, s);
     }
-    // Show welcome for brand new users (no XP data yet)
     if (isNew || (!xp && !profile)) {
       setShowWelcome(true);
     }
@@ -2402,11 +2633,15 @@ export default function App() {
     const unsub = onAuth(async u => {
       setUser(u); setAuthLoading(false);
       if (u) {
-        const name = u.displayName || u.email?.split("@")[0] || "Warrior";
-        setDisplayName(name);
-        // Detect new users: check if metadata shows account was just created
+        const authName = u.displayName || u.email?.split("@")[0] || "Warrior";
         const isNew = u.metadata?.creationTime === u.metadata?.lastSignInTime;
-        loadStats(u.uid, name, isNew);
+        // Don't set displayName here — loadStats sets it ONCE from Firestore
+        loadStats(u.uid, authName, isNew);
+        // Load errors once — shared across all tabs
+        getErrors(u.uid).then(e => { setAllErrors(e); setErrorsLoaded(true); });
+      } else {
+        setAllErrors([]); setErrorsLoaded(false); setProfileLoaded(false); setDisplayName("");
+        setProfileLoaded(false); setDisplayName("");
       }
     });
     return () => unsub();
@@ -2428,12 +2663,35 @@ export default function App() {
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600;700;800&display=swap');
         *{margin:0;padding:0;box-sizing:border-box}
-        input::placeholder,textarea::placeholder{color:#334155}
-        select option{background:#0d1117}
+        .auth-input{
+          display:block;
+          width:100%;
+          padding:12px 14px;
+          background:rgba(255,255,255,0.06) !important;
+          border:1px solid rgba(255,255,255,0.12) !important;
+          border-radius:10px;
+          color:#e2e8f0 !important;
+          font-size:14px;
+          font-family:'DM Sans',sans-serif;
+          box-sizing:border-box;
+          outline:none;
+          pointer-events:auto !important;
+          position:relative;
+          z-index:10;
+        }
+        .auth-input:focus{border-color:#00d4ff !important;}
+        .auth-input:-webkit-autofill,
+        .auth-input:-webkit-autofill:hover,
+        .auth-input:-webkit-autofill:focus{
+          -webkit-text-fill-color:#e2e8f0 !important;
+          -webkit-box-shadow:0 0 0 1000px #0d1117 inset !important;
+          caret-color:#00d4ff !important;
+        }
+        .auth-input::placeholder{color:#475569}
       `}</style>
       <Particles/>
-      <div style={{ position:"relative", zIndex:1 }}>
-        <AuthScreen onLogin={u => { setUser(u); const name = u.displayName||u.email?.split("@")[0]||"Warrior"; setDisplayName(name); loadStats(u.uid, name, true); }} />
+      <div style={{ position:"relative", zIndex:10 }}>
+        <AuthScreen onLogin={u => { setUser(u); }} />
       </div>
     </div>
   );
@@ -2461,6 +2719,66 @@ export default function App() {
         @keyframes slideInToast{from{transform:translateX(100%);opacity:0}to{transform:translateX(0);opacity:1}}
         @keyframes popIn{from{transform:translateX(-50%) scale(0.5);opacity:0}to{transform:translateX(-50%) scale(1);opacity:1}}
         @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.5}}
+        button{-webkit-tap-highlight-color:transparent;touch-action:manipulation}
+        input:focus,select:focus,textarea:focus{outline:none}
+        input:-webkit-autofill,
+        input:-webkit-autofill:hover,
+        input:-webkit-autofill:focus,
+        input:-webkit-autofill:active{
+          -webkit-text-fill-color:#e2e8f0 !important;
+          -webkit-box-shadow:0 0 0 1000px #0d1117 inset !important;
+          box-shadow:0 0 0 1000px #0d1117 inset !important;
+          background-color:#0d1117 !important;
+          caret-color:#00d4ff !important;
+          transition:background-color 9999s ease-in-out 0s;
+        }
+        img{content-visibility:auto}
+        .tab-content{contain:layout style}
+
+        /* ── RESPONSIVE BREAKPOINTS ── */
+        .main-content{padding:0 16px;padding-bottom:90px;max-width:100%}
+        .header-row{flex-wrap:wrap;gap:8px}
+
+        /* Tablet (768px+) */
+        @media(min-width:768px){
+          .main-content{padding:0 32px;padding-bottom:100px;max-width:860px;margin:0 auto}
+          .grid-2col{grid-template-columns:1fr 1fr!important}
+          .grid-3col{grid-template-columns:1fr 1fr 1fr!important}
+          .grid-4col{grid-template-columns:repeat(4,1fr)!important}
+          .stats-row{grid-template-columns:repeat(4,1fr)!important}
+          .error-form-grid{grid-template-columns:1fr 1fr!important}
+          .bottom-nav{max-width:500px;left:50%;transform:translateX(-50%);border-radius:24px;bottom:16px}
+        }
+
+        /* Desktop (1100px+) */
+        @media(min-width:1100px){
+          .main-content{max-width:1100px;padding:0 40px;padding-bottom:100px}
+          .grid-2col{grid-template-columns:1fr 1fr!important}
+          .grid-3col{grid-template-columns:repeat(3,1fr)!important}
+          .stats-row{grid-template-columns:repeat(4,1fr)!important}
+          .bottom-nav{max-width:600px}
+        }
+
+        /* Mobile-only fixes */
+        @media(max-width:480px){
+          .hide-mobile{display:none!important}
+          .modal-inner{padding:16px!important}
+          .error-form-grid{grid-template-columns:1fr!important}
+          .photo-grid{grid-template-columns:1fr!important}
+          .stats-mini{grid-template-columns:repeat(2,1fr)!important}
+          .cal-cell{border-radius:8px!important}
+        }
+
+        /* Fix select dropdowns on iOS */
+        select{background-image:none;color:#e2e8f0}
+        select:focus{outline:none}
+
+        /* Smooth scrolling */
+        html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
+        body{overscroll-behavior:none}
+
+        /* Bottom nav safe area for iPhone notch */
+        .bottom-nav-wrap{padding-bottom:env(safe-area-inset-bottom,0px)}
       `}</style>
 
       <Particles/>
@@ -2507,10 +2825,16 @@ export default function App() {
       )}
 
       {/* Main content */}
-      <div style={{ position:"relative", zIndex:1, maxWidth:1100, margin:"0 auto", padding:"0 16px", paddingBottom:80 }}>
+      <div style={{
+          position:"relative", zIndex:1,
+          maxWidth: screenWidth >= 1100 ? 1100 : screenWidth >= 768 ? 860 : "100%",
+          margin:"0 auto",
+          padding: screenWidth >= 1100 ? "0 40px" : screenWidth >= 768 ? "0 28px" : "0 14px",
+          paddingBottom: 100,
+        }}>
 
         {/* COMPACT TOP HEADER */}
-        <header style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"12px 0", borderBottom:"1px solid rgba(255,255,255,0.05)", marginBottom:16, gap:10 }}>
+        <header className="header-row" style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"12px 0", borderBottom:"1px solid rgba(255,255,255,0.05)", marginBottom:16, gap:10, flexWrap:"wrap" as const }}>
           <div style={{ display:"flex", alignItems:"center", gap:10 }}>
             <span style={{ fontFamily:"'Bebas Neue',cursive", fontSize:24, letterSpacing:4, background:"linear-gradient(135deg,#00d4ff,#ff2254)", WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent" }}>ERRORVERSE</span>
           </div>
@@ -2551,9 +2875,11 @@ export default function App() {
             {/* Avatar / profile button */}
             <button onClick={() => setShowProfile(true)} style={{ display:"flex", alignItems:"center", gap:6, background:"rgba(255,255,255,0.04)", border:"1px solid rgba(255,255,255,0.1)", borderRadius:24, padding:"3px 10px 3px 3px", cursor:"pointer" }}>
               <AvatarDisplay avatar={userAvatar} photoURL={userPhoto} displayName={displayName} size={28} />
-              <span style={{ fontSize:12, color:"#94a3b8", fontWeight:600, maxWidth:70, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" as const }}>
-                {displayName.split(" ")[0] || "You"}
-              </span>
+              {profileLoaded && (
+                <span style={{ fontSize:12, color:"#94a3b8", fontWeight:600, maxWidth:70, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" as const }}>
+                  {displayName.split(" ")[0] || "You"}
+                </span>
+              )}
             </button>
           </div>
         </header>
@@ -2585,14 +2911,38 @@ export default function App() {
           </h1>
         </div>
 
-        {/* Tab content */}
-        {activeTab==="errors"       && <ErrorBook userId={user.uid} onEntryAdded={handleEntryAdded} onXP={handleXPGained} xpData={xpData} streak={streak} todayCount={todayCount}/>}
-        {activeTab==="revision"     && <SpacedRevision userId={user.uid} onXP={handleXPGained}/>}
+        {/* Tab content — mount once on first visit, keep alive with display:none */}
+        {(activeTab==="errors" || mountedTabs.has("errors")) && (
+          <div style={{ display: activeTab==="errors" ? "block" : "none" }}>
+            <ErrorBook userId={user.uid} onEntryAdded={handleEntryAdded} onXP={handleXPGained} xpData={xpData} streak={streak} todayCount={todayCount} allErrors={allErrors} setAllErrors={setAllErrors} errorsLoaded={errorsLoaded}/>
+          </div>
+        )}
+        {(activeTab==="revision" || mountedTabs.has("revision")) && (
+          <div style={{ display: activeTab==="revision" ? "block" : "none" }}>
+            <SpacedRevision userId={user.uid} onXP={handleXPGained} allErrors={allErrors}/>
+          </div>
+        )}
         {activeTab==="achievements" && <BadgesPanel earned={xpData?.badges??[]}/>}
-        {activeTab==="collection"   && <AnimeCollection userId={user.uid} onEntryAdded={handleEntryAdded}/>}
-        {activeTab==="leaderboard"  && <Leaderboard currentUserId={user.uid}/>}
-        {activeTab==="ai"           && <AITabLoader userId={user.uid}/>}
-        {activeTab==="heatmap"      && <HeatCalendarLoader userId={user.uid}/>}
+        {(activeTab==="collection" || mountedTabs.has("collection")) && (
+          <div style={{ display: activeTab==="collection" ? "block" : "none" }}>
+            <AnimeCollection userId={user.uid} onEntryAdded={handleEntryAdded}/>
+          </div>
+        )}
+        {(activeTab==="leaderboard" || mountedTabs.has("leaderboard")) && (
+          <div style={{ display: activeTab==="leaderboard" ? "block" : "none" }}>
+            <Leaderboard currentUserId={user.uid}/>
+          </div>
+        )}
+        {(activeTab==="ai" || mountedTabs.has("ai")) && (
+          <div style={{ display: activeTab==="ai" ? "block" : "none" }}>
+            <AITabLoader userId={user.uid} allErrors={allErrors}/>
+          </div>
+        )}
+        {(activeTab==="heatmap" || mountedTabs.has("heatmap")) && (
+          <div style={{ display: activeTab==="heatmap" ? "block" : "none" }}>
+            <HeatCalendarLoader userId={user.uid} allErrors={allErrors} errorsLoaded={errorsLoaded}/>
+          </div>
+        )}
       </div>
 
       {/* Bottom nav */}
