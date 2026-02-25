@@ -2197,7 +2197,6 @@ const PRIMARY_TABS = [
 ];
 
 const SECONDARY_TABS = [
-  { id:"achievements",label:"Badges", icon:"🏅", color:"#22c55e", glow:"rgba(34,197,94,0.5)" },
   { id:"collection",  label:"Watch",  icon:"🎌", color:"#a855f7", glow:"rgba(168,85,247,0.5)" },
   { id:"ai",          label:"AI Hub", icon:"🤖", color:"#a855f7", glow:"rgba(168,85,247,0.5)" },
 ];
@@ -2336,6 +2335,7 @@ export default function App() {
 
   const [showProfile, setShowProfile] = useState(false);
   const [showXPPanel, setShowXPPanel] = useState(false);
+  const [showBadges, setShowBadges] = useState(false);
   const [showInfo, setShowInfo] = useState(false);
   const [showWelcome, setShowWelcome] = useState(false);
   const [userAvatar, setUserAvatar] = useState("av_luffy");
@@ -2485,6 +2485,17 @@ export default function App() {
         />
       )}
 
+      {showBadges && (
+        <div style={{ position:"fixed",inset:0,background:"rgba(0,0,0,0.88)",backdropFilter:"blur(12px)",zIndex:200,display:"flex",flexDirection:"column",padding:16,overflowY:"auto" }} onClick={() => setShowBadges(false)}>
+          <div style={{ maxWidth:600,width:"100%",margin:"0 auto" }} onClick={e=>e.stopPropagation()}>
+            <div style={{ display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20 }}>
+              <h2 style={{ margin:0,fontFamily:"'Bebas Neue',cursive",fontSize:26,letterSpacing:3,color:"#ffd700" }}>🏅 BADGES</h2>
+              <button onClick={() => setShowBadges(false)} style={{ background:"rgba(255,255,255,0.06)",border:"1px solid rgba(255,255,255,0.1)",color:"#64748b",fontSize:18,cursor:"pointer",borderRadius:10,width:36,height:36,display:"flex",alignItems:"center",justifyContent:"center" }}>✕</button>
+            </div>
+            <BadgesPanel earned={xpData?.badges??[]} />
+          </div>
+        </div>
+      )}
       {showXPPanel && xpData && (
         <XPTapPanel
           xpData={xpData}
@@ -2526,13 +2537,15 @@ export default function App() {
               }}
             >ℹ</button>
 
-            {/* XP pill with badge icon inside */}
+            {/* XP pill — click XP part for XP panel, click 🏅 for badges */}
             {xpData && (
-              <button onClick={() => setShowXPPanel(true)} style={{ display:"flex", alignItems:"center", gap:5, padding:"5px 10px", borderRadius:12, background:"rgba(123,97,255,0.12)", border:"1px solid rgba(123,97,255,0.3)", fontSize:11, color:"#a78bfa", fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>
-                <span>⚡</span>
-                <span>{xpData.totalXP} · Lv{xpData.level}</span>
-                <span style={{ fontSize:12 }}>🏅</span>
-              </button>
+              <div style={{ display:"flex", alignItems:"center", borderRadius:12, background:"rgba(123,97,255,0.12)", border:"1px solid rgba(123,97,255,0.3)", overflow:"hidden" }}>
+                <button onClick={() => setShowXPPanel(true)} style={{ display:"flex", alignItems:"center", gap:4, padding:"5px 8px", border:"none", background:"transparent", fontSize:11, color:"#a78bfa", fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>
+                  <span>⚡</span>
+                  <span>{xpData.totalXP} · Lv{xpData.level}</span>
+                </button>
+                <button onClick={() => setShowBadges(true)} style={{ padding:"5px 8px", border:"none", borderLeft:"1px solid rgba(123,97,255,0.3)", background:"transparent", fontSize:14, cursor:"pointer", lineHeight:1, display:"flex", alignItems:"center" }}>🏅</button>
+              </div>
             )}
 
             {/* Avatar / profile button */}
