@@ -932,84 +932,74 @@ function AuthScreen({ onLogin }: { onLogin:(u:any)=>void }) {
     setLoading(false);
   };
 
+  const inp: React.CSSProperties = {
+    display:"block", width:"100%", padding:"13px 16px",
+    background:"#111827", border:"1.5px solid #1e293b", borderRadius:12,
+    color:"#f1f5f9", fontSize:15, fontFamily:"'DM Sans',sans-serif",
+    outline:"none", boxSizing:"border-box",
+    WebkitTextFillColor:"#f1f5f9", caretColor:"#00d4ff",
+    position:"relative", zIndex:30,
+    // defeat autofill background without a style tag
+    transition:"background-color 9999s ease-in-out 0s, border-color 0.2s",
+  };
+
   return (
-    <>
-      <style>{`
-        .ev-auth-input {
-          display: block;
-          width: 100%;
-          padding: 13px 16px;
-          background: #111827 !important;
-          border: 1.5px solid #1e293b !important;
-          border-radius: 12px;
-          color: #f1f5f9 !important;
-          font-size: 15px;
-          font-family: 'DM Sans', sans-serif;
-          outline: none;
-          box-sizing: border-box;
-          position: relative;
-          z-index: 20;
-          -webkit-text-fill-color: #f1f5f9 !important;
-          caret-color: #00d4ff;
-          transition: border-color 0.2s;
-          touch-action: manipulation;
-        }
-        .ev-auth-input:focus { border-color: #00d4ff !important; background: #151d2e !important; }
-        .ev-auth-input::placeholder { color: #4b5563; }
-        .ev-auth-input:-webkit-autofill,
-        .ev-auth-input:-webkit-autofill:hover,
-        .ev-auth-input:-webkit-autofill:focus {
-          -webkit-text-fill-color: #f1f5f9 !important;
-          -webkit-box-shadow: 0 0 0 1000px #111827 inset !important;
-          caret-color: #00d4ff !important;
-        }
-      `}</style>
-      <div style={{ minHeight:"100vh", display:"flex", alignItems:"center", justifyContent:"center", padding:20, position:"relative", zIndex:10, isolation:"isolate" }}>
-        <div style={{ width:"100%", maxWidth:420 }}>
-          <div style={{ textAlign:"center", marginBottom:36 }}>
-            <div style={{ fontSize:52, marginBottom:10 }}>⚡</div>
-            <h1 style={{ fontSize:38, fontFamily:"'Bebas Neue',cursive", letterSpacing:4, background:"linear-gradient(135deg,#00d4ff,#ff2254)", WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent", margin:0 }}>ERRORVERSE</h1>
-            <p style={{ color:"#64748b", fontSize:13, marginTop:8 }}>Master your mistakes. Own your story.</p>
-          </div>
-          <div style={{ background:"rgba(15,20,40,0.97)", border:"1px solid rgba(255,255,255,0.12)", borderRadius:20, padding:32, backdropFilter:"blur(20px)", position:"relative", zIndex:20 }}>
-            <div style={{ display:"flex", gap:0, marginBottom:28, background:"rgba(255,255,255,0.04)", borderRadius:12, padding:4 }}>
-              {[["login","Sign In"],["signup","Create Account"]].map(([m,label])=>(
-                <button key={m} onClick={()=>{setMode(m);setError("");}}
-                  style={{ flex:1, padding:"10px", borderRadius:10, border:"none", cursor:"pointer",
-                    background:mode===m?"rgba(255,255,255,0.1)":"transparent",
-                    color:mode===m?"#00d4ff":"#64748b",
-                    fontFamily:"'DM Sans',sans-serif", fontSize:13, fontWeight:700,
-                    transition:"all 0.2s", position:"relative", zIndex:21 }}>
-                  {label}
-                </button>
-              ))}
-            </div>
-            <div style={{ display:"flex", flexDirection:"column", gap:14 }}>
-              {mode==="signup" && (
-                <input className="ev-auth-input" placeholder="Full Name" value={name} onChange={e=>setName(e.target.value)} autoComplete="name" />
-              )}
-              <input className="ev-auth-input" placeholder="Email address" type="email" value={email} onChange={e=>setEmail(e.target.value)} autoComplete="email" />
-              <input className="ev-auth-input" placeholder="Password" type="password" value={password} onChange={e=>setPassword(e.target.value)} onKeyDown={e=>e.key==="Enter"&&handle()} autoComplete="current-password" />
-              {error && (
-                <div style={{ fontSize:13, color:"#ff2254", padding:"10px 14px", background:"rgba(255,34,84,0.08)", border:"1px solid rgba(255,34,84,0.2)", borderRadius:10 }}>⚠️ {error}</div>
-              )}
-              <button onClick={handle} disabled={loading}
-                style={{ width:"100%", padding:"14px", borderRadius:12, border:"none",
-                  background:loading?"rgba(0,212,255,0.3)":"linear-gradient(135deg,#00d4ff,#0066ff)",
-                  color:"#fff", fontFamily:"'DM Sans',sans-serif", fontSize:15, fontWeight:800,
-                  cursor:loading?"not-allowed":"pointer", letterSpacing:1,
-                  boxShadow:loading?"none":"0 4px 20px rgba(0,212,255,0.3)",
-                  marginTop:4, position:"relative", zIndex:21 }}>
-                {loading ? "⏳ Signing in..." : (mode==="login" ? "ENTER THE VERSE ⚡" : "BEGIN JOURNEY 🚀")}
+    <div style={{ minHeight:"100vh", display:"flex", alignItems:"center", justifyContent:"center", padding:20, position:"relative", zIndex:10, isolation:"isolate" }}>
+      <div style={{ width:"100%", maxWidth:420, position:"relative", zIndex:20 }}>
+
+        {/* Logo */}
+        <div style={{ textAlign:"center", marginBottom:36 }}>
+          <div style={{ fontSize:52, marginBottom:10 }}>⚡</div>
+          <h1 style={{ fontSize:38, fontFamily:"'Bebas Neue',cursive", letterSpacing:4, background:"linear-gradient(135deg,#00d4ff,#ff2254)", WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent", margin:0 }}>ERRORVERSE</h1>
+          <p style={{ color:"#64748b", fontSize:13, marginTop:8 }}>Master your mistakes. Own your story.</p>
+        </div>
+
+        {/* Card */}
+        <div style={{ background:"rgba(15,20,40,0.97)", border:"1px solid rgba(255,255,255,0.12)", borderRadius:20, padding:32, backdropFilter:"blur(20px)", position:"relative", zIndex:20, isolation:"isolate" }}>
+
+          {/* Tabs */}
+          <div style={{ display:"flex", gap:0, marginBottom:28, background:"rgba(255,255,255,0.04)", borderRadius:12, padding:4 }}>
+            {[["login","Sign In"],["signup","Create Account"]].map(([m,label])=>(
+              <button key={m} onClick={()=>{setMode(m);setError("");}}
+                style={{ flex:1, padding:"10px", borderRadius:10, border:"none", cursor:"pointer",
+                  background:mode===m?"rgba(255,255,255,0.1)":"transparent",
+                  color:mode===m?"#00d4ff":"#64748b",
+                  fontFamily:"'DM Sans',sans-serif", fontSize:13, fontWeight:700,
+                  transition:"all 0.2s", position:"relative", zIndex:30 }}>
+                {label}
               </button>
-            </div>
+            ))}
+          </div>
+
+          {/* Fields */}
+          <div style={{ display:"flex", flexDirection:"column", gap:14, position:"relative", zIndex:30 }}>
+            {mode==="signup" && (
+              <input style={inp} placeholder="Full Name" value={name} onChange={e=>setName(e.target.value)} autoComplete="name" />
+            )}
+            <input style={inp} placeholder="Email address" type="email" value={email} onChange={e=>setEmail(e.target.value)} autoComplete="email" />
+            <input style={inp} placeholder="Password" type="password" value={password} onChange={e=>setPassword(e.target.value)} onKeyDown={e=>e.key==="Enter"&&handle()} autoComplete="current-password" />
+
+            {error && (
+              <div style={{ fontSize:13, color:"#ff2254", padding:"10px 14px", background:"rgba(255,34,84,0.08)", border:"1px solid rgba(255,34,84,0.2)", borderRadius:10 }}>
+                ⚠️ {error}
+              </div>
+            )}
+
+            <button onClick={handle} disabled={loading}
+              style={{ width:"100%", padding:"14px", borderRadius:12, border:"none",
+                background:loading?"rgba(0,212,255,0.3)":"linear-gradient(135deg,#00d4ff,#0066ff)",
+                color:"#fff", fontFamily:"'DM Sans',sans-serif", fontSize:15, fontWeight:800,
+                cursor:loading?"not-allowed":"pointer", letterSpacing:1,
+                boxShadow:loading?"none":"0 4px 20px rgba(0,212,255,0.3)",
+                marginTop:4, position:"relative", zIndex:30 }}>
+              {loading ? "⏳ Signing in..." : (mode==="login" ? "ENTER THE VERSE ⚡" : "BEGIN JOURNEY 🚀")}
+            </button>
           </div>
         </div>
       </div>
-    </>
+    </div>
   );
 }
-
 // ─── ERROR FORM ───────────────────────────────────────────────────────────────
 
 // ─── IMAGE UPLOAD HELPER ──────────────────────────────────────────────────────
