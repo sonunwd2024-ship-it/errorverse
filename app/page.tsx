@@ -97,12 +97,12 @@ const MASTERY_COLORS = { red: "#ff2254", yellow: "#ffd700", green: "#22c55e" };
 
 // ─── HXH NEN LEAGUES ─────────────────────────────────────────────────────────
 export const NEN_LEAGUES = [
-  { id:"enhancer",    name:"Enhancer",    icon:"💪", color:"#f97316", minXP:0,    desc:"You boost your own power! Every mistake you log makes you stronger.",    character:"Gon Freecss",    quote:"The basics are everything." },
-  { id:"transmuter",  name:"Transmuter",  icon:"⚡", color:"#fbbf24", minXP:200,  desc:"You change and adapt! Learning to transform your weak points.",           character:"Killua Zoldyck", quote:"I can change anything into power." },
-  { id:"emitter",     name:"Emitter",     icon:"🔥", color:"#ef4444", minXP:500,  desc:"You project your power outward! Your knowledge is spreading further.",    character:"Leorio",         quote:"My power reaches beyond myself." },
-  { id:"conjurer",    name:"Conjurer",    icon:"🔮", color:"#a78bfa", minXP:1000, desc:"You create real things from nothing! Your mastery is becoming solid.",    character:"Kurapika",       quote:"I manifest what others cannot imagine." },
-  { id:"manipulator", name:"Manipulator", icon:"🎮", color:"#38bdf8", minXP:2000, desc:"You control the battlefield! You understand your mistakes deeply.",       character:"Illumi Zoldyck", quote:"I control outcomes, not just react to them." },
-  { id:"specialist",  name:"Specialist",  icon:"♾️", color:"#00d4ff", minXP:4000, desc:"You are UNIQUE! Beyond all categories — a true master of your craft.",   character:"Ging Freecss",   quote:"I have transcended the system itself." },
+  { id:"enhancer",    name:"Enhancer",    icon:"💪", color:"#f97316", minXP:0,     desc:"You boost your own power! Every mistake you log makes you stronger.",    character:"Gon Freecss",    quote:"The basics are everything." },
+  { id:"transmuter",  name:"Transmuter",  icon:"⚡", color:"#fbbf24", minXP:2000,  desc:"You change and adapt! Learning to transform your weak points.",           character:"Killua Zoldyck", quote:"I can change anything into power." },
+  { id:"emitter",     name:"Emitter",     icon:"🔥", color:"#ef4444", minXP:5000,  desc:"You project your power outward! Your knowledge is spreading further.",    character:"Leorio",         quote:"My power reaches beyond myself." },
+  { id:"conjurer",    name:"Conjurer",    icon:"🔮", color:"#a78bfa", minXP:10000, desc:"You create real things from nothing! Your mastery is becoming solid.",    character:"Kurapika",       quote:"I manifest what others cannot imagine." },
+  { id:"manipulator", name:"Manipulator", icon:"🎮", color:"#38bdf8", minXP:20000, desc:"You control the battlefield! You understand your mistakes deeply.",       character:"Illumi Zoldyck", quote:"I control outcomes, not just react to them." },
+  { id:"specialist",  name:"Specialist",  icon:"♾️", color:"#00d4ff", minXP:40000, desc:"You are UNIQUE! Beyond all categories — a true master of your craft.",   character:"Ging Freecss",   quote:"I have transcended the system itself." },
 ];
 
 export function getNenLeague(xp: number) {
@@ -518,16 +518,151 @@ function StreakCalendar({ userId, streak, onClose }: { userId:string; streak:num
 function InfoPanel({ onClose }: { onClose: () => void }) {
   const [page, setPage] = useState(0);
   const pages = [
-    { icon:"⚡", title:"Welcome to ErrorVerse!", color:"#00d4ff", content:"ErrorVerse is like your **training journal** — but way cooler!\n\nEvery time you get a question wrong in school, you write it here. Then the app helps you fix it and never forget it again!", tip:"Think of it like catching your mistakes before they catch you in the exam! 🎯", visual:(<div style={{display:"flex",justifyContent:"center",alignItems:"center",gap:8,margin:"16px 0"}}>{[{e:"📝",l:"Write it"},{e:"→",l:""},{e:"🔁",l:"Review"},{e:"→",l:""},{e:"🏆",l:"Master it!"}].map((s,i)=>(<div key={i} style={{display:"flex",flexDirection:"column",alignItems:"center",gap:4}}><div style={{fontSize:s.e==="→"?20:32}}>{s.e}</div>{s.l&&<div style={{fontSize:9,color:"#64748b"}}>{s.l}</div>}</div>))}</div>) },
-    { icon:"📝", title:"Learn Tab — Your Error Book", color:"#ff2254", content:"This is where you **write down your mistakes**!\n\nWhen you get something wrong, tap the **+ Add Error** button and fill in the subject, chapter, why you got it wrong, and the correct answer.", tip:"Be honest about WHY you made the mistake — that's the secret sauce! 🔑", visual:(<div style={{background:"rgba(255,34,84,0.1)",border:"1px solid rgba(255,34,84,0.3)",borderRadius:12,padding:12,margin:"12px 0"}}><div style={{fontSize:11,color:"#ff8099",marginBottom:6}}>Example entry:</div><div style={{fontSize:13,color:"#e2e8f0"}}>📚 Physics → Kinematics</div><div style={{fontSize:12,color:"#94a3b8",marginTop:4}}>❌ Why: Forgot to square the velocity</div><div style={{fontSize:12,color:"#22c55e",marginTop:4}}>✅ Correct: v² = u² + 2as</div></div>) },
-    { icon:"🔁", title:"Review Tab — Don't Forget!", color:"#00d4ff", content:"This is the **magic part**!\n\nThe app sends your old mistakes back at the PERFECT time — just when you're about to forget. Scientists call this **Spaced Repetition** and it's the fastest way to remember anything forever!", tip:"Hit ✅ Mastered when you can solve it easily. Hit 📖 Reviewed if you still need practice! 💪", visual:(<div style={{display:"flex",gap:6,margin:"12px 0",flexWrap:"wrap" as const}}>{[{label:"Day 1",color:"#ff2254",text:"Learn it"},{label:"Day 3",color:"#ffd700",text:"Review"},{label:"Day 7",color:"#f97316",text:"Review"},{label:"Day 30",color:"#22c55e",text:"Mastered!"}].map(s=>(<div key={s.label} style={{flex:1,minWidth:60,padding:"8px 4px",borderRadius:8,background:`${s.color}18`,border:`1px solid ${s.color}44`,textAlign:"center" as const}}><div style={{fontSize:10,color:s.color,fontWeight:700}}>{s.label}</div><div style={{fontSize:10,color:"#94a3b8",marginTop:2}}>{s.text}</div></div>))}</div>) },
-    { icon:"📊", title:"Stats — See Your Progress", color:"#a855f7", content:"This shows you **cool charts and graphs** about your mistakes!\n\nYou can see which subject trips you up most, how many you fixed this week, and which chapters are your weakest spots.\n\nAccess Stats by tapping **Review** then the 📊 icon inside!", tip:"The chapters with the tallest bars need the most practice! 📈", visual:(<div style={{margin:"12px 0"}}>{[{label:"Physics",pct:80,color:"#00d4ff"},{label:"Math",pct:55,color:"#ff2254"},{label:"Chemistry",pct:35,color:"#22c55e"}].map(s=>(<div key={s.label} style={{marginBottom:8}}><div style={{display:"flex",justifyContent:"space-between",fontSize:11,color:"#94a3b8",marginBottom:3}}><span>{s.label}</span><span>{s.pct}%</span></div><div style={{height:8,background:"rgba(255,255,255,0.06)",borderRadius:4,overflow:"hidden"}}><div style={{height:"100%",width:`${s.pct}%`,background:`linear-gradient(90deg,${s.color},${s.color}88)`,borderRadius:4}}/></div></div>))}</div>) },
-    { icon:"🔥", title:"Heat Map — Your Activity", color:"#f97316", content:"The **Heat Map** shows every day you used the app!\n\nThe **brighter the square**, the more you studied that day. Try to make your whole calendar glow!", tip:"Green squares = active days. Try to make a long chain without any dark spots! 🟩🟩🟩", visual:(<div style={{display:"grid",gridTemplateColumns:"repeat(10,1fr)",gap:3,margin:"12px 0"}}>{[0,0,1,2,3,2,1,0,2,3,3,2,1,2,3,0,1,2,3,3,2,3,3,2,1,2,3,3,3,3].map((n,i)=>{const c=["rgba(255,255,255,0.05)","rgba(249,115,22,0.3)","rgba(249,115,22,0.6)","rgba(249,115,22,1)"];return <div key={i} style={{aspectRatio:"1",borderRadius:3,background:c[n]}}/>;})}
-</div>) },
-    { icon:"🏆", title:"Rank Tab — Beat Everyone!", color:"#ffd700", content:"See where you stand against **all other students** in your Nen League!\n\nEvery week, the **top 3 warriors PROMOTE** up! The bottom 3 go back down — just like Duolingo!", tip:"The secret to ranking up? ZERO repeated mistakes! 🎯", visual:(<div style={{margin:"12px 0"}}>{[{rank:"🥇",name:"Gojo_Fan99",m:0,c:"#ffd700"},{rank:"🥈",name:"NarutoKing",m:1,c:"#c0c0c0"},{rank:"🥉",name:"You!",m:2,c:"#cd7f32"}].map(p=>(<div key={p.rank} style={{display:"flex",alignItems:"center",gap:10,padding:"8px 10px",borderRadius:8,background:`${p.c}10`,marginBottom:6}}><span style={{fontSize:18}}>{p.rank}</span><span style={{flex:1,fontSize:13,color:"#e2e8f0",fontWeight:600}}>{p.name}</span><span style={{fontSize:11,color:p.m===0?"#22c55e":"#ff8099"}}>♻ {p.m} repeats</span></div>))}</div>) },
-    { icon:"♾️", title:"Nen Leagues — Your Power Level!", color:"#00d4ff", content:"Your rank uses **Hunter x Hunter Nen types** — just like your favourite anime!\n\nStart as Enhancer 💪 and reach Specialist ♾️ — the rarest type! Earn XP by logging and mastering errors.", tip:"Specialist ♾️ is the rarest Nen type — only the greatest warriors reach it! 👑", visual:(<div style={{display:"flex",flexDirection:"column",gap:5,margin:"8px 0"}}>{NEN_LEAGUES.map((l,i)=>(<div key={l.id} style={{display:"flex",alignItems:"center",gap:8,padding:"5px 10px",borderRadius:8,background:`${l.color}12`,border:`1px solid ${l.color}33`,opacity:0.5+i*0.1}}><span style={{fontSize:14}}>{l.icon}</span><span style={{fontSize:11,color:l.color,fontWeight:700,flex:1}}>{l.name}</span><span style={{fontSize:10,color:"#64748b"}}>{l.minXP}+ XP</span></div>))}</div>) },
-    { icon:"🤖", title:"AI Hub — Your Smart Helper!", color:"#a855f7", content:"The **AI Hub** is like a super-smart tutor available 24/7!\n\nIt finds patterns in your mistakes, suggests what to study next, and explains WHY you keep getting things wrong.", tip:"Ask it anything! Try: 'Why do I keep making calculation mistakes?' 🤖", visual:(<div style={{background:"rgba(168,85,247,0.1)",border:"1px solid rgba(168,85,247,0.3)",borderRadius:12,padding:12,margin:"12px 0"}}><div style={{fontSize:12,color:"#94a3b8",marginBottom:6}}>💬 You ask:</div><div style={{fontSize:13,color:"#c4b5fd",fontStyle:"italic"}}>"What is my weakest chapter this week?"</div><div style={{fontSize:12,color:"#94a3b8",marginTop:8,marginBottom:4}}>🤖 AI says:</div><div style={{fontSize:12,color:"#e2e8f0"}}>"You've made 7 mistakes in Kinematics. Here's what to focus on..."</div></div>) },
-    { icon:"🔥", title:"Streaks — Never Stop!", color:"#ffd700", content:"Log **3 or more errors** every day to keep your streak alive!\n\nMiss a day and it resets to zero — so never stop!", tip:"Even on easy days, find 3 small mistakes to log. Consistency beats intensity! 🔥", visual:(<div style={{textAlign:"center",margin:"12px 0"}}><div style={{display:"flex",justifyContent:"center",gap:6}}>{[true,true,true,true,true,false,false].map((active,i)=>(<div key={i} style={{display:"flex",flexDirection:"column",alignItems:"center",gap:4}}><div style={{width:32,height:32,borderRadius:8,background:active?"linear-gradient(135deg,#ffd700,#f97316)":"rgba(255,255,255,0.05)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:14}}>{active?"🔥":"○"}</div><div style={{fontSize:8,color:"#475569"}}>{"SMTWTFS"[i]}</div></div>))}</div><div style={{fontSize:11,color:"#ffd700",marginTop:8,fontWeight:600}}>5 day streak! Keep going! 🔥</div></div>) },
+    {
+      icon:"⚡", title:"Welcome to ErrorVerse!", color:"#00d4ff",
+      content:"ErrorVerse is your **personal training journal** — but way cooler!\n\nEvery time you get a question wrong, log it here. The app tracks your mistakes, reminds you to revise them, and shows your progress vs. classmates — all without anyone seeing your error count.",
+      tip:"Your mistakes are private. Nobody can see how many errors you've made — only your consistency and revision rate! 🔒",
+      visual:(<div style={{display:"flex",justifyContent:"center",alignItems:"center",gap:8,margin:"16px 0"}}>{[{e:"📝",l:"Log it"},{e:"→",l:""},{e:"🔁",l:"Revise it"},{e:"→",l:""},{e:"🏆",l:"Own it!"}].map((s,i)=>(<div key={i} style={{display:"flex",flexDirection:"column",alignItems:"center",gap:4}}><div style={{fontSize:s.e==="→"?20:30}}>{s.e}</div>{s.l&&<div style={{fontSize:9,color:"#64748b"}}>{s.l}</div>}</div>))}</div>)
+    },
+    {
+      icon:"📝", title:"Learn Tab — Log Mistakes", color:"#ff2254",
+      content:"Tap **+ Add Error** whenever you get something wrong.\n\nFill in the subject, chapter, mistake type, and what the correct answer is. The more detail you add, the smarter your revision schedule becomes.",
+      tip:"Be honest about WHY you got it wrong — that self-awareness is the real learning! 🔑",
+      visual:(<div style={{background:"rgba(255,34,84,0.08)",border:"1px solid rgba(255,34,84,0.25)",borderRadius:12,padding:12,margin:"12px 0"}}><div style={{fontSize:11,color:"#ff8099",marginBottom:8,fontWeight:700}}>Example entry:</div><div style={{fontSize:13,color:"#e2e8f0",marginBottom:4}}>📚 Physics → Kinematics</div><div style={{fontSize:12,color:"#94a3b8",marginBottom:4}}>❌ Mistake type: Conceptual</div><div style={{fontSize:12,color:"#94a3b8",marginBottom:4}}>❌ Why: Forgot to use v² = u² + 2as</div><div style={{fontSize:12,color:"#22c55e"}}>✅ Fix: Always list givens first</div></div>)
+    },
+    {
+      icon:"🔁", title:"Review Tab — Spaced Repetition", color:"#00d4ff",
+      content:"The app sends your old mistakes back at the **perfect time** — just before you forget them!\n\nThis is called **Spaced Repetition** — Day 1 → Day 3 → Day 7 → Day 30. It's how top scorers actually retain knowledge permanently.",
+      tip:"Hit ✅ Mastered only when you can solve it cold, no hints. Hit 📖 Reviewed if you still need work! 💪",
+      visual:(<div style={{display:"flex",gap:6,margin:"12px 0",flexWrap:"wrap" as const}}>{[{label:"Day 1",color:"#ff2254",text:"Learn"},{label:"Day 3",color:"#ffd700",text:"Review"},{label:"Day 7",color:"#f97316",text:"Review"},{label:"Day 30",color:"#22c55e",text:"Mastered!"}].map(s=>(<div key={s.label} style={{flex:1,minWidth:60,padding:"8px 4px",borderRadius:8,background:`${s.color}18`,border:`1px solid ${s.color}44`,textAlign:"center" as const}}><div style={{fontSize:10,color:s.color,fontWeight:700}}>{s.label}</div><div style={{fontSize:10,color:"#94a3b8",marginTop:2}}>{s.text}</div></div>))}</div>)
+    },
+    {
+      icon:"🏆", title:"Two Leaderboards!", color:"#ffd700",
+      content:"The Rank tab has **two separate leaderboards**:\n\n🏆 **Consistency Board** — ranked by your daily login streak. Show up every day and climb.\n\n📈 **Growth Board** — ranked by revision completion %. The more errors you go back and revise, the higher you rank.",
+      tip:"You can rank differently on each board — dominate both to be the ultimate warrior! ⚔️",
+      visual:(<div style={{margin:"12px 0",display:"flex",flexDirection:"column",gap:8}}><div style={{padding:"10px 14px",borderRadius:12,background:"rgba(249,115,22,0.1)",border:"1px solid rgba(249,115,22,0.3)"}}><div style={{fontSize:12,fontWeight:800,color:"#f97316",marginBottom:2}}>🏆 Consistency Board</div><div style={{fontSize:11,color:"#94a3b8"}}>Ranked by: 🔥 Daily streak (longest = #1)</div></div><div style={{padding:"10px 14px",borderRadius:12,background:"rgba(34,197,94,0.1)",border:"1px solid rgba(34,197,94,0.3)"}}><div style={{fontSize:12,fontWeight:800,color:"#22c55e",marginBottom:2}}>📈 Growth Board</div><div style={{fontSize:11,color:"#94a3b8"}}>Ranked by: ♻️ Revision % (most revised = #1)</div></div></div>)
+    },
+    {
+      icon:"🔒", title:"Private Stats — No Judgement", color:"#a78bfa",
+      content:"Your **error count is completely hidden** from everyone on the leaderboard.\n\nWhat others can see:\n✅ Your streak\n✅ Days active\n✅ Revision completion %\n✅ Subjects you've covered\n\n❌ Nobody sees how many errors you made.",
+      tip:"This makes the competition fair — it's about consistency and effort, not who makes the fewest mistakes! 🌟",
+      visual:(<div style={{margin:"12px 0",padding:"12px 14px",borderRadius:12,background:"rgba(167,139,250,0.08)",border:"1px solid rgba(167,139,250,0.25)"}}><div style={{fontSize:11,color:"#a78bfa",fontWeight:700,marginBottom:8}}>What the leaderboard shows:</div>{[{icon:"🔥",label:"Streak",show:true},{icon:"📅",label:"Days active",show:true},{icon:"♻️",label:"Revision %",show:true},{icon:"📚",label:"Subjects covered",show:true},{icon:"📝",label:"Error count",show:false}].map(s=>(<div key={s.label} style={{display:"flex",alignItems:"center",gap:8,marginBottom:5}}><span style={{fontSize:13}}>{s.icon}</span><span style={{fontSize:11,color:s.show?"#e2e8f0":"#475569",flex:1,textDecoration:s.show?"none":"line-through"}}>{s.label}</span><span style={{fontSize:11,fontWeight:700,color:s.show?"#22c55e":"#ff2254"}}>{s.show?"Visible":"Hidden"}</span></div>))}</div>)
+    },
+    {
+      icon:"📅", title:"Monday Promotions!", color:"#22c55e",
+      content:"Every **Monday**, your weekly performance is evaluated:\n\n⬆️ **Top 3 in your league** → promoted to the next league\n\n➡️ **Middle pack** → stays in the same league\n\n⬇️ **Bottom 3** → demoted to the league below\n\nYour weekly streak, revision %, and days active all count toward your standing.",
+      tip:"Even if you had a bad week, you get a fresh start every Monday. Never give up! 🔄",
+      visual:(<div style={{margin:"12px 0"}}><div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}><div style={{width:36,height:36,borderRadius:8,background:"rgba(34,197,94,0.15)",border:"1px solid rgba(34,197,94,0.4)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:16}}>📅</div><div style={{flex:1}}><div style={{fontSize:12,fontWeight:700,color:"#22c55e"}}>Every Monday at midnight</div><div style={{fontSize:11,color:"#64748b"}}>Promotions & demotions processed</div></div></div>{[{label:"Top 3 this week",action:"⬆️ Promoted",color:"#22c55e"},{label:"Middle of league",action:"➡️ Stays",color:"#fbbf24"},{label:"Bottom 3 this week",action:"⬇️ Demoted",color:"#ff2254"}].map(s=>(<div key={s.label} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"6px 10px",borderRadius:8,background:`${s.color}10`,border:`1px solid ${s.color}22`,marginBottom:5}}><span style={{fontSize:11,color:"#94a3b8"}}>{s.label}</span><span style={{fontSize:11,fontWeight:700,color:s.color}}>{s.action}</span></div>))}</div>)
+    },
+    {
+      icon:"♾️", title:"Nen Leagues — Your Power Level!", color:"#00d4ff",
+      content:"Your league is determined by your **total XP earned** in the app.\n\nStart as **Enhancer 💪** and grind your way to **Specialist ♾️** — the rarest Nen type! These are based on **Hunter x Hunter** Nen abilities.",
+      tip:"Leagues are hard to climb — that's the point! Specialist requires 40,000 XP. Only true masters get there! 👑",
+      visual:(<div style={{display:"flex",flexDirection:"column",gap:4,margin:"8px 0"}}>{NEN_LEAGUES.map((l,i)=>(<div key={l.id} style={{display:"flex",alignItems:"center",gap:8,padding:"6px 10px",borderRadius:8,background:`${l.color}12`,border:`1px solid ${l.color}33`,opacity:0.55+i*0.09}}><span style={{fontSize:14}}>{l.icon}</span><span style={{fontSize:11,color:l.color,fontWeight:700,flex:1}}>{l.name}</span><span style={{fontSize:10,color:"#64748b"}}>{l.minXP.toLocaleString()}+ XP</span></div>))}</div>)
+    },
+    {
+      icon:"🤖", title:"AI Hub — Your Smart Tutor", color:"#a855f7",
+      content:"The **AI Hub** analyses all your logged errors and gives you personal study advice!\n\nIt finds patterns in your mistakes, explains WHY you keep getting things wrong, and recommends exactly what to study next.",
+      tip:"Ask it: 'What is my weakest topic this week?' or 'Why do I keep making calculation errors?' 🤖",
+      visual:(<div style={{background:"rgba(168,85,247,0.08)",border:"1px solid rgba(168,85,247,0.28)",borderRadius:12,padding:12,margin:"12px 0"}}><div style={{fontSize:11,color:"#94a3b8",marginBottom:5}}>💬 You ask:</div><div style={{fontSize:13,color:"#c4b5fd",fontStyle:"italic",marginBottom:8}}>"What is my weakest chapter this week?"</div><div style={{fontSize:11,color:"#94a3b8",marginBottom:4}}>🤖 AI says:</div><div style={{fontSize:12,color:"#e2e8f0"}}>"You've logged 7 errors in Kinematics. Focus on equations of motion — you've missed them 4 times."</div></div>)
+    },
+    {
+      icon:"🔥", title:"Heat Map — Your Study Story!", color:"#f97316",
+      content:"The **Heat Map** is like a picture diary of every day you studied!\n\nEach little square = one day. The **brighter and redder** the square, the more mistakes you logged that day. Dark square = you didn't study. Bright red = you were on fire! 🔥\n\nTry to make the whole calendar glow!",
+      tip:"Imagine your calendar as a painting — the more red squares you fill in, the more powerful your painting becomes! 🎨",
+      visual:(
+        <div style={{margin:"12px 0"}}>
+          {/* Mini demo calendar */}
+          <div style={{marginBottom:10}}>
+            <div style={{fontSize:10,color:"#64748b",marginBottom:6,textAlign:"center" as const,letterSpacing:1}}>YOUR CALENDAR LOOKS LIKE THIS 👇</div>
+            <div style={{display:"grid",gridTemplateColumns:"repeat(7,1fr)",gap:3}}>
+              {[0,0,2,3,1,3,3, 2,1,3,3,0,2,3, 1,3,2,3,3,1,0, 3,3,3,2,1,3,3, 0,2,3,3,3,2,1].map((n,i)=>{
+                const cols=["rgba(255,255,255,0.04)","rgba(255,34,84,0.2)","rgba(255,34,84,0.5)","#ff2254"];
+                const labels=["","low","med","🔥"];
+                return(
+                  <div key={i} style={{aspectRatio:"1",borderRadius:6,background:cols[n],display:"flex",alignItems:"center",justifyContent:"center"}}>
+                    {n===3&&<span style={{fontSize:8}}>🔥</span>}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+          {/* Legend explained simply */}
+          <div style={{display:"flex",gap:6,justifyContent:"center",flexWrap:"wrap" as const}}>
+            {[
+              {bg:"rgba(255,255,255,0.04)",label:"😴 No study",c:"#475569"},
+              {bg:"rgba(255,34,84,0.2)",label:"📝 A little",c:"#ff8099"},
+              {bg:"rgba(255,34,84,0.5)",label:"💪 Good day",c:"#ff2254"},
+              {bg:"#ff2254",label:"🔥 Beast mode",c:"#fff"},
+            ].map(l=>(
+              <div key={l.label} style={{display:"flex",alignItems:"center",gap:5,padding:"4px 8px",borderRadius:8,background:"rgba(255,255,255,0.03)",border:"1px solid rgba(255,255,255,0.07)"}}>
+                <div style={{width:14,height:14,borderRadius:4,background:l.bg,flexShrink:0}}/>
+                <span style={{fontSize:9,color:l.c,fontWeight:600}}>{l.label}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )
+    },
+    {
+      icon:"📅", title:"Heat Map — Tap Any Day!", color:"#00d4ff",
+      content:"The Heat Map is **interactive** — it's not just for looking!\n\nTap on any **glowing day** to instantly see every mistake you logged that day. You can even click on a mistake to open it and revise it!\n\nAlso use the **← → arrows** to travel back in time through older months.",
+      tip:"Tap your busiest day (darkest red) to see which mistakes you logged — then go revise them! 🔍",
+      visual:(
+        <div style={{margin:"12px 0",display:"flex",flexDirection:"column",gap:8}}>
+          {/* Feature cards */}
+          {[
+            {icon:"👆",label:"Tap a glowing square",desc:"See all mistakes from that day",color:"#f97316"},
+            {icon:"📋",label:"Tap any mistake",desc:"Open it and revise it right now",color:"#ff2254"},
+            {icon:"◀▶",label:"Use the arrows",desc:"Travel back through past months",color:"#00d4ff"},
+            {icon:"📊",label:"Stats at the top",desc:"All time, this year, this month, active days",color:"#a78bfa"},
+          ].map(f=>(
+            <div key={f.label} style={{display:"flex",alignItems:"center",gap:10,padding:"8px 12px",borderRadius:10,background:`${f.color}0e`,border:`1px solid ${f.color}25`}}>
+              <div style={{width:32,height:32,borderRadius:8,background:`${f.color}18`,border:`1px solid ${f.color}33`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,flexShrink:0}}>{f.icon}</div>
+              <div>
+                <div style={{fontSize:11,fontWeight:700,color:f.color}}>{f.label}</div>
+                <div style={{fontSize:10,color:"#64748b",marginTop:1}}>{f.desc}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )
+    },
+    {
+      icon:"🌟", title:"Heat Map — Your Power Score!", color:"#ffd700",
+      content:"At the top of the Heat Map, you'll see **4 big numbers** — think of them as your power score!\n\n📚 **All Time** — every mistake you've ever logged\n📆 **This Year** — mistakes logged this year\n🗓 **This Month** — just this month\n🔥 **Active Days** — how many days you actually studied",
+      tip:"The goal: make ALL 4 numbers go up every week! Even logging one mistake a day makes your Active Days number grow! 🚀",
+      visual:(
+        <div style={{margin:"12px 0"}}>
+          <div style={{fontSize:10,color:"#64748b",marginBottom:8,textAlign:"center" as const,letterSpacing:1}}>YOUR POWER NUMBERS 💪</div>
+          <div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:8}}>
+            {[
+              {icon:"📚",label:"All Time",value:"247",sub:"total errors",color:"#00d4ff"},
+              {icon:"📆",label:"This Year",value:"89",sub:"this year",color:"#a78bfa"},
+              {icon:"🗓",label:"This Month",value:"23",sub:"this month",color:"#ff2254"},
+              {icon:"🔥",label:"Active Days",value:"34",sub:"days studied",color:"#f97316"},
+            ].map(s=>(
+              <div key={s.label} style={{padding:"10px 12px",borderRadius:12,background:"rgba(255,255,255,0.04)",border:`1px solid ${s.color}25`,display:"flex",alignItems:"center",gap:10}}>
+                <span style={{fontSize:20}}>{s.icon}</span>
+                <div>
+                  <div style={{fontSize:22,fontWeight:900,color:s.color,fontFamily:"'Bebas Neue',cursive",lineHeight:1}}>{s.value}</div>
+                  <div style={{fontSize:9,color:"#64748b",marginTop:1}}>{s.label}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+          <div style={{marginTop:10,padding:"8px 12px",borderRadius:10,background:"rgba(0,212,255,0.07)",border:"1px solid rgba(0,212,255,0.18)",textAlign:"center" as const}}>
+            <span style={{fontSize:11,color:"#00d4ff"}}>🎯 Goal: make all 4 numbers grow every week!</span>
+          </div>
+        </div>
+      )
+    },
+    {
+      icon:"🔥", title:"Streaks — Show Up Every Day", color:"#ffd700",
+      content:"Log **at least one error** every day to keep your streak alive.\n\nYour streak is the **#1 factor** in the Consistency Board ranking — the longer your streak, the higher you rank.\n\nMiss a day and your streak resets to zero!",
+      tip:"Even on a good day, log one small mistake. Consistency always beats cramming! 🔥",
+      visual:(<div style={{textAlign:"center",margin:"12px 0"}}><div style={{display:"flex",justifyContent:"center",gap:6}}>{[true,true,true,true,true,false,false].map((active,i)=>(<div key={i} style={{display:"flex",flexDirection:"column",alignItems:"center",gap:4}}><div style={{width:32,height:32,borderRadius:8,background:active?"linear-gradient(135deg,#ffd700,#f97316)":"rgba(255,255,255,0.05)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:14}}>{active?"🔥":"○"}</div><div style={{fontSize:8,color:"#475569"}}>{"SMTWTFS"[i]}</div></div>))}</div><div style={{fontSize:11,color:"#ffd700",marginTop:10,fontWeight:600}}>5-day streak — you're on fire! 🔥</div><div style={{fontSize:10,color:"#64748b",marginTop:4}}>7+ days unlocks the 🔥 On Fire badge</div></div>)
+    },
   ];
   const cur = pages[page];
   return (
@@ -615,8 +750,8 @@ function WelcomePage({ onDone }: { onDone: () => void }) {
       iconGlow: "#00d4ff",
       title: "Welcome to",
       titleHighlight: "ErrorVerse",
-      sub: "The smartest way to study",
-      desc: "Turn every mistake into a superpower. This app is your personal training ground — log errors, track progress, and never repeat the same mistake twice.",
+      sub: "Master your Mistakes. Own your Story.",
+      desc: "Turn every mistake into a superpower. Log errors, revise them with spaced repetition, compete privately on the leaderboard, and become the student who never repeats the same mistake twice.",
       visual: (
         <div style={{ display: "flex", justifyContent: "center", gap: 20, margin: "24px 0" }}>
           {["📝", "🔁", "🏆"].map((e, i) => (
@@ -625,11 +760,10 @@ function WelcomePage({ onDone }: { onDone: () => void }) {
                 width: 60, height: 60, borderRadius: 16,
                 background: `rgba(0,212,255,${0.1 + i * 0.05})`,
                 border: "1px solid rgba(0,212,255,0.3)",
-                display: "flex", alignItems: "center", justifyContent: "center",
-                fontSize: 28,
+                display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28,
                 animation: `floatUp${i} 2s ease-in-out ${i * 0.3}s infinite alternate`,
               }}>{e}</div>
-              <span style={{ fontSize: 11, color: "#64748b" }}>{["Log it", "Review it", "Own it"][i]}</span>
+              <span style={{ fontSize: 11, color: "#64748b" }}>{["Log it", "Revise it", "Rank up"][i]}</span>
             </div>
           ))}
         </div>
@@ -641,17 +775,17 @@ function WelcomePage({ onDone }: { onDone: () => void }) {
       iconGlow: "#ff2254",
       title: "Log Your",
       titleHighlight: "Mistakes",
-      sub: "Every error is a lesson",
-      desc: "Whenever you get something wrong — in class, homework, or mock tests — just open ErrorVerse and tap '+ Add Error'. Fill in the subject, chapter, and what went wrong.",
+      sub: "Every error is a lesson waiting to happen",
+      desc: "Whenever you get something wrong — in class, homework, or mock tests — tap '+ Add Error'. Add the subject, chapter, mistake type, and the correct answer. The more detail, the smarter your revision schedule.",
       visual: (
         <div style={{ background: "rgba(255,34,84,0.08)", border: "1px solid rgba(255,34,84,0.25)", borderRadius: 16, padding: 16, margin: "20px 0" }}>
-          <div style={{ display: "flex", gap: 10, marginBottom: 10 }}>
+          <div style={{ display: "flex", gap: 8, marginBottom: 10, flexWrap: "wrap" as const }}>
             {["Physics", "Math", "Chemistry"].map((s, i) => (
-              <div key={s} style={{ padding: "5px 12px", borderRadius: 20, fontSize: 11, fontWeight: 700, background: `${Object.values(SUBJECT_COLORS)[i]}18`, color: Object.values(SUBJECT_COLORS)[i], border: `1px solid ${Object.values(SUBJECT_COLORS)[i]}44` }}>{s}</div>
+              <div key={s} style={{ padding: "4px 10px", borderRadius: 20, fontSize: 11, fontWeight: 700, background: `${Object.values(SUBJECT_COLORS)[i]}18`, color: Object.values(SUBJECT_COLORS)[i], border: `1px solid ${Object.values(SUBJECT_COLORS)[i]}44` }}>{s}</div>
             ))}
           </div>
-          <div style={{ fontSize: 13, color: "#e2e8f0", marginBottom: 6 }}>📚 Chapter: Kinematics</div>
-          <div style={{ fontSize: 12, color: "#94a3b8", marginBottom: 4 }}>❌ Why: Forgot to use v² = u² + 2as</div>
+          <div style={{ fontSize: 13, color: "#e2e8f0", marginBottom: 5 }}>📚 Chapter: Kinematics</div>
+          <div style={{ fontSize: 12, color: "#94a3b8", marginBottom: 4 }}>❌ Type: Conceptual — Forgot v² = u² + 2as</div>
           <div style={{ fontSize: 12, color: "#22c55e" }}>✅ Fix: Always list what's given first</div>
         </div>
       ),
@@ -660,10 +794,10 @@ function WelcomePage({ onDone }: { onDone: () => void }) {
     {
       icon: "🔁",
       iconGlow: "#00d4ff",
-      title: "Review at the",
+      title: "Revise at the",
       titleHighlight: "Right Time",
       sub: "Science-backed spaced repetition",
-      desc: "The app reminds you to review each mistake at exactly the right time — Day 1, Day 3, Day 7, Day 30. This is called Spaced Repetition and it's how top scorers actually study!",
+      desc: "The app automatically schedules each mistake for review at the optimal time — Day 1, Day 3, Day 7, then Day 30. This is Spaced Repetition — the most powerful study technique science has discovered.",
       visual: (
         <div style={{ display: "flex", gap: 8, margin: "20px 0", flexWrap: "wrap" as const }}>
           {[{ d: "Day 1", c: "#ff2254", p: 100 }, { d: "Day 3", c: "#ffd700", p: 75 }, { d: "Day 7", c: "#f97316", p: 50 }, { d: "Day 30", c: "#22c55e", p: 25 }].map(s => (
@@ -672,7 +806,7 @@ function WelcomePage({ onDone }: { onDone: () => void }) {
               <div style={{ height: 40, display: "flex", alignItems: "flex-end", justifyContent: "center", margin: "6px 0" }}>
                 <div style={{ width: 16, height: `${s.p}%`, background: `linear-gradient(to top,${s.c},${s.c}66)`, borderRadius: 4 }} />
               </div>
-              <div style={{ fontSize: 9, color: "#64748b" }}>review</div>
+              <div style={{ fontSize: 9, color: "#64748b" }}>revise</div>
             </div>
           ))}
         </div>
@@ -682,24 +816,114 @@ function WelcomePage({ onDone }: { onDone: () => void }) {
     {
       icon: "🏆",
       iconGlow: "#ffd700",
-      title: "Climb the",
-      titleHighlight: "Leaderboard",
-      sub: "Compete like a champion",
-      desc: "Earn XP by logging and mastering mistakes. Climb from Enhancer 💪 all the way to Specialist ♾️ — the rarest Nen type, just like your favourite HxH characters!",
+      title: "Two Private",
+      titleHighlight: "Leaderboards",
+      sub: "Compete on consistency AND growth",
+      desc: "The Rank tab has two boards — 🏆 Consistency (ranked by streak) and 📈 Growth (ranked by revision %). Your error count is always hidden — nobody sees how many mistakes you made, only your effort.",
       visual: (
-        <div style={{ margin: "16px 0" }}>
-          <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
-            {NEN_LEAGUES.slice(0, 3).map((l, i) => (
-              <div key={l.id} style={{ flex: 1, padding: "8px 6px", borderRadius: 10, background: `${l.color}12`, border: `1px solid ${l.color}33`, textAlign: "center" as const }}>
-                <div style={{ fontSize: 20 }}>{l.icon}</div>
-                <div style={{ fontSize: 9, color: l.color, fontWeight: 700, marginTop: 4 }}>{l.name}</div>
-              </div>
-            ))}
+        <div style={{ margin: "16px 0", display: "flex", flexDirection: "column", gap: 8 }}>
+          <div style={{ padding: "10px 14px", borderRadius: 12, background: "rgba(249,115,22,0.1)", border: "1px solid rgba(249,115,22,0.3)" }}>
+            <div style={{ fontSize: 12, fontWeight: 800, color: "#f97316", marginBottom: 2 }}>🏆 Consistency Board</div>
+            <div style={{ fontSize: 11, color: "#94a3b8" }}>Ranked by daily streak — show up every day</div>
           </div>
-          <div style={{ textAlign: "center", fontSize: 12, color: "#64748b" }}>Start → Earn XP → Level Up → ♾️</div>
+          <div style={{ padding: "10px 14px", borderRadius: 12, background: "rgba(34,197,94,0.1)", border: "1px solid rgba(34,197,94,0.3)" }}>
+            <div style={{ fontSize: 12, fontWeight: 800, color: "#22c55e", marginBottom: 2 }}>📈 Growth Board</div>
+            <div style={{ fontSize: 11, color: "#94a3b8" }}>Ranked by revision % — actually go back and learn</div>
+          </div>
+          <div style={{ padding: "8px 12px", borderRadius: 10, background: "rgba(0,212,255,0.08)", border: "1px solid rgba(0,212,255,0.2)", textAlign: "center" as const }}>
+            <span style={{ fontSize: 11, color: "#00d4ff" }}>🔒 Error count hidden from everyone</span>
+          </div>
         </div>
       ),
       color: "#ffd700",
+    },
+    {
+      icon: "🔥",
+      iconGlow: "#f97316",
+      title: "Your Heat Map",
+      titleHighlight: "Calendar!",
+      sub: "See your whole study journey at a glance",
+      desc: "The Heat tab shows a calendar where every day you studied lights up red! The more you studied, the brighter it glows. Tap any glowing day to see exactly which mistakes you logged that day.",
+      visual: (
+        <div style={{ margin: "16px 0" }}>
+          <div style={{ fontSize: 11, color: "#64748b", marginBottom: 8, textAlign: "center" as const }}>IMAGINE THIS IS YOUR CALENDAR 👇</div>
+          {/* Demo mini calendar */}
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(7,1fr)", gap: 4, marginBottom: 12 }}>
+            {[0,1,2,3,2,3,3, 1,0,3,3,2,3,3, 3,2,3,1,3,3,0, 2,3,3,3,2,1,3].map((n,i) => {
+              const bgs = ["rgba(255,255,255,0.04)","rgba(255,34,84,0.2)","rgba(255,34,84,0.5)","#ff2254"];
+              return (
+                <div key={i} style={{ aspectRatio:"1", borderRadius:7, background:bgs[n], display:"flex", alignItems:"center", justifyContent:"center", transition:"all 0.2s" }}>
+                  {n === 3 && <span style={{ fontSize:9 }}>🔥</span>}
+                  {n === 0 && <span style={{ fontSize:8, color:"#334155" }}>·</span>}
+                </div>
+              );
+            })}
+          </div>
+          {/* Simple legend */}
+          <div style={{ display: "flex", justifyContent: "center", gap: 8, flexWrap: "wrap" as const }}>
+            {[
+              { bg: "rgba(255,255,255,0.04)", label: "😴 Rest day" },
+              { bg: "rgba(255,34,84,0.25)", label: "📝 Studied" },
+              { bg: "#ff2254", label: "🔥 On fire!" },
+            ].map(l => (
+              <div key={l.label} style={{ display: "flex", alignItems: "center", gap: 5 }}>
+                <div style={{ width: 14, height: 14, borderRadius: 4, background: l.bg }} />
+                <span style={{ fontSize: 10, color: "#94a3b8" }}>{l.label}</span>
+              </div>
+            ))}
+          </div>
+          <div style={{ marginTop: 10, padding: "8px 12px", borderRadius: 10, background: "rgba(249,115,22,0.08)", border: "1px solid rgba(249,115,22,0.2)", textAlign: "center" as const }}>
+            <span style={{ fontSize: 11, color: "#f97316", fontWeight: 600 }}>👆 Tap any red square → see what you studied!</span>
+          </div>
+        </div>
+      ),
+      color: "#f97316",
+    },
+    {
+      icon: "📅",
+      iconGlow: "#22c55e",
+      title: "Monday",
+      titleHighlight: "Promotions",
+      sub: "Every week is a fresh battle",
+      desc: "Every Monday your weekly performance is judged. Top 3 in your league get PROMOTED to the next Nen type. Bottom 3 get demoted. Middle stays. Your streak and revision rate decide everything.",
+      visual: (
+        <div style={{ margin: "16px 0" }}>
+          {[
+            { label: "Top 3 this week", action: "⬆️ PROMOTED", color: "#22c55e" },
+            { label: "Middle of league", action: "➡️ STAYS", color: "#fbbf24" },
+            { label: "Bottom 3 this week", action: "⬇️ DEMOTED", color: "#ff2254" },
+          ].map(s => (
+            <div key={s.label} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 12px", borderRadius: 10, background: `${s.color}10`, border: `1px solid ${s.color}25`, marginBottom: 7 }}>
+              <span style={{ fontSize: 12, color: "#94a3b8" }}>{s.label}</span>
+              <span style={{ fontSize: 12, fontWeight: 800, color: s.color }}>{s.action}</span>
+            </div>
+          ))}
+          <div style={{ textAlign: "center" as const, marginTop: 8 }}>
+            <span style={{ fontSize: 11, color: "#64748b" }}>Resets every Monday — always a chance to climb 🔄</span>
+          </div>
+        </div>
+      ),
+      color: "#22c55e",
+    },
+    {
+      icon: "♾️",
+      iconGlow: "#00d4ff",
+      title: "Nen Leagues —",
+      titleHighlight: "Your Power!",
+      sub: "Based on Hunter x Hunter Nen types",
+      desc: "Your league is determined by total XP earned. Start as Enhancer 💪 and grind to Specialist ♾️. Leagues are intentionally hard to climb — Specialist requires 40,000 XP. Only legends get there.",
+      visual: (
+        <div style={{ margin: "8px 0", display: "flex", flexDirection: "column", gap: 4 }}>
+          {NEN_LEAGUES.map((l, i) => (
+            <div key={l.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "5px 10px", borderRadius: 8, background: `${l.color}12`, border: `1px solid ${l.color}33`, opacity: 0.5 + i * 0.1 }}>
+              <span style={{ fontSize: 14 }}>{l.icon}</span>
+              <span style={{ fontSize: 11, color: l.color, fontWeight: 700, flex: 1 }}>{l.name}</span>
+              <span style={{ fontSize: 10, color: "#64748b" }}>{l.minXP.toLocaleString()}+ XP</span>
+            </div>
+          ))}
+        </div>
+      ),
+      color: "#00d4ff",
     },
     {
       icon: "🚀",
@@ -707,13 +931,13 @@ function WelcomePage({ onDone }: { onDone: () => void }) {
       title: "You're",
       titleHighlight: "Ready!",
       sub: "Your journey starts now",
-      desc: "Log 3 mistakes a day to build your streak 🔥. Master every error, climb the leaderboard, and become the version of yourself that never repeats mistakes.",
+      desc: "Log mistakes daily to build your streak 🔥. Revise them to climb the Growth Board 📈. Show up every day to dominate the Consistency Board 🏆. Become the student who never repeats mistakes.",
       visual: (
         <div style={{ textAlign: "center", margin: "20px 0" }}>
-          <div style={{ fontSize: 64, marginBottom: 12, animation: "spinOnce 1s ease-out" }}>🚀</div>
-          <div style={{ display: "flex", justifyContent: "center", gap: 10, flexWrap: "wrap" as const }}>
-            {["Log daily 📝", "Review smart 🔁", "Rank up 🏆", "Never repeat ♾️"].map(t => (
-              <div key={t} style={{ padding: "6px 14px", borderRadius: 20, background: "rgba(34,197,94,0.12)", border: "1px solid rgba(34,197,94,0.3)", fontSize: 12, color: "#22c55e", fontWeight: 600 }}>{t}</div>
+          <div style={{ fontSize: 60, marginBottom: 16, animation: "spinOnce 1s ease-out" }}>🚀</div>
+          <div style={{ display: "flex", justifyContent: "center", gap: 8, flexWrap: "wrap" as const }}>
+            {["Log daily 📝", "Revise smart 🔁", "Rank up 🏆", "Monday promo 📅", "Stay private 🔒"].map(t => (
+              <div key={t} style={{ padding: "6px 12px", borderRadius: 20, background: "rgba(34,197,94,0.12)", border: "1px solid rgba(34,197,94,0.3)", fontSize: 11, color: "#22c55e", fontWeight: 600 }}>{t}</div>
             ))}
           </div>
         </div>
@@ -1773,145 +1997,384 @@ function AnimeCollection({ userId, onEntryAdded }: { userId:string; onEntryAdded
 
 // ─── LEADERBOARD (with avatars) ───────────────────────────────────────────────
 
+// ─── ANIMATED COUNTER ────────────────────────────────────────────────────────
+function AnimatedCounter({ target, duration = 1200 }: { target: number; duration?: number }) {
+  const [count, setCount] = useState(0);
+  useEffect(() => {
+    if (target === 0) { setCount(0); return; }
+    const start = Date.now();
+    const tick = () => {
+      const elapsed = Date.now() - start;
+      const progress = Math.min(elapsed / duration, 1);
+      const eased = 1 - Math.pow(1 - progress, 3);
+      setCount(Math.round(eased * target));
+      if (progress < 1) requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  }, [target, duration]);
+  return <>{count}</>;
+}
+
+// ─── MINI PROGRESS BAR ───────────────────────────────────────────────────────
+function MiniBar({ value, max, color }: { value: number; max: number; color: string }) {
+  const pct = max > 0 ? Math.min(100, (value / max) * 100) : 0;
+  return (
+    <div style={{ height: 4, background: "rgba(255,255,255,0.06)", borderRadius: 3, overflow: "hidden", flex: 1 }}>
+      <div style={{ height: "100%", width: `${pct}%`, background: color, borderRadius: 3, transition: "width 1s ease" }} />
+    </div>
+  );
+}
+
+// ─── HELPERS ─────────────────────────────────────────────────────────────────
+function isUserInactive(l: any): boolean {
+  if (!l.lastActive) return (l.streak ?? 0) === 0 && (l.totalErrors ?? 0) === 0;
+  const diffDays = (Date.now() - new Date(l.lastActive).getTime()) / 86400000;
+  return diffDays >= 3;
+}
+
+function getStreakColor(s: number) { return s === 0 ? "#64748b" : s < 7 ? "#f97316" : "#ffd700"; }
+function getRevColor(r: number)    { return r === 0 ? "#ff2254" : r <= 2 ? "#fbbf24" : "#22c55e"; }
+
+// Compute "days active" from totalErrors as a rough proxy (capped estimate)
+function getDaysActive(l: any): number {
+  // Each day a student might log 1-3 errors. rough = errors / 1.5
+  return Math.min(l.streak ?? 0, Math.round((l.totalErrors ?? 0) / 1.5));
+}
+
+// Revision completion % = repeatedMistakes / max(totalErrors,1) * 100
+function getRevisionPct(l: any): number {
+  const errors = l.totalErrors ?? 0;
+  const repeats = l.repeatedMistakes ?? 0;
+  if (errors === 0) return 0;
+  return Math.min(100, Math.round((repeats / errors) * 100));
+}
+
+// Subjects covered — stored as a comma-joined string or array in leaderboard entry
+function getSubjects(l: any): string[] {
+  if (Array.isArray(l.subjects)) return l.subjects.slice(0, 4);
+  if (typeof l.subjects === "string" && l.subjects) return l.subjects.split(",").slice(0, 4);
+  // fallback: guess from subjectBreakdown keys if present
+  if (l.subjectBreakdown && typeof l.subjectBreakdown === "object") return Object.keys(l.subjectBreakdown).slice(0, 4);
+  return [];
+}
+
+const SUBJECT_BADGE_COLORS: Record<string, string> = {
+  Physics: "#00d4ff", Math: "#ff2254", Chemistry: "#22c55e", Other: "#f97316",
+  Biology: "#a78bfa", English: "#fbbf24", History: "#fb923c",
+};
+
+// ─── LEADERBOARD CARD (shared between both boards) ────────────────────────────
+function LBCard({ l, rank, isMe, profile, boardType, maxVal }: any) {
+  const RANK_COLORS = ["#ffd700","#c0c0c0","#cd7f32"];
+  const MEDALS = ["🥇","🥈","🥉"];
+  const isTop3 = rank <= 3;
+  const rankColor = isTop3 ? RANK_COLORS[rank-1] : (isMe ? "#a78bfa" : "#475569");
+  const glowColor = isTop3 ? RANK_COLORS[rank-1] : "transparent";
+  const uid = l.userId ?? l.id;
+  const name = profile?.displayName || l.displayName || "Warrior";
+  const avatarKey = profile?.avatar || "av_luffy";
+  const photoURL = profile?.photoURL || null;
+  const inactive = isUserInactive(l);
+  const onFire = (l.streak ?? 0) >= 7;
+
+  // Board-specific primary value
+  const streak = l.streak ?? 0;
+  const revPct = getRevisionPct(l);
+  const daysActive = getDaysActive(l);
+  const subjects = getSubjects(l);
+
+  const primaryVal   = boardType === "consistency" ? streak      : revPct;
+  const primaryLabel = boardType === "consistency" ? "day streak" : "% revised";
+  const primaryColor = boardType === "consistency" ? getStreakColor(streak) : getRevColor(l.repeatedMistakes ?? 0);
+
+  return (
+    <div style={{
+      position: "relative",
+      padding: isTop3 ? "16px 14px" : "11px 14px",
+      borderRadius: isTop3 ? 18 : 13,
+      display: "flex", alignItems: "center", gap: 12,
+      background: isMe
+        ? "linear-gradient(135deg,rgba(123,97,255,0.2),rgba(0,212,255,0.1))"
+        : isTop3 ? `linear-gradient(135deg,${rankColor}12,${rankColor}04)` : "rgba(255,255,255,0.03)",
+      border: isMe ? "2px solid rgba(167,139,250,0.7)"
+              : isTop3 ? `2px solid ${rankColor}` : "1px solid rgba(255,255,255,0.06)",
+      boxShadow: isMe ? "0 0 24px rgba(123,97,255,0.3),0 0 48px rgba(0,212,255,0.1)"
+               : isTop3 ? `0 0 18px ${glowColor}55` : "none",
+      opacity: inactive ? 0.72 : 1,
+      transition: "all 0.3s ease",
+      animation: isTop3 ? `shimmerBorder${rank-1} 2.5s ease-in-out infinite alternate` : "none",
+    }}>
+
+      {/* Shimmer sweep on top3 */}
+      {isTop3 && (
+        <div style={{ position:"absolute", inset:0, borderRadius:18, pointerEvents:"none", overflow:"hidden" }}>
+          <div style={{ position:"absolute", inset:0, background:`linear-gradient(120deg,transparent 30%,${rankColor}0e 50%,transparent 70%)`, animation:`shimmerSlide 3s ease-in-out ${(rank-1)*0.5}s infinite` }} />
+        </div>
+      )}
+
+      {/* Crown for #1 */}
+      {rank === 1 && (
+        <div style={{ position:"absolute", top:-20, left:"50%", transform:"translateX(-50%)", fontSize:20, animation:"crownFloat 1.5s ease-in-out infinite alternate", zIndex:10, pointerEvents:"none" }}>👑</div>
+      )}
+
+      {/* Rank */}
+      <div style={{ minWidth: isTop3 ? 44 : 36, textAlign:"center", flexShrink:0 }}>
+        {isTop3
+          ? <div style={{ fontSize:28, textShadow:`0 0 16px ${rankColor}` }}>{MEDALS[rank-1]}<div style={{ fontSize:10, color:rankColor, fontWeight:700 }}>#{rank}</div></div>
+          : <div style={{ fontSize:15, fontWeight:800, color:rankColor, fontFamily:"'Bebas Neue',cursive", textShadow: isMe ? "0 0 10px rgba(167,139,250,0.5)" : "none" }}>#{rank}</div>
+        }
+      </div>
+
+      {/* Avatar */}
+      <div style={{
+        flexShrink:0, borderRadius:"50%", overflow:"hidden",
+        width: isTop3 ? 52 : 42, height: isTop3 ? 52 : 42,
+        border: `${isTop3 ? 3 : 2}px solid ${isMe ? "rgba(167,139,250,0.7)" : isTop3 ? rankColor : "rgba(255,255,255,0.1)"}`,
+        boxShadow: isTop3 ? `0 0 14px ${glowColor}88` : isMe ? "0 0 10px rgba(167,139,250,0.4)" : "none",
+        position:"relative",
+      }}>
+        <AvatarDisplay avatar={avatarKey} photoURL={photoURL} displayName={name} size={isTop3 ? 52 : 42} />
+        {inactive && <div style={{ position:"absolute", inset:0, background:"rgba(0,0,0,0.55)", borderRadius:"50%", display:"flex", alignItems:"center", justifyContent:"center", fontSize:14 }}>💀</div>}
+      </div>
+
+      {/* Main info */}
+      <div style={{ flex:1, minWidth:0 }}>
+        {/* Name row */}
+        <div style={{ display:"flex", alignItems:"center", gap:5, flexWrap:"wrap" as const, marginBottom:3 }}>
+          <span style={{
+            fontSize: isTop3 ? 15 : 13, fontWeight:700,
+            color: isMe ? "#c4b5fd" : "#e2e8f0",
+            textShadow: isMe ? "0 0 10px rgba(167,139,250,0.5)" : "none",
+            maxWidth:100, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" as const,
+          }}>{name}{isMe ? " (You)" : ""}</span>
+          {isTop3 && <span style={{ fontSize:8, padding:"2px 6px", borderRadius:7, background:`${rankColor}22`, color:rankColor, fontWeight:800, border:`1px solid ${rankColor}44` }}>TOP {rank}</span>}
+          {inactive && <span style={{ fontSize:8, padding:"2px 5px", borderRadius:6, background:"rgba(100,116,139,0.2)", color:"#64748b", fontWeight:700 }}>💀 Inactive</span>}
+          {onFire && !inactive && <span style={{ fontSize:8, padding:"2px 5px", borderRadius:6, background:"rgba(251,146,60,0.18)", color:"#fb923c", fontWeight:700 }}>🔥 On Fire</span>}
+        </div>
+
+        {/* Private stats row — NO error count shown */}
+        <div style={{ display:"flex", gap:10, flexWrap:"wrap" as const, alignItems:"center", marginBottom:4 }}>
+          <span style={{ fontSize:11, color:getStreakColor(streak), fontWeight:600 }}>🔥 <AnimatedCounter target={streak} />d streak</span>
+          <span style={{ fontSize:11, color:"#64748b" }}>📅 <AnimatedCounter target={daysActive} /> days active</span>
+          <span style={{ fontSize:11, color:getRevColor(l.repeatedMistakes ?? 0), fontWeight:600 }}>♻️ <AnimatedCounter target={revPct} />% revised</span>
+        </div>
+
+        {/* Subjects covered */}
+        {subjects.length > 0 && (
+          <div style={{ display:"flex", gap:4, flexWrap:"wrap" as const, marginBottom:4 }}>
+            {subjects.map((s:string) => (
+              <span key={s} style={{ fontSize:8, padding:"1px 6px", borderRadius:5, background:`${SUBJECT_BADGE_COLORS[s] ?? "#64748b"}18`, color:SUBJECT_BADGE_COLORS[s] ?? "#94a3b8", border:`1px solid ${SUBJECT_BADGE_COLORS[s] ?? "#64748b"}33`, fontWeight:600 }}>{s}</span>
+            ))}
+          </div>
+        )}
+
+        {/* Progress bar toward primary metric */}
+        <div style={{ display:"flex", alignItems:"center", gap:6 }}>
+          <MiniBar value={primaryVal} max={maxVal} color={primaryColor} />
+          <span style={{ fontSize:9, color:primaryColor, fontWeight:700, flexShrink:0 }}><AnimatedCounter target={primaryVal} /> {primaryLabel}</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── CONSISTENCY BOARD ────────────────────────────────────────────────────────
+function ConsistencyBoard({ leaders, profiles, currentUserId, loading, activeLeague }: any) {
+  const inLeague = leaders.filter((l:any) => getNenLeague(l.totalXP ?? 0).id === activeLeague);
+  // Sort: streak DESC, inactive penalty, then daysActive
+  const sorted = [...inLeague].sort((a, b) => {
+    const aInactive = isUserInactive(a), bInactive = isUserInactive(b);
+    if (aInactive !== bInactive) return aInactive ? 1 : -1;
+    const sa = a.streak ?? 0, sb = b.streak ?? 0;
+    if (sa !== sb) return sb - sa;
+    return getDaysActive(b) - getDaysActive(a);
+  });
+  const maxStreak = Math.max(1, ...sorted.map((l:any) => l.streak ?? 0));
+  const myRank = sorted.findIndex((l:any) => (l.userId ?? l.id) === currentUserId) + 1;
+
+  if (loading) return <div style={{ textAlign:"center", padding:50, color:"#475569" }}>⏳ Loading warriors...</div>;
+  if (sorted.length === 0) return <div style={{ textAlign:"center", padding:50, color:"#475569", fontSize:13 }}>No warriors in this league yet.</div>;
+
+  return (
+    <div>
+      {/* My rank pill */}
+      {myRank > 0 && (
+        <div style={{ marginBottom:14, padding:"8px 14px", borderRadius:10, background:"rgba(249,115,22,0.1)", border:"1px solid rgba(249,115,22,0.25)", display:"inline-flex", alignItems:"center", gap:8 }}>
+          <span style={{ fontSize:12 }}>🔥</span>
+          <span style={{ fontSize:12, color:"#fb923c", fontWeight:700 }}>Your consistency rank: <span style={{ color:"#ffd700" }}>#{myRank}</span></span>
+        </div>
+      )}
+      <div style={{ display:"flex", flexDirection:"column", gap:9 }}>
+        {sorted.map((l:any, idx:number) => {
+          const uid = l.userId ?? l.id;
+          return <LBCard key={uid} l={l} rank={idx+1} isMe={uid===currentUserId} profile={profiles[uid]} boardType="consistency" maxVal={maxStreak} />;
+        })}
+      </div>
+      {sorted.length > 5 && (
+        <div style={{ marginTop:10, fontSize:11, color:"#ff2254", fontWeight:700 }}>⬇ DEMOTION ZONE (Bottom 3)</div>
+      )}
+    </div>
+  );
+}
+
+// ─── GROWTH BOARD ────────────────────────────────────────────────────────────
+function GrowthBoard({ leaders, profiles, currentUserId, loading, activeLeague }: any) {
+  const inLeague = leaders.filter((l:any) => getNenLeague(l.totalXP ?? 0).id === activeLeague);
+  // Sort: revisionPct DESC, then daysActive, then streak
+  const sorted = [...inLeague].sort((a, b) => {
+    const aInactive = isUserInactive(a), bInactive = isUserInactive(b);
+    if (aInactive !== bInactive) return aInactive ? 1 : -1;
+    const pa = getRevisionPct(a), pb = getRevisionPct(b);
+    if (pa !== pb) return pb - pa;
+    return getDaysActive(b) - getDaysActive(a);
+  });
+  const maxPct = 100;
+  const myRank = sorted.findIndex((l:any) => (l.userId ?? l.id) === currentUserId) + 1;
+
+  if (loading) return <div style={{ textAlign:"center", padding:50, color:"#475569" }}>⏳ Loading warriors...</div>;
+  if (sorted.length === 0) return <div style={{ textAlign:"center", padding:50, color:"#475569", fontSize:13 }}>No warriors in this league yet.</div>;
+
+  return (
+    <div>
+      {myRank > 0 && (
+        <div style={{ marginBottom:14, padding:"8px 14px", borderRadius:10, background:"rgba(34,197,94,0.1)", border:"1px solid rgba(34,197,94,0.25)", display:"inline-flex", alignItems:"center", gap:8 }}>
+          <span style={{ fontSize:12 }}>📈</span>
+          <span style={{ fontSize:12, color:"#22c55e", fontWeight:700 }}>Your growth rank: <span style={{ color:"#ffd700" }}>#{myRank}</span></span>
+        </div>
+      )}
+      <div style={{ display:"flex", flexDirection:"column", gap:9 }}>
+        {sorted.map((l:any, idx:number) => {
+          const uid = l.userId ?? l.id;
+          return <LBCard key={uid} l={l} rank={idx+1} isMe={uid===currentUserId} profile={profiles[uid]} boardType="growth" maxVal={maxPct} />;
+        })}
+      </div>
+      {sorted.length > 5 && (
+        <div style={{ marginTop:10, fontSize:11, color:"#ff2254", fontWeight:700 }}>⬇ DEMOTION ZONE (Bottom 3)</div>
+      )}
+    </div>
+  );
+}
+
+// ─── MAIN LEADERBOARD ─────────────────────────────────────────────────────────
 function Leaderboard({ currentUserId }: { currentUserId: string }) {
   const [leaders, setLeaders] = useState<any[]>([]);
   const [profiles, setProfiles] = useState<Record<string, any>>({});
   const [loading, setLoading] = useState(true);
   const [activeLeague, setActiveLeague] = useState("enhancer");
+  const [activeBoard, setActiveBoard] = useState<"consistency"|"growth">("consistency");
+  const [visible, setVisible] = useState(false);
 
   useEffect(() => {
     getLeaderboard().then(async data => {
       setLeaders(data);
       const pm: Record<string, any> = {};
       await Promise.all(data.map(async (l: any) => {
-        try { const snap = await getDoc(doc(db, "userProfiles", l.userId ?? l.id)); if (snap.exists()) pm[l.userId ?? l.id] = snap.data(); } catch {}
+        try {
+          const snap = await getDoc(doc(db, "userProfiles", l.userId ?? l.id));
+          if (snap.exists()) pm[l.userId ?? l.id] = snap.data();
+        } catch {}
       }));
-      setProfiles(pm); setLoading(false);
+      setProfiles(pm);
+      setLoading(false);
+      setTimeout(() => setVisible(true), 50);
     });
   }, []);
 
-  const MEDALS = ["🥇", "🥈", "🥉"], RANK_COLORS = ["#ffd700", "#c0c0c0", "#cd7f32"];
-  const leagueLeaders = leaders.filter(l => getNenLeague(l.totalXP ?? 0).id === activeLeague);
   const myEntry = leaders.find(l => (l.userId ?? l.id) === currentUserId);
   const myNen = myEntry ? getNenLeague(myEntry.totalXP ?? 0) : NEN_LEAGUES[0];
-  const myRank = leagueLeaders.findIndex(l => (l.userId ?? l.id) === currentUserId) + 1;
   const nextNen = NEN_LEAGUES[NEN_LEAGUES.findIndex(l => l.id === myNen.id) + 1];
   const activeLg = NEN_LEAGUES.find(l => l.id === activeLeague) ?? NEN_LEAGUES[0];
 
   return (
-    <div style={{ paddingBottom: 40 }}>
+    <div style={{ paddingBottom:40, opacity:visible?1:0, transition:"opacity 0.6s ease" }}>
+      <style>{`
+        @keyframes crownFloat { from{transform:translateX(-50%) translateY(0) rotate(-5deg)} to{transform:translateX(-50%) translateY(-6px) rotate(5deg)} }
+        @keyframes shimmerSlide { 0%{transform:translateX(-100%)} 100%{transform:translateX(200%)} }
+        @keyframes shimmerBorder0 { 0%{box-shadow:0 0 20px rgba(255,215,0,0.35)} 100%{box-shadow:0 0 36px rgba(255,215,0,0.65),0 0 60px rgba(255,215,0,0.25)} }
+        @keyframes shimmerBorder1 { 0%{box-shadow:0 0 14px rgba(192,192,192,0.25)} 100%{box-shadow:0 0 28px rgba(192,192,192,0.5)} }
+        @keyframes shimmerBorder2 { 0%{box-shadow:0 0 14px rgba(205,127,50,0.25)} 100%{box-shadow:0 0 28px rgba(205,127,50,0.5)} }
+        @keyframes glowGreen { 0%,100%{text-shadow:0 0 8px #22c55e44} 50%{text-shadow:0 0 18px #22c55e,0 0 36px #22c55e55} }
+      `}</style>
+
+      {/* My Nen banner */}
       {myEntry && (
-        <div style={{ padding: "14px 16px", borderRadius: 14, marginBottom: 20, background: `${myNen.color}12`, border: `1px solid ${myNen.color}30`, display: "flex", alignItems: "center", gap: 14 }}>
-          <span style={{ fontSize: 36 }}>{myNen.icon}</span>
-          <div style={{ flex: 1 }}>
-            <div style={{ fontSize: 16, fontWeight: 800, color: myNen.color, fontFamily: "'Bebas Neue',cursive", letterSpacing: 2 }}>YOU ARE {myNen.name.toUpperCase()} TYPE</div>
-            <div style={{ fontSize: 12, color: "#94a3b8", marginTop: 2, fontStyle: "italic" }}>"{myNen.quote}"</div>
-            <div style={{ fontSize: 11, color: "#64748b", marginTop: 2 }}>— {myNen.character}</div>
+        <div style={{ padding:"12px 16px", borderRadius:14, marginBottom:18, background:`${myNen.color}12`, border:`1px solid ${myNen.color}30`, display:"flex", alignItems:"center", gap:14, flexWrap:"wrap" as const }}>
+          <span style={{ fontSize:32 }}>{myNen.icon}</span>
+          <div style={{ flex:1, minWidth:120 }}>
+            <div style={{ fontSize:15, fontWeight:800, color:myNen.color, fontFamily:"'Bebas Neue',cursive", letterSpacing:2 }}>YOU ARE {myNen.name.toUpperCase()} TYPE</div>
+            <div style={{ fontSize:11, color:"#94a3b8", marginTop:2, fontStyle:"italic" }}>"{myNen.quote}"</div>
           </div>
-          {nextNen && <div style={{ textAlign: "right", flexShrink: 0 }}><div style={{ fontSize: 10, color: "#64748b" }}>next:</div><div style={{ fontSize: 18 }}>{nextNen.icon}</div><div style={{ fontSize: 10, color: nextNen.color, fontWeight: 700 }}>{nextNen.name}</div></div>}
+          {nextNen && <div style={{ textAlign:"right", flexShrink:0 }}><div style={{ fontSize:9, color:"#64748b" }}>next:</div><div style={{ fontSize:16 }}>{nextNen.icon}</div><div style={{ fontSize:9, color:nextNen.color, fontWeight:700 }}>{nextNen.name}</div></div>}
         </div>
       )}
 
-      <div style={{ marginBottom: 16 }}>
-        <div style={{ fontSize: 11, color: "#64748b", letterSpacing: 1, marginBottom: 10 }}>⚡ SELECT NEN LEAGUE DIVISION</div>
-        <div style={{ display: "flex", gap: 6, overflowX: "auto", paddingBottom: 6 }}>
+      {/* Privacy notice */}
+      <div style={{ marginBottom:16, padding:"8px 14px", borderRadius:10, background:"rgba(0,212,255,0.07)", border:"1px solid rgba(0,212,255,0.18)", display:"flex", alignItems:"center", gap:8 }}>
+        <span style={{ fontSize:14 }}>🔒</span>
+        <span style={{ fontSize:11, color:"#94a3b8" }}>Private board — error counts are <span style={{ color:"#00d4ff", fontWeight:700 }}>never shown</span>. Only streak, days active, and revision % are visible.</span>
+      </div>
+
+      {/* League selector */}
+      <div style={{ marginBottom:14 }}>
+        <div style={{ fontSize:10, color:"#64748b", letterSpacing:1, marginBottom:8 }}>⚡ NEN LEAGUE</div>
+        <div style={{ display:"flex", gap:6, overflowX:"auto" as const, paddingBottom:4 }}>
           {NEN_LEAGUES.map(league => {
             const count = leaders.filter(l => getNenLeague(l.totalXP ?? 0).id === league.id).length;
             const isActive = activeLeague === league.id;
             return (
-              <button key={league.id} onClick={() => setActiveLeague(league.id)} style={{ flexShrink: 0, padding: "8px 14px", borderRadius: 12, border: `1px solid ${isActive ? league.color : "rgba(255,255,255,0.08)"}`, background: isActive ? `${league.color}18` : "rgba(255,255,255,0.03)", cursor: "pointer", fontFamily: "inherit", display: "flex", flexDirection: "column", alignItems: "center", gap: 3, minWidth: 72 }}>
-                <span style={{ fontSize: 20 }}>{league.icon}</span>
-                <span style={{ fontSize: 10, fontWeight: 700, color: isActive ? league.color : "#475569" }}>{league.name}</span>
-                <span style={{ fontSize: 9, color: "#334155" }}>{count} warriors</span>
+              <button key={league.id} onClick={() => setActiveLeague(league.id)} style={{ flexShrink:0, padding:"7px 12px", borderRadius:10, border:`1px solid ${isActive ? league.color : "rgba(255,255,255,0.08)"}`, background: isActive ? `${league.color}18` : "rgba(255,255,255,0.03)", cursor:"pointer", fontFamily:"inherit", display:"flex", flexDirection:"column", alignItems:"center", gap:2, minWidth:62, transition:"all 0.2s" }}>
+                <span style={{ fontSize:18 }}>{league.icon}</span>
+                <span style={{ fontSize:9, fontWeight:700, color: isActive ? league.color : "#475569" }}>{league.name}</span>
+                <span style={{ fontSize:8, color:"#334155" }}>{count}</span>
               </button>
             );
           })}
         </div>
       </div>
 
-      <div style={{ padding: "16px", borderRadius: 14, marginBottom: 16, background: `linear-gradient(135deg,${activeLg.color}15,transparent)`, border: `1px solid ${activeLg.color}30` }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 8 }}>
-          <span style={{ fontSize: 32 }}>{activeLg.icon}</span>
-          <div>
-            <div style={{ fontSize: 20, fontWeight: 900, color: activeLg.color, fontFamily: "'Bebas Neue',cursive", letterSpacing: 2 }}>{activeLg.name.toUpperCase()} LEAGUE</div>
-            <div style={{ fontSize: 12, color: "#94a3b8" }}>{activeLg.desc}</div>
+      {/* Board toggle */}
+      <div style={{ display:"flex", gap:8, marginBottom:20 }}>
+        {([
+          { id:"consistency", icon:"🏆", label:"Consistency Board", sub:"ranked by daily streak", color:"#f97316", glow:"rgba(249,115,22,0.4)" },
+          { id:"growth",      icon:"📈", label:"Growth Board",      sub:"ranked by revision %",   color:"#22c55e", glow:"rgba(34,197,94,0.4)" },
+        ] as const).map(board => {
+          const isActive = activeBoard === board.id;
+          return (
+            <button key={board.id} onClick={() => setActiveBoard(board.id)} style={{
+              flex:1, padding:"14px 12px", borderRadius:14, border:`2px solid ${isActive ? board.color : "rgba(255,255,255,0.08)"}`,
+              background: isActive ? `${board.color}15` : "rgba(255,255,255,0.03)",
+              boxShadow: isActive ? `0 0 20px ${board.glow}` : "none",
+              cursor:"pointer", fontFamily:"inherit", transition:"all 0.25s", textAlign:"center" as const,
+            }}>
+              <div style={{ fontSize:24, marginBottom:4 }}>{board.icon}</div>
+              <div style={{ fontSize:12, fontWeight:800, color: isActive ? board.color : "#64748b", letterSpacing:0.5 }}>{board.label}</div>
+              <div style={{ fontSize:10, color: isActive ? `${board.color}cc` : "#334155", marginTop:2 }}>{board.sub}</div>
+            </button>
+          );
+        })}
+      </div>
+
+      {/* League info strip */}
+      <div style={{ padding:"12px 14px", borderRadius:12, marginBottom:16, background:`linear-gradient(135deg,${activeLg.color}12,transparent)`, border:`1px solid ${activeLg.color}28`, display:"flex", alignItems:"center", gap:10, flexWrap:"wrap" as const }}>
+        <span style={{ fontSize:24 }}>{activeLg.icon}</span>
+        <div style={{ flex:1 }}>
+          <span style={{ fontSize:14, fontWeight:800, color:activeLg.color, fontFamily:"'Bebas Neue',cursive", letterSpacing:2 }}>{activeLg.name.toUpperCase()} LEAGUE</span>
+          <div style={{ display:"flex", gap:8, marginTop:4, flexWrap:"wrap" as const }}>
+            <span style={{ fontSize:10, padding:"2px 8px", borderRadius:8, background:"rgba(34,197,94,0.15)", color:"#22c55e", fontWeight:700 }}>⬆ Top 3 promote</span>
+            <span style={{ fontSize:10, padding:"2px 8px", borderRadius:8, background:"rgba(255,34,84,0.15)", color:"#ff2254", fontWeight:700 }}>⬇ Bottom 3 demote</span>
           </div>
         </div>
-        <div style={{ display: "flex", gap: 10, flexWrap: "wrap" as const }}>
-          <span style={{ fontSize: 11, padding: "3px 10px", borderRadius: 10, background: "rgba(34,197,94,0.15)", color: "#22c55e", fontWeight: 700 }}>⬆ Top 3 promote next week</span>
-          <span style={{ fontSize: 11, padding: "3px 10px", borderRadius: 10, background: "rgba(255,34,84,0.15)", color: "#ff2254", fontWeight: 700 }}>⬇ Bottom 3 demote</span>
+        <div style={{ textAlign:"right", fontSize:10, color:"#64748b" }}>
+          <div style={{ fontSize:18, fontWeight:800, color:"#00d4ff", fontFamily:"'Bebas Neue',cursive" }}>{leaders.filter(l => getNenLeague(l.totalXP ?? 0).id === activeLeague).length}</div>
+          warriors
         </div>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 10, marginBottom: 20 }}>
-        {[{ icon: "👥", label: "In League", value: leagueLeaders.length, color: "#00d4ff" }, { icon: "🏅", label: "My Rank", value: myRank > 0 ? `#${myRank}` : "—", color: "#a855f7" }, { icon: "⬆", label: "Promote at", value: "Top 3", color: "#22c55e" }].map(s => (
-          <div key={s.label} style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 12, padding: "12px 10px", textAlign: "center" }}>
-            <div style={{ fontSize: 18 }}>{s.icon}</div>
-            <div style={{ fontSize: 20, fontWeight: 800, color: s.color, fontFamily: "'Bebas Neue',cursive" }}>{s.value}</div>
-            <div style={{ fontSize: 10, color: "#64748b" }}>{s.label}</div>
-          </div>
-        ))}
-      </div>
-
-      {loading ? (
-        <div style={{ textAlign: "center", padding: 60, color: "#475569" }}>Loading warriors...</div>
-      ) : leagueLeaders.length === 0 ? (
-        <div style={{ textAlign: "center", padding: 60 }}>
-          <div style={{ fontSize: 48, marginBottom: 12 }}>{activeLg.icon}</div>
-          <div style={{ fontSize: 16, color: "#64748b" }}>No {activeLg.name} warriors yet!</div>
-          <div style={{ fontSize: 13, color: "#475569", marginTop: 8 }}>Earn {activeLg.minXP}+ XP to join this league.</div>
-        </div>
-      ) : (
-        <>
-          <div style={{ fontSize: 11, color: "#22c55e", fontWeight: 700, letterSpacing: 1, marginBottom: 10 }}>⬆ PROMOTION ZONE (Top 3)</div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            {leagueLeaders.map((l: any, i: number) => {
-              const uid = l.userId ?? l.id;
-              const profile = profiles[uid];
-              const name = profile?.displayName || l.displayName || "Warrior";
-              const isMe = uid === currentUserId;
-              const isMedal = i < 3;
-              const isDemotion = i >= leagueLeaders.length - 3 && leagueLeaders.length > 5;
-              // Avatar: get from profile
-              const avatarKey = profile?.avatar || "av_luffy";
-              const photoURL = profile?.photoURL || null;
-
-              return (
-                <div key={uid} style={{ padding: "14px 16px", borderRadius: 14, display: "flex", alignItems: "center", gap: 14, background: isMe ? "rgba(123,97,255,0.12)" : isMedal ? `${RANK_COLORS[i]}08` : "rgba(255,255,255,0.03)", border: isMe ? "1px solid rgba(123,97,255,0.35)" : isMedal ? `1px solid ${RANK_COLORS[i]}30` : "1px solid rgba(255,255,255,0.06)", position: "relative" as const }}>
-
-                  {/* Rank */}
-                  <div style={{ fontSize: isMedal ? 26 : 14, minWidth: 36, textAlign: "center", color: isMedal ? RANK_COLORS[i] : "#475569", fontWeight: 800, fontFamily: "'Bebas Neue',cursive", flexShrink: 0 }}>
-                    {isMedal ? MEDALS[i] : `#${i + 1}`}
-                  </div>
-
-                  {/* Avatar */}
-                  <div style={{ flexShrink: 0 }}>
-                    <AvatarDisplay avatar={avatarKey} photoURL={photoURL} displayName={name} size={40} />
-                  </div>
-
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" as const }}>
-                      <span style={{ fontSize: 15, fontWeight: 700, color: isMe ? "#a78bfa" : "#e2e8f0" }}>{name}{isMe ? " (You)" : ""}</span>
-                      {isMedal && <span style={{ fontSize: 9, padding: "2px 6px", borderRadius: 8, background: `${RANK_COLORS[i]}22`, color: RANK_COLORS[i], fontWeight: 700 }}>TOP {i + 1}</span>}
-                    </div>
-                    <div style={{ display: "flex", gap: 10, marginTop: 4, flexWrap: "wrap" as const }}>
-                      <span style={{ fontSize: 11, color: "#64748b" }}>📝 {l.totalErrors ?? 0} errors</span>
-                      <span style={{ fontSize: 11, color: "#ffd700" }}>🔥 {l.streak ?? 0}d</span>
-                      <span style={{ fontSize: 11, color: l.repeatedMistakes === 0 ? "#22c55e" : "#ff2254" }}>♻ {l.repeatedMistakes ?? 0} repeats</span>
-                    </div>
-                  </div>
-                  <div style={{ textAlign: "right", flexShrink: 0 }}>
-                    <div style={{ fontSize: 22, fontWeight: 800, color: l.repeatedMistakes === 0 ? "#22c55e" : "#ff2254", fontFamily: "'Bebas Neue',cursive" }}>{l.repeatedMistakes ?? 0}</div>
-                    <div style={{ fontSize: 9, color: "#64748b" }}>REPEATS</div>
-                  </div>
-                  {isDemotion && <div style={{ position: "absolute", right: 10, bottom: 2, fontSize: 9, color: "#ff2254", fontWeight: 700 }}>⬇ DEMOTION</div>}
-                </div>
-              );
-            })}
-          </div>
-          {leagueLeaders.length > 5 && <div style={{ fontSize: 11, color: "#ff2254", fontWeight: 700, letterSpacing: 1, marginTop: 8 }}>⬇ DEMOTION ZONE (Bottom 3)</div>}
-        </>
-      )}
+      {/* Active board */}
+      {activeBoard === "consistency"
+        ? <ConsistencyBoard leaders={leaders} profiles={profiles} currentUserId={currentUserId} loading={loading} activeLeague={activeLeague} />
+        : <GrowthBoard      leaders={leaders} profiles={profiles} currentUserId={currentUserId} loading={loading} activeLeague={activeLeague} />
+      }
     </div>
   );
 }
@@ -2201,6 +2664,121 @@ const SECONDARY_TABS = [
   { id:"ai",          label:"AI Hub", icon:"🤖", color:"#a855f7", glow:"rgba(168,85,247,0.5)" },
 ];
 
+// ─── RESPONSIVE NAV ───────────────────────────────────────────────────────────
+function useIsMobile() {
+  const [mobile, setMobile] = useState(typeof window !== "undefined" ? window.innerWidth < 768 : true);
+  useEffect(() => {
+    const fn = () => setMobile(window.innerWidth < 768);
+    window.addEventListener("resize", fn);
+    return () => window.removeEventListener("resize", fn);
+  }, []);
+  return mobile;
+}
+
+function useIsTablet() {
+  const [tablet, setTablet] = useState(typeof window !== "undefined" ? window.innerWidth >= 768 && window.innerWidth < 1100 : false);
+  useEffect(() => {
+    const fn = () => setTablet(window.innerWidth >= 768 && window.innerWidth < 1100);
+    window.addEventListener("resize", fn);
+    return () => window.removeEventListener("resize", fn);
+  }, []);
+  return tablet;
+}
+
+// Side nav for desktop/tablet
+function SideNav({ active, setActive }: { active:string; setActive:(t:string)=>void }) {
+  const allTabs = [...PRIMARY_TABS, ...SECONDARY_TABS];
+  const isTablet = useIsTablet();
+  const collapsed = isTablet; // tablets get icon-only side nav
+
+  return (
+    <nav style={{
+      position:"fixed", left:0, top:0, bottom:0, zIndex:101,
+      width: collapsed ? 68 : 200,
+      background:"rgba(3,5,12,0.97)", backdropFilter:"blur(28px)",
+      borderRight:"1px solid rgba(255,255,255,0.07)",
+      display:"flex", flexDirection:"column",
+      padding:"0 8px",
+      transition:"width 0.25s ease",
+      overflow:"hidden",
+    }}>
+      {/* Logo */}
+      <div style={{
+        padding: collapsed ? "20px 0 16px" : "20px 8px 16px",
+        borderBottom:"1px solid rgba(255,255,255,0.06)",
+        marginBottom:8,
+        display:"flex", alignItems:"center", justifyContent: collapsed ? "center" : "flex-start",
+        gap:10,
+      }}>
+        <span style={{ fontSize:22 }}>⚡</span>
+        {!collapsed && (
+          <span style={{
+            fontFamily:"'Bebas Neue',cursive", fontSize:18, letterSpacing:3,
+            background:"linear-gradient(135deg,#00d4ff,#ff2254)",
+            WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent",
+            whiteSpace:"nowrap" as const,
+          }}>ERRORVERSE</span>
+        )}
+      </div>
+
+      {/* Nav items */}
+      <div style={{ flex:1, display:"flex", flexDirection:"column", gap:4, overflowY:"auto" as const }}>
+        {allTabs.map(t => {
+          const isActive = active === t.id;
+          return (
+            <button key={t.id} onClick={() => setActive(t.id)} style={{
+              display:"flex", alignItems:"center",
+              gap: collapsed ? 0 : 12,
+              justifyContent: collapsed ? "center" : "flex-start",
+              padding: collapsed ? "12px 8px" : "11px 14px",
+              borderRadius:12, border:"none",
+              background: isActive ? `${t.color}18` : "transparent",
+              outline: isActive ? `1px solid ${t.color}40` : "1px solid transparent",
+              cursor:"pointer", fontFamily:"inherit",
+              transition:"all 0.2s",
+              position:"relative" as const,
+              width:"100%",
+            }}>
+              {/* Active indicator */}
+              {isActive && (
+                <div style={{
+                  position:"absolute", left:0, top:"50%", transform:"translateY(-50%)",
+                  width:3, height:28, borderRadius:"0 3px 3px 0",
+                  background:t.color,
+                  boxShadow:`0 0 12px ${t.glow}`,
+                }} />
+              )}
+              <span style={{
+                fontSize:20, lineHeight:1,
+                filter: isActive ? `drop-shadow(0 0 8px ${t.glow})` : "none",
+                transition:"filter 0.2s",
+                flexShrink:0,
+              }}>{t.icon}</span>
+              {!collapsed && (
+                <span style={{
+                  fontSize:13, fontWeight: isActive ? 700 : 400,
+                  color: isActive ? t.color : "#64748b",
+                  letterSpacing:0.3, whiteSpace:"nowrap" as const,
+                  transition:"color 0.15s",
+                }}>{t.label}</span>
+              )}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Bottom version tag */}
+      {!collapsed && (
+        <div style={{ padding:"12px 8px", borderTop:"1px solid rgba(255,255,255,0.05)", marginTop:8 }}>
+          <div style={{ fontSize:10, color:"#1e293b", letterSpacing:1 }}>ERRORVERSE v2.0</div>
+          <div style={{ fontSize:9, color:"#0f172a", marginTop:2 }}>Master your Mistakes.</div>
+        </div>
+      )}
+    </nav>
+  );
+}
+
+// Bottom nav for mobile (unchanged behavior, improved tap targets)
 function BottomNav({ active, setActive }: { active:string; setActive:(t:string)=>void }) {
   const [showMore, setShowMore] = useState(false);
   const allTabs = [...PRIMARY_TABS, ...SECONDARY_TABS];
@@ -2231,13 +2809,13 @@ function BottomNav({ active, setActive }: { active:string; setActive:(t:string)=
               return (
                 <button key={t.id} onClick={() => { setActive(t.id); setShowMore(false); }} style={{
                   display:"flex", flexDirection:"column", alignItems:"center", gap:5,
-                  padding:"10px 18px", borderRadius:14, border:"none",
+                  padding:"12px 20px", borderRadius:14, border:"none",
                   background: isActive ? `${t.color}18` : "rgba(255,255,255,0.04)",
                   outline: isActive ? `1px solid ${t.color}44` : "1px solid rgba(255,255,255,0.06)",
                   cursor:"pointer", fontFamily:"inherit", transition:"all 0.2s",
                 }}>
                   <span style={{ fontSize:26, lineHeight:1, filter: isActive ? `drop-shadow(0 0 10px ${t.color})` : "none", transition:"filter 0.2s" }}>{t.icon}</span>
-                  <span style={{ fontSize:10, fontWeight: isActive ? 800 : 500, color: isActive ? t.color : "#64748b", letterSpacing:0.3 }}>{t.label}</span>
+                  <span style={{ fontSize:11, fontWeight: isActive ? 800 : 500, color: isActive ? t.color : "#64748b", letterSpacing:0.3 }}>{t.label}</span>
                 </button>
               );
             })}
@@ -2261,8 +2839,9 @@ function BottomNav({ active, setActive }: { active:string; setActive:(t:string)=
               justifyContent:"center", gap:3,
               border:"none", background:"transparent",
               cursor:"pointer", fontFamily:"inherit",
-              position:"relative", padding:"6px 2px 8px",
+              position:"relative", padding:"6px 2px 10px",
               transition:"all 0.15s",
+              WebkitTapHighlightColor:"transparent",
             }}>
               <div style={{
                 position:"absolute", top:0, left:"50%", transform:"translateX(-50%)",
@@ -2293,8 +2872,9 @@ function BottomNav({ active, setActive }: { active:string; setActive:(t:string)=
           justifyContent:"center", gap:3,
           border:"none", background:"transparent",
           cursor:"pointer", fontFamily:"inherit",
-          position:"relative", padding:"6px 2px 8px",
+          position:"relative", padding:"6px 2px 10px",
           transition:"all 0.15s",
+          WebkitTapHighlightColor:"transparent",
         }}>
           <div style={{
             position:"absolute", top:0, left:"50%", transform:"translateX(-50%)",
@@ -2304,7 +2884,6 @@ function BottomNav({ active, setActive }: { active:string; setActive:(t:string)=
             boxShadow: isSecondaryActive ? `0 2px 12px ${(activeTab as any)?.glow ?? "#64748b44"}` : "none",
             transition:"width 0.25s ease",
           }} />
-
           {isSecondaryActive ? (
             <>
               <span style={{ fontSize:24, lineHeight:1, filter: `drop-shadow(0 0 10px ${(activeTab as any)?.glow ?? "#64748b"})`, transform:"translateY(-1px)" }}>{activeTab?.icon}</span>
@@ -2319,6 +2898,88 @@ function BottomNav({ active, setActive }: { active:string; setActive:(t:string)=
         </button>
       </nav>
     </>
+  );
+}
+
+// ─── RESPONSIVE NAV WRAPPER ───────────────────────────────────────────────────
+function ResponsiveNav({ active, setActive }: { active:string; setActive:(t:string)=>void }) {
+  const isMobile = useIsMobile();
+  if (isMobile) return <BottomNav active={active} setActive={setActive} />;
+  return <SideNav active={active} setActive={setActive} />;
+}
+
+// ─── MAIN CONTENT AREA (responsive margin for side nav) ──────────────────────
+function MainContentArea({ activeTab, pt, user, displayName, userAvatar, userPhoto, xpData, streak, todayCount, quoteIdx, setShowCal, setShowInfo, setShowXPPanel, setShowBadges, setShowProfile, handleEntryAdded, handleXPGained, QUOTES }: any) {
+  const isMobile = useIsMobile();
+  const isTablet = useIsTablet();
+  const sideWidth = isMobile ? 0 : isTablet ? 68 : 200;
+  const bottomPad = isMobile ? 80 : 24;
+
+  return (
+    <div style={{
+      position:"relative", zIndex:1,
+      marginLeft: sideWidth,
+      minHeight:"100vh",
+      transition:"margin-left 0.25s ease",
+    }}>
+      <div style={{ maxWidth:880, margin:"0 auto", padding:"0 16px", paddingBottom: bottomPad }}>
+
+        {/* TOP HEADER */}
+        <header style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"12px 0", borderBottom:"1px solid rgba(255,255,255,0.05)", marginBottom:16, gap:10, flexWrap:"wrap" as const }}>
+          <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+            <span style={{ fontFamily:"'Bebas Neue',cursive", fontSize:22, letterSpacing:4, background:"linear-gradient(135deg,#00d4ff,#ff2254)", WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent" }}>ERRORVERSE</span>
+          </div>
+          <div style={{ display:"flex", alignItems:"center", gap:6, flexWrap:"wrap" as const }}>
+            <button onClick={()=>setShowCal(true)} style={{ display:"flex", alignItems:"center", gap:5, padding:"5px 10px", borderRadius:20, background:streak>0?"rgba(255,215,0,0.12)":"rgba(255,255,255,0.05)", border:`1px solid ${streak>0?"rgba(255,215,0,0.35)":"rgba(255,255,255,0.08)"}`, cursor:"pointer", fontFamily:"inherit" }}>
+              <span style={{ fontSize:13 }}>🔥</span>
+              <span style={{ fontSize:12, color:streak>0?"#ffd700":"#475569", fontWeight:700 }}>{streak}d</span>
+            </button>
+            <button onClick={() => setShowInfo(true)} title="How to use ErrorVerse" style={{ display:"flex", alignItems:"center", gap:5, padding:"5px 11px", borderRadius:20, background:"rgba(0,212,255,0.1)", border:"1px solid rgba(0,212,255,0.3)", color:"#fff", fontSize:14, fontWeight:900, cursor:"pointer", fontFamily:"serif" }}>ℹ</button>
+            {xpData && (
+              <div style={{ display:"flex", alignItems:"center", borderRadius:12, background:"rgba(123,97,255,0.12)", border:"1px solid rgba(123,97,255,0.3)", overflow:"hidden" }}>
+                <button onClick={() => setShowXPPanel(true)} style={{ display:"flex", alignItems:"center", gap:4, padding:"5px 8px", border:"none", background:"transparent", fontSize:11, color:"#a78bfa", fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>
+                  <span>⚡</span><span>{xpData.totalXP} · Lv{xpData.level}</span>
+                </button>
+                <button onClick={() => setShowBadges(true)} style={{ padding:"5px 8px", border:"none", borderLeft:"1px solid rgba(123,97,255,0.3)", background:"transparent", fontSize:14, cursor:"pointer", lineHeight:1, display:"flex", alignItems:"center" }}>🏅</button>
+              </div>
+            )}
+            <button onClick={() => setShowProfile(true)} style={{ display:"flex", alignItems:"center", gap:6, background:"rgba(255,255,255,0.04)", border:"1px solid rgba(255,255,255,0.1)", borderRadius:24, padding:"3px 10px 3px 3px", cursor:"pointer" }}>
+              <AvatarDisplay avatar={userAvatar} photoURL={userPhoto} displayName={displayName} size={28} />
+              <span style={{ fontSize:12, color:"#94a3b8", fontWeight:600, maxWidth:70, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" as const }}>{displayName.split(" ")[0] || "You"}</span>
+            </button>
+          </div>
+        </header>
+
+        {/* Quote */}
+        <div style={{ marginBottom:14, minHeight:22 }}>
+          <span style={{ fontSize:13, color:"#ffffff", fontWeight:700, fontStyle:"italic", letterSpacing:0.3, textShadow:"0 0 20px rgba(0,212,255,0.3)" }}>"{QUOTES[quoteIdx]}"</span>
+        </div>
+
+        {/* Banners */}
+        {activeTab==="achievements" && xpData && <LevelBanner xpData={xpData}/>}
+        {(activeTab==="errors" || activeTab==="collection") && <StreakBanner todayCount={todayCount} streak={streak}/>}
+
+        {/* Page title */}
+        <div style={{ marginBottom:16 }}>
+          <h1 style={{ fontSize:28, fontFamily:"'Bebas Neue',cursive", letterSpacing:3, color:"#e2e8f0", margin:0 }}>
+            {pt.title.split(" ").map((w:string,i:number,arr:string[])=>
+              i===arr.length-1
+                ? <span key={i} style={{ color:pt.color }}> {w}</span>
+                : <span key={i}>{w} </span>
+            )}
+          </h1>
+        </div>
+
+        {/* Tab content */}
+        {activeTab==="errors"       && <ErrorBook userId={user.uid} onEntryAdded={handleEntryAdded} onXP={handleXPGained} xpData={xpData} streak={streak} todayCount={todayCount}/>}
+        {activeTab==="revision"     && <SpacedRevision userId={user.uid} onXP={handleXPGained}/>}
+        {activeTab==="achievements" && <BadgesPanel earned={xpData?.badges??[]}/>}
+        {activeTab==="collection"   && <AnimeCollection userId={user.uid} onEntryAdded={handleEntryAdded}/>}
+        {activeTab==="leaderboard"  && <Leaderboard currentUserId={user.uid}/>}
+        {activeTab==="ai"           && <AITabLoader userId={user.uid}/>}
+        {activeTab==="heatmap"      && <HeatCalendarLoader userId={user.uid}/>}
+      </div>
+    </div>
   );
 }
 
@@ -2451,7 +3112,8 @@ export default function App() {
   const pt = PAGE_TITLES[activeTab] ?? PAGE_TITLES["errors"];
 
   return (
-    <div style={{ minHeight:"100vh", background:"#050810", color:"#e2e8f0", fontFamily:"'DM Sans',sans-serif", position:"relative" }}>
+    <div style={{ minHeight:"100vh", background:"radial-gradient(ellipse at 20% 20%, #0d0520 0%, #050810 40%, #020510 70%, #060318 100%)", color:"#e2e8f0", fontFamily:"'DM Sans',sans-serif", position:"relative" }}>
+      <div style={{ position:"fixed", inset:0, pointerEvents:"none", zIndex:0, background:"radial-gradient(ellipse at 10% 10%, rgba(123,97,255,0.06) 0%, transparent 50%), radial-gradient(ellipse at 90% 80%, rgba(0,212,255,0.04) 0%, transparent 50%)" }} />
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600;700;800&display=swap');
         *{margin:0;padding:0;box-sizing:border-box}
@@ -2461,6 +3123,8 @@ export default function App() {
         @keyframes slideInToast{from{transform:translateX(100%);opacity:0}to{transform:translateX(0);opacity:1}}
         @keyframes popIn{from{transform:translateX(-50%) scale(0.5);opacity:0}to{transform:translateX(-50%) scale(1);opacity:1}}
         @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.5}}
+        html{scroll-behavior:smooth;}
+        @media(max-width:480px){button{min-height:36px;}}
       `}</style>
 
       <Particles/>
@@ -2506,97 +3170,11 @@ export default function App() {
         />
       )}
 
-      {/* Main content */}
-      <div style={{ position:"relative", zIndex:1, maxWidth:1100, margin:"0 auto", padding:"0 16px", paddingBottom:80 }}>
+      {/* Responsive navigation */}
+      <ResponsiveNav active={activeTab} setActive={setActiveTab} />
 
-        {/* COMPACT TOP HEADER */}
-        <header style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"12px 0", borderBottom:"1px solid rgba(255,255,255,0.05)", marginBottom:16, gap:10 }}>
-          <div style={{ display:"flex", alignItems:"center", gap:10 }}>
-            <span style={{ fontFamily:"'Bebas Neue',cursive", fontSize:24, letterSpacing:4, background:"linear-gradient(135deg,#00d4ff,#ff2254)", WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent" }}>ERRORVERSE</span>
-          </div>
-
-          <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-            {/* Streak pill */}
-            <button onClick={()=>setShowCal(true)} style={{ display:"flex", alignItems:"center", gap:5, padding:"5px 10px", borderRadius:20, background:streak>0?"rgba(255,215,0,0.12)":"rgba(255,255,255,0.05)", border:`1px solid ${streak>0?"rgba(255,215,0,0.35)":"rgba(255,255,255,0.08)"}`, cursor:"pointer", fontFamily:"inherit" }}>
-              <span style={{ fontSize:13 }}>🔥</span>
-              <span style={{ fontSize:12, color:streak>0?"#ffd700":"#475569", fontWeight:700 }}>{streak}d</span>
-            </button>
-
-            {/* ℹ️ Info icon — WHERE 0/3 WAS */}
-            <button
-              onClick={() => setShowInfo(true)}
-              title="How to use ErrorVerse"
-              style={{
-                display:"flex", alignItems:"center", gap:5,
-                padding:"5px 11px", borderRadius:20,
-                background:"rgba(0,212,255,0.1)",
-                border:"1px solid rgba(0,212,255,0.3)",
-                color:"#fff", fontSize:14, fontWeight:900,
-                cursor:"pointer", fontFamily:"serif",
-                transition:"all 0.2s",
-              }}
-            >ℹ</button>
-
-            {/* XP pill — click XP part for XP panel, click 🏅 for badges */}
-            {xpData && (
-              <div style={{ display:"flex", alignItems:"center", borderRadius:12, background:"rgba(123,97,255,0.12)", border:"1px solid rgba(123,97,255,0.3)", overflow:"hidden" }}>
-                <button onClick={() => setShowXPPanel(true)} style={{ display:"flex", alignItems:"center", gap:4, padding:"5px 8px", border:"none", background:"transparent", fontSize:11, color:"#a78bfa", fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>
-                  <span>⚡</span>
-                  <span>{xpData.totalXP} · Lv{xpData.level}</span>
-                </button>
-                <button onClick={() => setShowBadges(true)} style={{ padding:"5px 8px", border:"none", borderLeft:"1px solid rgba(123,97,255,0.3)", background:"transparent", fontSize:14, cursor:"pointer", lineHeight:1, display:"flex", alignItems:"center" }}>🏅</button>
-              </div>
-            )}
-
-            {/* Avatar / profile button */}
-            <button onClick={() => setShowProfile(true)} style={{ display:"flex", alignItems:"center", gap:6, background:"rgba(255,255,255,0.04)", border:"1px solid rgba(255,255,255,0.1)", borderRadius:24, padding:"3px 10px 3px 3px", cursor:"pointer" }}>
-              <AvatarDisplay avatar={userAvatar} photoURL={userPhoto} displayName={displayName} size={28} />
-              <span style={{ fontSize:12, color:"#94a3b8", fontWeight:600, maxWidth:70, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" as const }}>
-                {displayName.split(" ")[0] || "You"}
-              </span>
-            </button>
-          </div>
-        </header>
-
-        {/* Scrolling quote — bold white, clearly readable */}
-        <div style={{ marginBottom:14, overflow:"hidden", minHeight:22 }}>
-          <span style={{
-            fontSize:13,
-            color:"#ffffff",
-            fontWeight:700,
-            fontStyle:"italic",
-            letterSpacing:0.3,
-            textShadow:"0 0 20px rgba(0,212,255,0.3)",
-          }}>"{QUOTES[quoteIdx]}"</span>
-        </div>
-
-        {/* Page banners */}
-        {activeTab==="achievements" && xpData && <LevelBanner xpData={xpData}/>}
-        {(activeTab==="errors" || activeTab==="collection") && <StreakBanner todayCount={todayCount} streak={streak}/>}
-
-        {/* Page title */}
-        <div style={{ marginBottom:16 }}>
-          <h1 style={{ fontSize:28, fontFamily:"'Bebas Neue',cursive", letterSpacing:3, color:"#e2e8f0", margin:0 }}>
-            {pt.title.split(" ").map((w,i,arr)=>
-              i===arr.length-1
-                ? <span key={i} style={{ color:pt.color }}> {w}</span>
-                : <span key={i}>{w} </span>
-            )}
-          </h1>
-        </div>
-
-        {/* Tab content */}
-        {activeTab==="errors"       && <ErrorBook userId={user.uid} onEntryAdded={handleEntryAdded} onXP={handleXPGained} xpData={xpData} streak={streak} todayCount={todayCount}/>}
-        {activeTab==="revision"     && <SpacedRevision userId={user.uid} onXP={handleXPGained}/>}
-        {activeTab==="achievements" && <BadgesPanel earned={xpData?.badges??[]}/>}
-        {activeTab==="collection"   && <AnimeCollection userId={user.uid} onEntryAdded={handleEntryAdded}/>}
-        {activeTab==="leaderboard"  && <Leaderboard currentUserId={user.uid}/>}
-        {activeTab==="ai"           && <AITabLoader userId={user.uid}/>}
-        {activeTab==="heatmap"      && <HeatCalendarLoader userId={user.uid}/>}
-      </div>
-
-      {/* Bottom nav */}
-      <BottomNav active={activeTab} setActive={setActiveTab} />
+      {/* Main content — shifts right on desktop/tablet to make room for side nav */}
+      <MainContentArea activeTab={activeTab} pt={pt} user={user} displayName={displayName} userAvatar={userAvatar} userPhoto={userPhoto} xpData={xpData} streak={streak} todayCount={todayCount} quoteIdx={quoteIdx} setShowCal={setShowCal} setShowInfo={setShowInfo} setShowXPPanel={setShowXPPanel} setShowBadges={setShowBadges} setShowProfile={setShowProfile} handleEntryAdded={handleEntryAdded} handleXPGained={handleXPGained} QUOTES={QUOTES} />
     </div>
   );
 }
