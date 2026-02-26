@@ -920,106 +920,93 @@ function AuthScreen({ onLogin }: { onLogin:(u:any)=>void }) {
     } catch(e:any) {
       const code = e.code || "";
       setError(
-        code==="auth/user-not-found" ? "No account found. Please create one." :
-        code==="auth/invalid-credential" ? "Wrong email or password." :
-        code==="auth/wrong-password" ? "Incorrect password." :
-        code==="auth/email-already-in-use" ? "Email already in use." :
-        code==="auth/weak-password" ? "Password must be 6+ characters." :
-        code==="auth/invalid-email" ? "Please enter a valid email." :
+        code==="auth/user-not-found"       ? "No account found. Please create one."  :
+        code==="auth/invalid-credential"   ? "Wrong email or password."               :
+        code==="auth/wrong-password"       ? "Incorrect password."                    :
+        code==="auth/email-already-in-use" ? "Email already in use."                  :
+        code==="auth/weak-password"        ? "Password must be 6+ characters."        :
+        code==="auth/invalid-email"        ? "Please enter a valid email."             :
         "Something went wrong. Try again."
       );
     }
     setLoading(false);
   };
 
-  const inputStyle: React.CSSProperties = {
-    width:"100%", padding:"13px 16px",
-    background:"#111827",
-    border:"1.5px solid #1e293b",
-    borderRadius:12, color:"#f1f5f9",
-    fontSize:15, fontFamily:"'DM Sans',sans-serif",
-    outline:"none", boxSizing:"border-box",
-    display:"block", WebkitTextFillColor:"#f1f5f9",
-  };
-
   return (
-    <div style={{ minHeight:"100vh", display:"flex", alignItems:"center", justifyContent:"center", padding:20, position:"relative", zIndex:10 }}>
-      <div style={{ width:"100%", maxWidth:420, position:"relative", zIndex:10 }}>
-
-        {/* Logo */}
-        <div style={{ textAlign:"center", marginBottom:36 }}>
-          <div style={{ fontSize:52, marginBottom:10 }}>⚡</div>
-          <h1 style={{ fontSize:38, fontFamily:"'Bebas Neue',cursive", letterSpacing:4, background:"linear-gradient(135deg,#00d4ff,#ff2254)", WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent", margin:0 }}>ERRORVERSE</h1>
-          <p style={{ color:"#64748b", fontSize:13, marginTop:8 }}>Master your mistakes. Own your story.</p>
-        </div>
-
-        {/* Card */}
-        <div style={{ background:"rgba(15,20,40,0.95)", border:"1px solid rgba(255,255,255,0.1)", borderRadius:20, padding:32, backdropFilter:"blur(20px)" }}>
-
-          {/* Tabs */}
-          <div style={{ display:"flex", gap:0, marginBottom:28, background:"rgba(255,255,255,0.04)", borderRadius:12, padding:4 }}>
-            {[["login","Sign In"],["signup","Create Account"]].map(([m,label])=>(
-              <button key={m} onClick={()=>{setMode(m);setError("");}}
-                style={{ flex:1, padding:"10px", borderRadius:10, border:"none", cursor:"pointer",
-                  background:mode===m?"rgba(255,255,255,0.1)":"transparent",
-                  color:mode===m?"#00d4ff":"#64748b",
-                  fontFamily:"'DM Sans',sans-serif", fontSize:13, fontWeight:700,
-                  transition:"all 0.2s" }}>
-                {label}
-              </button>
-            ))}
+    <>
+      <style>{`
+        .ev-auth-input {
+          display: block;
+          width: 100%;
+          padding: 13px 16px;
+          background: #111827 !important;
+          border: 1.5px solid #1e293b !important;
+          border-radius: 12px;
+          color: #f1f5f9 !important;
+          font-size: 15px;
+          font-family: 'DM Sans', sans-serif;
+          outline: none;
+          box-sizing: border-box;
+          position: relative;
+          z-index: 20;
+          -webkit-text-fill-color: #f1f5f9 !important;
+          caret-color: #00d4ff;
+          transition: border-color 0.2s;
+          touch-action: manipulation;
+        }
+        .ev-auth-input:focus { border-color: #00d4ff !important; background: #151d2e !important; }
+        .ev-auth-input::placeholder { color: #4b5563; }
+        .ev-auth-input:-webkit-autofill,
+        .ev-auth-input:-webkit-autofill:hover,
+        .ev-auth-input:-webkit-autofill:focus {
+          -webkit-text-fill-color: #f1f5f9 !important;
+          -webkit-box-shadow: 0 0 0 1000px #111827 inset !important;
+          caret-color: #00d4ff !important;
+        }
+      `}</style>
+      <div style={{ minHeight:"100vh", display:"flex", alignItems:"center", justifyContent:"center", padding:20, position:"relative", zIndex:10, isolation:"isolate" }}>
+        <div style={{ width:"100%", maxWidth:420 }}>
+          <div style={{ textAlign:"center", marginBottom:36 }}>
+            <div style={{ fontSize:52, marginBottom:10 }}>⚡</div>
+            <h1 style={{ fontSize:38, fontFamily:"'Bebas Neue',cursive", letterSpacing:4, background:"linear-gradient(135deg,#00d4ff,#ff2254)", WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent", margin:0 }}>ERRORVERSE</h1>
+            <p style={{ color:"#64748b", fontSize:13, marginTop:8 }}>Master your mistakes. Own your story.</p>
           </div>
-
-          {/* Fields */}
-          <div style={{ display:"flex", flexDirection:"column", gap:14 }}>
-            {mode==="signup" && (
-              <input
-                style={inputStyle}
-                placeholder="Full Name"
-                value={name}
-                onChange={e=>setName(e.target.value)}
-                autoComplete="name"
-              />
-            )}
-            <input
-              style={inputStyle}
-              placeholder="Email address"
-              type="email"
-              value={email}
-              onChange={e=>setEmail(e.target.value)}
-              autoComplete="email"
-            />
-            <input
-              style={inputStyle}
-              placeholder="Password"
-              type="password"
-              value={password}
-              onChange={e=>setPassword(e.target.value)}
-              onKeyDown={e=>e.key==="Enter"&&handle()}
-              autoComplete="current-password"
-            />
-
-            {error && (
-              <div style={{ fontSize:13, color:"#ff2254", padding:"10px 14px", background:"rgba(255,34,84,0.08)", border:"1px solid rgba(255,34,84,0.2)", borderRadius:10 }}>
-                ⚠️ {error}
-              </div>
-            )}
-
-            <button
-              onClick={handle}
-              disabled={loading}
-              style={{ width:"100%", padding:"14px", borderRadius:12, border:"none",
-                background:loading?"rgba(0,212,255,0.3)":"linear-gradient(135deg,#00d4ff,#0066ff)",
-                color:"#fff", fontFamily:"'DM Sans',sans-serif", fontSize:15, fontWeight:800,
-                cursor:loading?"not-allowed":"pointer", letterSpacing:1,
-                boxShadow:loading?"none":"0 4px 20px rgba(0,212,255,0.3)",
-                marginTop:4 }}>
-              {loading ? "⏳ Signing in..." : (mode==="login" ? "ENTER THE VERSE ⚡" : "BEGIN JOURNEY 🚀")}
-            </button>
+          <div style={{ background:"rgba(15,20,40,0.97)", border:"1px solid rgba(255,255,255,0.12)", borderRadius:20, padding:32, backdropFilter:"blur(20px)", position:"relative", zIndex:20 }}>
+            <div style={{ display:"flex", gap:0, marginBottom:28, background:"rgba(255,255,255,0.04)", borderRadius:12, padding:4 }}>
+              {[["login","Sign In"],["signup","Create Account"]].map(([m,label])=>(
+                <button key={m} onClick={()=>{setMode(m);setError("");}}
+                  style={{ flex:1, padding:"10px", borderRadius:10, border:"none", cursor:"pointer",
+                    background:mode===m?"rgba(255,255,255,0.1)":"transparent",
+                    color:mode===m?"#00d4ff":"#64748b",
+                    fontFamily:"'DM Sans',sans-serif", fontSize:13, fontWeight:700,
+                    transition:"all 0.2s", position:"relative", zIndex:21 }}>
+                  {label}
+                </button>
+              ))}
+            </div>
+            <div style={{ display:"flex", flexDirection:"column", gap:14 }}>
+              {mode==="signup" && (
+                <input className="ev-auth-input" placeholder="Full Name" value={name} onChange={e=>setName(e.target.value)} autoComplete="name" />
+              )}
+              <input className="ev-auth-input" placeholder="Email address" type="email" value={email} onChange={e=>setEmail(e.target.value)} autoComplete="email" />
+              <input className="ev-auth-input" placeholder="Password" type="password" value={password} onChange={e=>setPassword(e.target.value)} onKeyDown={e=>e.key==="Enter"&&handle()} autoComplete="current-password" />
+              {error && (
+                <div style={{ fontSize:13, color:"#ff2254", padding:"10px 14px", background:"rgba(255,34,84,0.08)", border:"1px solid rgba(255,34,84,0.2)", borderRadius:10 }}>⚠️ {error}</div>
+              )}
+              <button onClick={handle} disabled={loading}
+                style={{ width:"100%", padding:"14px", borderRadius:12, border:"none",
+                  background:loading?"rgba(0,212,255,0.3)":"linear-gradient(135deg,#00d4ff,#0066ff)",
+                  color:"#fff", fontFamily:"'DM Sans',sans-serif", fontSize:15, fontWeight:800,
+                  cursor:loading?"not-allowed":"pointer", letterSpacing:1,
+                  boxShadow:loading?"none":"0 4px 20px rgba(0,212,255,0.3)",
+                  marginTop:4, position:"relative", zIndex:21 }}>
+                {loading ? "⏳ Signing in..." : (mode==="login" ? "ENTER THE VERSE ⚡" : "BEGIN JOURNEY 🚀")}
+              </button>
+            </div>
           </div>
         </div>
       </div>
-    </div>
+    </>
   );
 }
 
@@ -1052,34 +1039,39 @@ async function uploadImageToStorage(file: File, userId: string): Promise<string>
 function PhotoUploadBox({ label, value, onChange, userId }: { label: string; value: string|null; onChange: (v: string|null) => void; userId: string }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
-  const [error, setError] = useState("");
+  const [errorMsg, setErrorMsg] = useState("");
 
   const handleFile = async (file: File) => {
     if (!file) return;
-    if (!file.type.startsWith("image/")) { setError("Only image files allowed"); return; }
-    setError("");
+    if (!file.type.startsWith("image/")) { setErrorMsg("Only image files are allowed."); return; }
+    if (file.size > 15 * 1024 * 1024) { setErrorMsg("File too large (max 15 MB)."); return; }
+    setErrorMsg("");
     setUploading(true);
     try {
-      // First read as dataURL — this ALWAYS works
-      const dataUrl = await new Promise<string>((res, rej) => {
+      const dataUrl = await new Promise<string>((resolve, reject) => {
         const reader = new FileReader();
-        reader.onload = () => res(reader.result as string);
-        reader.onerror = rej;
+        reader.onload  = () => resolve(reader.result as string);
+        reader.onerror = () => reject(new Error("FileReader failed"));
         reader.readAsDataURL(file);
       });
-      // Then try Firebase Storage — if it fails, use dataUrl
       let finalUrl = dataUrl;
       try {
-        const path = `errors/${userId||"anon"}/${Date.now()}.jpg`;
-        const sRef = ref(storage, path);
-        await uploadBytes(sRef, file);
-        finalUrl = await getDownloadURL(sRef);
-      } catch(storageErr) {
-        console.warn("Storage failed, using dataURL fallback");
+        const timeoutPromise = new Promise<never>((_,reject) =>
+          setTimeout(() => reject(new Error("Upload timed out")), 15000)
+        );
+        const uploadPromise = (async () => {
+          const path = `errors/${userId||"anon"}/${Date.now()}_${Math.random().toString(36).slice(2)}.jpg`;
+          const sRef = ref(storage, path);
+          await uploadBytes(sRef, file);
+          return await getDownloadURL(sRef);
+        })();
+        finalUrl = await Promise.race([uploadPromise, timeoutPromise]);
+      } catch(storageErr: any) {
+        console.warn("Storage failed, using dataURL fallback:", storageErr?.message);
       }
       onChange(finalUrl);
-    } catch(e) {
-      setError("Could not read photo. Try again.");
+    } catch(e: any) {
+      setErrorMsg("Could not read photo. Please try again.");
     } finally {
       setUploading(false);
       if (inputRef.current) inputRef.current.value = "";
@@ -1090,34 +1082,32 @@ function PhotoUploadBox({ label, value, onChange, userId }: { label: string; val
     <div>
       <label style={{ fontSize:11, color:"#64748b", display:"block", marginBottom:4 }}>{label}</label>
       <div
-        onClick={() => { if (!uploading) { setError(""); inputRef.current?.click(); } }}
+        onClick={() => { if (!uploading) { setErrorMsg(""); inputRef.current?.click(); } }}
         style={{
           width:"100%", minHeight:90, borderRadius:12,
-          border:`2px dashed ${error ? "#ff2254" : value ? "#22c55e" : uploading ? "#f97316" : "rgba(255,255,255,0.15)"}`,
-          background: error ? "rgba(255,34,84,0.05)" : value ? "rgba(34,197,94,0.06)" : "rgba(255,255,255,0.03)",
+          border:`2px dashed ${errorMsg ? "#ff2254" : value ? "#22c55e" : uploading ? "#f97316" : "rgba(255,255,255,0.15)"}`,
+          background: errorMsg ? "rgba(255,34,84,0.05)" : value ? "rgba(34,197,94,0.06)" : "rgba(255,255,255,0.03)",
           display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center",
           cursor: uploading ? "wait" : "pointer", position:"relative", overflow:"hidden", transition:"all 0.2s",
         }}
       >
         {uploading ? (
           <div style={{ textAlign:"center", padding:16 }}>
-            <div style={{ fontSize:28, marginBottom:6, animation:"pulse 1s infinite" }}>⏳</div>
-            <div style={{ fontSize:12, color:"#f97316", fontWeight:600 }}>Processing photo...</div>
+            <div style={{ fontSize:28, marginBottom:6 }}>⏳</div>
+            <div style={{ fontSize:12, color:"#f97316", fontWeight:600 }}>Processing photo…</div>
+            <div style={{ fontSize:10, color:"#64748b", marginTop:4 }}>Max 15 seconds</div>
           </div>
-        ) : error ? (
+        ) : errorMsg ? (
           <div style={{ textAlign:"center", padding:12 }}>
             <div style={{ fontSize:24, marginBottom:4 }}>⚠️</div>
-            <div style={{ fontSize:11, color:"#ff2254" }}>{error}</div>
+            <div style={{ fontSize:11, color:"#ff2254" }}>{errorMsg}</div>
             <div style={{ fontSize:10, color:"#475569", marginTop:4 }}>Tap to try again</div>
           </div>
         ) : value ? (
           <>
             <img src={value} alt="" style={{ maxHeight:130, maxWidth:"100%", objectFit:"contain", borderRadius:8 }} />
-            <button
-              onClick={e => { e.stopPropagation(); onChange(null); setError(""); }}
-              style={{ position:"absolute", top:6, right:6, background:"rgba(255,34,84,0.9)", border:"none", borderRadius:"50%", width:24, height:24, color:"#fff", fontSize:14, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", fontWeight:700 }}>
-              ✕
-            </button>
+            <button onClick={e => { e.stopPropagation(); onChange(null); setErrorMsg(""); }}
+              style={{ position:"absolute", top:6, right:6, background:"rgba(255,34,84,0.9)", border:"none", borderRadius:"50%", width:24, height:24, color:"#fff", fontSize:14, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", fontWeight:700 }}>✕</button>
             <div style={{ position:"absolute", bottom:4, left:"50%", transform:"translateX(-50%)", fontSize:10, color:"rgba(255,255,255,0.5)", background:"rgba(0,0,0,0.5)", padding:"2px 8px", borderRadius:10, whiteSpace:"nowrap" as const }}>
               ✅ Photo added · tap ✕ to remove
             </div>
@@ -1126,14 +1116,13 @@ function PhotoUploadBox({ label, value, onChange, userId }: { label: string; val
           <div style={{ textAlign:"center", padding:16 }}>
             <div style={{ fontSize:32, marginBottom:6 }}>📷</div>
             <div style={{ fontSize:12, color:"#64748b", fontWeight:600 }}>Tap to add photo</div>
-            <div style={{ fontSize:10, color:"#334155", marginTop:3 }}>JPG, PNG up to 15MB</div>
+            <div style={{ fontSize:10, color:"#334155", marginTop:3 }}>JPG, PNG up to 15 MB</div>
           </div>
         )}
         <input
           ref={inputRef}
           type="file"
           accept="image/*"
-          capture="environment"
           style={{ display:"none" }}
           onChange={e => { const f = e.target.files?.[0]; if (f) handleFile(f); }}
         />
