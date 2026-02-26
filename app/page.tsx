@@ -920,32 +920,31 @@ function AuthScreen({ onLogin }: { onLogin:(u:any)=>void }) {
     } catch(e:any) {
       const code = e.code || "";
       setError(
-        code==="auth/user-not-found"       ? "No account found. Please create one."  :
-        code==="auth/invalid-credential"   ? "Wrong email or password."               :
-        code==="auth/wrong-password"       ? "Incorrect password."                    :
-        code==="auth/email-already-in-use" ? "Email already in use."                  :
-        code==="auth/weak-password"        ? "Password must be 6+ characters."        :
-        code==="auth/invalid-email"        ? "Please enter a valid email."             :
+        code==="auth/user-not-found" ? "No account found. Please create one." :
+        code==="auth/invalid-credential" ? "Wrong email or password." :
+        code==="auth/wrong-password" ? "Incorrect password." :
+        code==="auth/email-already-in-use" ? "Email already in use." :
+        code==="auth/weak-password" ? "Password must be 6+ characters." :
+        code==="auth/invalid-email" ? "Please enter a valid email." :
         "Something went wrong. Try again."
       );
     }
     setLoading(false);
   };
 
-  const inp: React.CSSProperties = {
-    display:"block", width:"100%", padding:"13px 16px",
-    background:"#111827", border:"1.5px solid #1e293b", borderRadius:12,
-    color:"#f1f5f9", fontSize:15, fontFamily:"'DM Sans',sans-serif",
+  const inputStyle: React.CSSProperties = {
+    width:"100%", padding:"13px 16px",
+    background:"#111827",
+    border:"1.5px solid #1e293b",
+    borderRadius:12, color:"#f1f5f9",
+    fontSize:15, fontFamily:"'DM Sans',sans-serif",
     outline:"none", boxSizing:"border-box",
-    WebkitTextFillColor:"#f1f5f9", caretColor:"#00d4ff",
-    position:"relative", zIndex:30,
-    // defeat autofill background without a style tag
-    transition:"background-color 9999s ease-in-out 0s, border-color 0.2s",
+    display:"block", WebkitTextFillColor:"#f1f5f9",
   };
 
   return (
-    <div style={{ minHeight:"100vh", display:"flex", alignItems:"center", justifyContent:"center", padding:20, position:"relative", zIndex:10, isolation:"isolate" }}>
-      <div style={{ width:"100%", maxWidth:420, position:"relative", zIndex:20 }}>
+    <div style={{ minHeight:"100vh", display:"flex", alignItems:"center", justifyContent:"center", padding:20, position:"relative", zIndex:10 }}>
+      <div style={{ width:"100%", maxWidth:420, position:"relative", zIndex:10 }}>
 
         {/* Logo */}
         <div style={{ textAlign:"center", marginBottom:36 }}>
@@ -955,7 +954,7 @@ function AuthScreen({ onLogin }: { onLogin:(u:any)=>void }) {
         </div>
 
         {/* Card */}
-        <div style={{ background:"rgba(15,20,40,0.97)", border:"1px solid rgba(255,255,255,0.12)", borderRadius:20, padding:32, backdropFilter:"blur(20px)", position:"relative", zIndex:20, isolation:"isolate" }}>
+        <div style={{ background:"rgba(15,20,40,0.95)", border:"1px solid rgba(255,255,255,0.1)", borderRadius:20, padding:32, backdropFilter:"blur(20px)" }}>
 
           {/* Tabs */}
           <div style={{ display:"flex", gap:0, marginBottom:28, background:"rgba(255,255,255,0.04)", borderRadius:12, padding:4 }}>
@@ -965,19 +964,40 @@ function AuthScreen({ onLogin }: { onLogin:(u:any)=>void }) {
                   background:mode===m?"rgba(255,255,255,0.1)":"transparent",
                   color:mode===m?"#00d4ff":"#64748b",
                   fontFamily:"'DM Sans',sans-serif", fontSize:13, fontWeight:700,
-                  transition:"all 0.2s", position:"relative", zIndex:30 }}>
+                  transition:"all 0.2s" }}>
                 {label}
               </button>
             ))}
           </div>
 
           {/* Fields */}
-          <div style={{ display:"flex", flexDirection:"column", gap:14, position:"relative", zIndex:30 }}>
+          <div style={{ display:"flex", flexDirection:"column", gap:14 }}>
             {mode==="signup" && (
-              <input style={inp} placeholder="Full Name" value={name} onChange={e=>setName(e.target.value)} autoComplete="name" />
+              <input
+                style={inputStyle}
+                placeholder="Full Name"
+                value={name}
+                onChange={e=>setName(e.target.value)}
+                autoComplete="name"
+              />
             )}
-            <input style={inp} placeholder="Email address" type="email" value={email} onChange={e=>setEmail(e.target.value)} autoComplete="email" />
-            <input style={inp} placeholder="Password" type="password" value={password} onChange={e=>setPassword(e.target.value)} onKeyDown={e=>e.key==="Enter"&&handle()} autoComplete="current-password" />
+            <input
+              style={inputStyle}
+              placeholder="Email address"
+              type="email"
+              value={email}
+              onChange={e=>setEmail(e.target.value)}
+              autoComplete="email"
+            />
+            <input
+              style={inputStyle}
+              placeholder="Password"
+              type="password"
+              value={password}
+              onChange={e=>setPassword(e.target.value)}
+              onKeyDown={e=>e.key==="Enter"&&handle()}
+              autoComplete="current-password"
+            />
 
             {error && (
               <div style={{ fontSize:13, color:"#ff2254", padding:"10px 14px", background:"rgba(255,34,84,0.08)", border:"1px solid rgba(255,34,84,0.2)", borderRadius:10 }}>
@@ -985,13 +1005,15 @@ function AuthScreen({ onLogin }: { onLogin:(u:any)=>void }) {
               </div>
             )}
 
-            <button onClick={handle} disabled={loading}
+            <button
+              onClick={handle}
+              disabled={loading}
               style={{ width:"100%", padding:"14px", borderRadius:12, border:"none",
                 background:loading?"rgba(0,212,255,0.3)":"linear-gradient(135deg,#00d4ff,#0066ff)",
                 color:"#fff", fontFamily:"'DM Sans',sans-serif", fontSize:15, fontWeight:800,
                 cursor:loading?"not-allowed":"pointer", letterSpacing:1,
                 boxShadow:loading?"none":"0 4px 20px rgba(0,212,255,0.3)",
-                marginTop:4, position:"relative", zIndex:30 }}>
+                marginTop:4 }}>
               {loading ? "⏳ Signing in..." : (mode==="login" ? "ENTER THE VERSE ⚡" : "BEGIN JOURNEY 🚀")}
             </button>
           </div>
@@ -1000,6 +1022,7 @@ function AuthScreen({ onLogin }: { onLogin:(u:any)=>void }) {
     </div>
   );
 }
+
 // ─── ERROR FORM ───────────────────────────────────────────────────────────────
 
 // ─── IMAGE UPLOAD HELPER ──────────────────────────────────────────────────────
@@ -1029,75 +1052,65 @@ async function uploadImageToStorage(file: File, userId: string): Promise<string>
 function PhotoUploadBox({ label, value, onChange, userId }: { label: string; value: string|null; onChange: (v: string|null) => void; userId: string }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
-  const [errorMsg, setErrorMsg] = useState("");
+  const [error, setError] = useState("");
 
-  const handleFile = async (file: File) => {
-    if (!file) return;
-    if (!file.type.startsWith("image/")) { setErrorMsg("Only image files are allowed."); return; }
-    if (file.size > 15 * 1024 * 1024) { setErrorMsg("File too large (max 15 MB)."); return; }
-    setErrorMsg("");
-    setUploading(true);
-    try {
-      const dataUrl = await new Promise<string>((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload  = () => resolve(reader.result as string);
-        reader.onerror = () => reject(new Error("FileReader failed"));
-        reader.readAsDataURL(file);
-      });
-      let finalUrl = dataUrl;
-      try {
-        const timeoutPromise = new Promise<never>((_,reject) =>
-          setTimeout(() => reject(new Error("Upload timed out")), 15000)
-        );
-        const uploadPromise = (async () => {
-          const path = `errors/${userId||"anon"}/${Date.now()}_${Math.random().toString(36).slice(2)}.jpg`;
-          const sRef = ref(storage, path);
-          await uploadBytes(sRef, file);
-          return await getDownloadURL(sRef);
-        })();
-        finalUrl = await Promise.race([uploadPromise, timeoutPromise]);
-      } catch(storageErr: any) {
-        console.warn("Storage failed, using dataURL fallback:", storageErr?.message);
-      }
-      onChange(finalUrl);
-    } catch(e: any) {
-      setErrorMsg("Could not read photo. Please try again.");
-    } finally {
+  const handleFile = (file: File) => {
+    if (!file.type.startsWith("image/")) { setError("Only images allowed"); return; }
+    setError(""); setUploading(true);
+    // Use FileReader — works 100% in all browsers, no async issues
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const dataUrl = e.target?.result as string;
+      // Try Firebase Storage in background — use dataUrl as immediate value
+      onChange(dataUrl); // show photo immediately
       setUploading(false);
-      if (inputRef.current) inputRef.current.value = "";
-    }
+      // Then try to upgrade to Storage URL silently
+      try {
+        const path = `errors/${userId||"anon"}/${Date.now()}.jpg`;
+        const sRef = ref(storage, path);
+        uploadBytes(sRef, file).then(() => getDownloadURL(sRef)).then(url => {
+          onChange(url); // upgrade to storage URL
+        }).catch(() => {
+          // keep dataUrl — already set above
+        });
+      } catch { /* keep dataUrl */ }
+    };
+    reader.onerror = () => { setError("Could not read photo"); setUploading(false); };
+    reader.readAsDataURL(file);
   };
 
   return (
     <div>
       <label style={{ fontSize:11, color:"#64748b", display:"block", marginBottom:4 }}>{label}</label>
       <div
-        onClick={() => { if (!uploading) { setErrorMsg(""); inputRef.current?.click(); } }}
+        onClick={() => { if (!uploading) { setError(""); inputRef.current?.click(); } }}
         style={{
           width:"100%", minHeight:90, borderRadius:12,
-          border:`2px dashed ${errorMsg ? "#ff2254" : value ? "#22c55e" : uploading ? "#f97316" : "rgba(255,255,255,0.15)"}`,
-          background: errorMsg ? "rgba(255,34,84,0.05)" : value ? "rgba(34,197,94,0.06)" : "rgba(255,255,255,0.03)",
+          border:`2px dashed ${error ? "#ff2254" : value ? "#22c55e" : uploading ? "#f97316" : "rgba(255,255,255,0.15)"}`,
+          background: error ? "rgba(255,34,84,0.05)" : value ? "rgba(34,197,94,0.06)" : "rgba(255,255,255,0.03)",
           display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center",
           cursor: uploading ? "wait" : "pointer", position:"relative", overflow:"hidden", transition:"all 0.2s",
         }}
       >
         {uploading ? (
           <div style={{ textAlign:"center", padding:16 }}>
-            <div style={{ fontSize:28, marginBottom:6 }}>⏳</div>
-            <div style={{ fontSize:12, color:"#f97316", fontWeight:600 }}>Processing photo…</div>
-            <div style={{ fontSize:10, color:"#64748b", marginTop:4 }}>Max 15 seconds</div>
+            <div style={{ fontSize:28, marginBottom:6, animation:"pulse 1s infinite" }}>⏳</div>
+            <div style={{ fontSize:12, color:"#f97316", fontWeight:600 }}>Processing photo...</div>
           </div>
-        ) : errorMsg ? (
+        ) : error ? (
           <div style={{ textAlign:"center", padding:12 }}>
             <div style={{ fontSize:24, marginBottom:4 }}>⚠️</div>
-            <div style={{ fontSize:11, color:"#ff2254" }}>{errorMsg}</div>
+            <div style={{ fontSize:11, color:"#ff2254" }}>{error}</div>
             <div style={{ fontSize:10, color:"#475569", marginTop:4 }}>Tap to try again</div>
           </div>
         ) : value ? (
           <>
             <img src={value} alt="" style={{ maxHeight:130, maxWidth:"100%", objectFit:"contain", borderRadius:8 }} />
-            <button onClick={e => { e.stopPropagation(); onChange(null); setErrorMsg(""); }}
-              style={{ position:"absolute", top:6, right:6, background:"rgba(255,34,84,0.9)", border:"none", borderRadius:"50%", width:24, height:24, color:"#fff", fontSize:14, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", fontWeight:700 }}>✕</button>
+            <button
+              onClick={e => { e.stopPropagation(); onChange(null); setError(""); }}
+              style={{ position:"absolute", top:6, right:6, background:"rgba(255,34,84,0.9)", border:"none", borderRadius:"50%", width:24, height:24, color:"#fff", fontSize:14, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", fontWeight:700 }}>
+              ✕
+            </button>
             <div style={{ position:"absolute", bottom:4, left:"50%", transform:"translateX(-50%)", fontSize:10, color:"rgba(255,255,255,0.5)", background:"rgba(0,0,0,0.5)", padding:"2px 8px", borderRadius:10, whiteSpace:"nowrap" as const }}>
               ✅ Photo added · tap ✕ to remove
             </div>
@@ -1106,13 +1119,14 @@ function PhotoUploadBox({ label, value, onChange, userId }: { label: string; val
           <div style={{ textAlign:"center", padding:16 }}>
             <div style={{ fontSize:32, marginBottom:6 }}>📷</div>
             <div style={{ fontSize:12, color:"#64748b", fontWeight:600 }}>Tap to add photo</div>
-            <div style={{ fontSize:10, color:"#334155", marginTop:3 }}>JPG, PNG up to 15 MB</div>
+            <div style={{ fontSize:10, color:"#334155", marginTop:3 }}>JPG, PNG up to 15MB</div>
           </div>
         )}
         <input
           ref={inputRef}
           type="file"
           accept="image/*"
+          capture="environment"
           style={{ display:"none" }}
           onChange={e => { const f = e.target.files?.[0]; if (f) handleFile(f); }}
         />
@@ -1140,7 +1154,7 @@ function ErrorForm({ onSubmit, onClose, userId }: any) {
 
   return (
     <div style={{ position:"fixed",inset:0,background:"rgba(0,0,0,0.85)",backdropFilter:"blur(4px)",zIndex:100,display:"flex",alignItems:"center",justifyContent:"center",padding:20 }}>
-      <div style={{ width:"100%",maxWidth:600,maxHeight:"94vh",overflow:"auto",scrollbarWidth:"none" as any }}>
+      <div style={{ width:"100%",maxWidth:600,maxHeight:"88vh",overflow:"auto",scrollbarWidth:"none" as any, paddingBottom:80 }}>
         <GlassCard hover={false} style={{ padding:28 }}>
           <div style={{ display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20 }}>
             <h2 style={{ margin:0,fontSize:20,color:"#00d4ff",fontFamily:"'Bebas Neue',cursive",letterSpacing:2 }}>+ NEW ERROR ENTRY</h2>
@@ -2357,6 +2371,7 @@ function HeatCalendarLoader({ userId, allErrors, errorsLoaded }: { userId: strin
 }
 
 // ─── NAVIGATION CONFIG ────────────────────────────────────────────────────────
+// Changes: Heat moved to PRIMARY_TABS icon collection, Watch moved to SECONDARY_TABS
 
 const PRIMARY_TABS = [
   { id:"errors",      label:"Learn",  icon:"📝", color:"#ff2254", glow:"rgba(255,34,84,0.5)" },
@@ -2373,6 +2388,8 @@ const SECONDARY_TABS = [
 function BottomNav({ active, setActive }: { active:string; setActive:(t:string)=>void }) {
   const windowWidth = useWindowWidth();
   const isMobile = windowWidth < 768;
+  const isTablet = windowWidth >= 768 && windowWidth < 1100;
+  const isDesktop = windowWidth >= 1100;
   const [showMore, setShowMore] = useState(false);
   const allTabs = [...PRIMARY_TABS, ...SECONDARY_TABS];
   const activeTab = allTabs.find(t => t.id === active);
@@ -2421,6 +2438,7 @@ function BottomNav({ active, setActive }: { active:string; setActive:(t:string)=
         display:"flex", alignItems:"stretch",
         paddingBottom:"env(safe-area-inset-bottom,0px)",
       }}>
+        {/* Inner nav — pill on desktop, full-width on mobile */}
         <div style={{
           flex:1, display:"flex", alignItems:"stretch",
           background:"rgba(3,5,12,0.98)", backdropFilter:"blur(28px)",
@@ -2434,70 +2452,71 @@ function BottomNav({ active, setActive }: { active:string; setActive:(t:string)=
           overflow:"hidden",
           transition:"all 0.3s ease",
         }}>
-          {PRIMARY_TABS.map(t => {
-            const isActive = active === t.id;
-            return (
-              <button key={t.id} onClick={() => { setActive(t.id); setShowMore(false); }} style={{
-                flex:1, display:"flex", flexDirection:"column", alignItems:"center",
-                justifyContent:"center", gap:3,
-                border:"none", background:"transparent",
-                cursor:"pointer", fontFamily:"inherit",
-                position:"relative", padding:"6px 2px 8px",
-                transition:"all 0.15s",
-              }}>
-                <div style={{
-                  position:"absolute", top:0, left:"50%", transform:"translateX(-50%)",
-                  width: isActive ? 32 : 0,
-                  height:2, borderRadius:"0 0 3px 3px",
-                  background:t.color,
-                  boxShadow: isActive ? `0 2px 12px ${t.glow}` : "none",
-                  transition:"width 0.25s ease, box-shadow 0.25s ease",
-                }} />
-                <span style={{
-                  fontSize: isActive ? 24 : 21, lineHeight:1,
-                  filter: isActive ? `drop-shadow(0 0 10px ${t.glow})` : "none",
-                  transition:"all 0.2s",
-                  transform: isActive ? "translateY(-1px)" : "none",
-                }}>{t.icon}</span>
-                <span style={{
-                  fontSize:9.5, fontWeight: isActive ? 800 : 400,
-                  color: isActive ? t.color : "#3d4d63",
-                  letterSpacing:0.2, transition:"all 0.15s",
-                }}>{t.label}</span>
-              </button>
-            );
-          })}
+        {PRIMARY_TABS.map(t => {
+          const isActive = active === t.id;
+          return (
+            <button key={t.id} onClick={() => { setActive(t.id); setShowMore(false); }} style={{
+              flex:1, display:"flex", flexDirection:"column", alignItems:"center",
+              justifyContent:"center", gap:3,
+              border:"none", background:"transparent",
+              cursor:"pointer", fontFamily:"inherit",
+              position:"relative", padding:"6px 2px 8px",
+              transition:"all 0.15s",
+            }}>
+              <div style={{
+                position:"absolute", top:0, left:"50%", transform:"translateX(-50%)",
+                width: isActive ? 32 : 0,
+                height:2, borderRadius:"0 0 3px 3px",
+                background:t.color,
+                boxShadow: isActive ? `0 2px 12px ${t.glow}` : "none",
+                transition:"width 0.25s ease, box-shadow 0.25s ease",
+              }} />
+              <span style={{
+                fontSize: isActive ? 24 : 21, lineHeight:1,
+                filter: isActive ? `drop-shadow(0 0 10px ${t.glow})` : "none",
+                transition:"all 0.2s",
+                transform: isActive ? "translateY(-1px)" : "none",
+              }}>{t.icon}</span>
+              <span style={{
+                fontSize:9.5, fontWeight: isActive ? 800 : 400,
+                color: isActive ? t.color : "#3d4d63",
+                letterSpacing:0.2, transition:"all 0.15s",
+              }}>{t.label}</span>
+            </button>
+          );
+        })}
 
-          {/* More button */}
-          <button onClick={() => setShowMore(s => !s)} style={{
-            flex:1, display:"flex", flexDirection:"column", alignItems:"center",
-            justifyContent:"center", gap:3,
-            border:"none", background:"transparent",
-            cursor:"pointer", fontFamily:"inherit",
-            position:"relative", padding:"6px 2px 8px",
-            transition:"all 0.15s",
-          }}>
-            <div style={{
-              position:"absolute", top:0, left:"50%", transform:"translateX(-50%)",
-              width: isSecondaryActive ? 32 : 0,
-              height:2, borderRadius:"0 0 3px 3px",
-              background: activeTab?.color ?? "#64748b",
-              boxShadow: isSecondaryActive ? `0 2px 12px ${(activeTab as any)?.glow ?? "#64748b44"}` : "none",
-              transition:"width 0.25s ease",
-            }} />
+        {/* More button */}
+        <button onClick={() => setShowMore(s => !s)} style={{
+          flex:1, display:"flex", flexDirection:"column", alignItems:"center",
+          justifyContent:"center", gap:3,
+          border:"none", background:"transparent",
+          cursor:"pointer", fontFamily:"inherit",
+          position:"relative", padding:"6px 2px 8px",
+          transition:"all 0.15s",
+        }}>
+          <div style={{
+            position:"absolute", top:0, left:"50%", transform:"translateX(-50%)",
+            width: isSecondaryActive ? 32 : 0,
+            height:2, borderRadius:"0 0 3px 3px",
+            background: activeTab?.color ?? "#64748b",
+            boxShadow: isSecondaryActive ? `0 2px 12px ${(activeTab as any)?.glow ?? "#64748b44"}` : "none",
+            transition:"width 0.25s ease",
+          }} />
 
-            {isSecondaryActive ? (
-              <>
-                <span style={{ fontSize:24, lineHeight:1, filter: `drop-shadow(0 0 10px ${(activeTab as any)?.glow ?? "#64748b"})`, transform:"translateY(-1px)" }}>{activeTab?.icon}</span>
-                <span style={{ fontSize:9.5, fontWeight:800, color: activeTab?.color ?? "#64748b", letterSpacing:0.2 }}>{activeTab?.label}</span>
-              </>
-            ) : (
-              <>
-                <span style={{ fontSize:20, lineHeight:1, color: showMore ? "#94a3b8" : "#3d4d63", transform: showMore ? "rotate(45deg)" : "none", transition:"all 0.25s ease", display:"block" }}>⊕</span>
-                <span style={{ fontSize:9.5, fontWeight:400, color: showMore ? "#94a3b8" : "#3d4d63", letterSpacing:0.2, transition:"color 0.15s" }}>More</span>
-              </>
-            )}
-          </button>
+          {isSecondaryActive ? (
+            <>
+              <span style={{ fontSize:24, lineHeight:1, filter: `drop-shadow(0 0 10px ${(activeTab as any)?.glow ?? "#64748b"})`, transform:"translateY(-1px)" }}>{activeTab?.icon}</span>
+              <span style={{ fontSize:9.5, fontWeight:800, color: activeTab?.color ?? "#64748b", letterSpacing:0.2 }}>{activeTab?.label}</span>
+            </>
+          ) : (
+            <>
+              <span style={{ fontSize:20, lineHeight:1, color: showMore ? "#94a3b8" : "#3d4d63", transform: showMore ? "rotate(45deg)" : "none", transition:"all 0.25s ease", display:"block" }}>⊕</span>
+              <span style={{ fontSize:9.5, fontWeight:400, color: showMore ? "#94a3b8" : "#3d4d63", letterSpacing:0.2, transition:"color 0.15s" }}>More</span>
+            </>
+          )}
+        </button>
+        </div>
         </div>
       </nav>
     </>
@@ -2537,6 +2556,7 @@ export default function App() {
 
   const syncLeaderboard = useCallback(async (uid: string, name: string, stk: number, cachedErrors?: ErrorEntry[]) => {
     try {
+      // Use cached errors to avoid extra Firestore reads
       const errors = cachedErrors ?? allErrors;
       const mc: Record<string,number> = {};
       errors.forEach((e:any) => { mc[e.mistakeType]=(mc[e.mistakeType]||0)+1; });
@@ -2546,17 +2566,20 @@ export default function App() {
   }, [allErrors]);
 
   const handleUpdateProfile = useCallback(async (data: any) => {
+    // Update local state immediately — no waiting, no blink
     if (data.displayName) setDisplayName(data.displayName);
     if (data.avatar) setUserAvatar(data.avatar);
     if (data.photoURL !== undefined) setUserPhoto(data.photoURL ?? null);
     if (user) {
       const newName = data.displayName || displayName;
+      // Also update Firebase Auth profile so it persists on next login
       try { await updateProfile(user, { displayName: newName }); } catch(e) {}
       await syncLeaderboard(user.uid, newName, streak);
     }
   }, [user, displayName, streak, syncLeaderboard]);
 
   const loadStats = useCallback(async (uid: string, name: string, isNew?: boolean) => {
+    // Load profile FIRST so name is set before anything else renders
     const [profile, s, t, xp] = await Promise.all([
       loadUserProfile(uid),
       getStreak(uid),
@@ -2572,6 +2595,7 @@ export default function App() {
       setProfileLoaded(true);
       await syncLeaderboard(uid, finalName, s);
     } else {
+      // No Firestore profile yet — use auth name as final
       setDisplayName(name);
       setProfileLoaded(true);
       await syncLeaderboard(uid, name, s);
@@ -2604,7 +2628,9 @@ export default function App() {
       if (u) {
         const authName = u.displayName || u.email?.split("@")[0] || "Warrior";
         const isNew = u.metadata?.creationTime === u.metadata?.lastSignInTime;
+        // Don't set displayName here — loadStats sets it ONCE from Firestore
         loadStats(u.uid, authName, isNew);
+        // Load errors once — shared across all tabs
         getErrors(u.uid).then(e => { setAllErrors(e); setErrorsLoaded(true); });
       } else {
         setAllErrors([]); setErrorsLoaded(false); setProfileLoaded(false); setDisplayName("");
@@ -2630,31 +2656,6 @@ export default function App() {
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600;700;800&display=swap');
         *{margin:0;padding:0;box-sizing:border-box}
-        .auth-input{
-          display:block;
-          width:100%;
-          padding:12px 14px;
-          background:rgba(255,255,255,0.06) !important;
-          border:1px solid rgba(255,255,255,0.12) !important;
-          border-radius:10px;
-          color:#e2e8f0 !important;
-          font-size:14px;
-          font-family:'DM Sans',sans-serif;
-          box-sizing:border-box;
-          outline:none;
-          pointer-events:auto !important;
-          position:relative;
-          z-index:10;
-        }
-        .auth-input:focus{border-color:#00d4ff !important;}
-        .auth-input:-webkit-autofill,
-        .auth-input:-webkit-autofill:hover,
-        .auth-input:-webkit-autofill:focus{
-          -webkit-text-fill-color:#e2e8f0 !important;
-          -webkit-box-shadow:0 0 0 1000px #0d1117 inset !important;
-          caret-color:#00d4ff !important;
-        }
-        .auth-input::placeholder{color:#475569}
       `}</style>
       <Particles/>
       <div style={{ position:"relative", zIndex:10 }}>
@@ -2813,7 +2814,7 @@ export default function App() {
               <span style={{ fontSize:12, color:streak>0?"#ffd700":"#475569", fontWeight:700 }}>{streak}d</span>
             </button>
 
-            {/* ℹ️ Info icon */}
+            {/* ℹ️ Info icon — WHERE 0/3 WAS */}
             <button
               onClick={() => setShowInfo(true)}
               title="How to use ErrorVerse"
@@ -2828,7 +2829,7 @@ export default function App() {
               }}
             >ℹ</button>
 
-            {/* XP pill */}
+            {/* XP pill — click XP part for XP panel, click 🏅 for badges */}
             {xpData && (
               <div style={{ display:"flex", alignItems:"center", borderRadius:12, background:"rgba(123,97,255,0.12)", border:"1px solid rgba(123,97,255,0.3)", overflow:"hidden" }}>
                 <button onClick={() => setShowXPPanel(true)} style={{ display:"flex", alignItems:"center", gap:4, padding:"5px 8px", border:"none", background:"transparent", fontSize:11, color:"#a78bfa", fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>
@@ -2851,7 +2852,7 @@ export default function App() {
           </div>
         </header>
 
-        {/* Scrolling quote */}
+        {/* Scrolling quote — bold white, clearly readable */}
         <div style={{ marginBottom:14, overflow:"hidden", minHeight:22 }}>
           <span style={{
             fontSize:13,
@@ -2878,7 +2879,7 @@ export default function App() {
           </h1>
         </div>
 
-        {/* Tab content */}
+        {/* Tab content — mount once on first visit, keep alive with display:none */}
         {(activeTab==="errors" || mountedTabs.has("errors")) && (
           <div style={{ display: activeTab==="errors" ? "block" : "none" }}>
             <ErrorBook userId={user.uid} onEntryAdded={handleEntryAdded} onXP={handleXPGained} xpData={xpData} streak={streak} todayCount={todayCount} allErrors={allErrors} setAllErrors={setAllErrors} errorsLoaded={errorsLoaded}/>
