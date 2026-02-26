@@ -2517,7 +2517,6 @@ function BottomNav({ active, setActive }: { active:string; setActive:(t:string)=
           )}
         </button>
         </div>
-        </div>
       </nav>
     </>
   );
